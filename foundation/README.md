@@ -21,7 +21,7 @@ Once that's done we'll need to build.
 
 ## Building Qemu
 
-If your system has qemu >= 3.1, then RISC-V support was upstreamed and you can probably install a RISC-V-supporting qemu from your system package manager.
+If your system has qemu >= 3.1, then in theory RISC-V support was upstreamed and you can probably install a RISC-V-supporting qemu from your system package manager. In practise, at least on macOS, there are problems connecting to an emulated kernel with gdb. Better to build it yourself; it's quick to do.
 
 Otherwise you'll want to clone it yourself and build:
 
@@ -29,7 +29,7 @@ Otherwise you'll want to clone it yourself and build:
 git clone --recursive https://github.com/sifive/riscv-qemu
 cd riscv-qemu
 mkdir build && cd build
-../configure --target-list=riscv32-softmmu # TODO: Check this is right
+../configure --target-list=riscv32-softmmu
 make -j4
 ```
 
@@ -39,16 +39,18 @@ You can use a prebuilt toolchain from [Sifive](https://www.sifive.com/boards/) (
 
 If you're building from source, you can see in the freedom-e-sdk HiFive1 [BSP](https://github.com/sifive/freedom-e-sdk/blob/30c143eb5445f47edb351ba54c84ff8285dc27a9/bsp/sifive-hifive1/settings.mk) that we need to target a different arch and ABI, since the toolchain defaults to 64 bit.
 
-You can choose a different prefix, but we'll assume you've set `$RISCV_PREFIX` to something.
+You can choose a different prefix, but we'll assume you've set `$RISCV_PREFIX` to something. You'll need that evironment variable set to do anything.
+
+Before building, you're likely to need to install some additional requirements. See [the repo](https://github.com/riscv/riscv-gnu-toolchain) for requirements on various platforms including Ubuntu and macOS.
 
 ```bash
 cd riscv-gnu-toolchain
 mkdir build && cd build
-../configure --with-arch=rv32imac --with-abi=ilp32 --with-cmodel=medlow --prefix=$RISCV_PREFIX 
+../configure --with-arch=rv32imac --with-abi=ilp32 --with-cmodel=medlow --prefix=$RISCV_PREFIX
 make -j4  # might need to be done as root depending on where you're installing
 ```
 
-The build files will be in the `$RISCV_PREFIX/bin` dir.
+The executables will be in the `$RISCV_PREFIX/bin` dir, and you can sanity check by running `$RISCV_PREFIX/bin/riscv32-unknown-elf-gcc -v`.
 
 ## Compiling Our Sample
 
@@ -87,7 +89,7 @@ Of course, the compiled output isn't much use to us right now. We want to run it
 
 ## Running in Qemu
 
-Note that when running Qemu headless, you exit by pressing Ctrl+A and then `x` (use Ctrl+A and then `h` for help).
+First, note that when running Qemu headless, you exit by pressing Ctrl+A, releasing and then pressing `x` (use Ctrl+A and then `h` for help on other such commands).
 
 We pass a few arguments to the following command which look initially confusing:
 
@@ -96,7 +98,7 @@ We pass a few arguments to the following command which look initially confusing:
 - `-machine sifive_e` tells qemu we're running a sifive-e machine (which the HiFive 1 is!)
 - `-nographic` disables graphics - we're not going to need them.
 
-Finally we point at our kernel (which is our ELF file)
+Finally we point at our kernel (which is our ELF file) and kick off Qemu. macOS users take note: there are some problems with using the homebrew qemu with gdb. Best to compile your own qemu for this.
 
 ```bash
 $ qemu-system-riscv32 -machine sifive_e -nographic -s -S -kernel BUILD/nothing.elf
@@ -105,12 +107,96 @@ $ $RISCV_PREFIX/bin/riscv32-unknown-elf-gdb
 (gdb) target remote localhost:1234
 (gdb) x 0x80000000
 0x80000000:    0x8082452d
-(gdb) quit
+(gdb) info register pc # can also write "i r pc"
+                       # or just "i r" to dump all registers
+pc 0x1000     0x1000
+(gdb) x 0x1000
+0x1000:    0x204002b7
+(gdb) x 0x1004
+0x1004:    0x00028067
 ```
 
 `x 0x80000000` dumps the memory at that address, which we can see is our `main` function above. We know we've loaded the file correctly into qemu.
 
-# TODO: Actually run the program
+So we see our program is loaded correctly, and `info register pc` shows us that the board has defaulted `pc` to `0x1000`, and at that address there's actually an instruction already there which we didn't write! We can cheat and look up in the HiFive1 manual for clues as to what that instruction does, but this is actually a great opportunity to test something out!
+
+## Writing Raw Machine Code
+
+If we want to write in pure machine code, we'll need to be able to write raw bytes into a file. We'll come onto tooling for that later, but for now we can make do with a very quick solution.
+
+In `bootloader` there's a Python script which will dump raw binary into a file called "bootloader" in the same directory. The order looks "reversed" compared to the instructions we see above to account for endianness when we're writing to the file - gdb is showing us full hex values, which need to be written little-endian.
+
+```bash
+$ python3 write_bootloader.py && hexdump bootloader
+0000000 b7 02 40 20 67 80 02 00
+0000008
+```
+
+Now we've dumped the instructions into a file, we can use `riscv32-unknown-elf-objdump` to help us work out what they are, as long as we give the disassembler a little help:
+
+- `-D` (not `-d`) dissassembles "all" in the file, so every instruction
+- `-b binary` indicates we're dealing with a raw binary file (as oppossed to, say, an ELF)
+- `-m riscv:rv32` hints that we're dealing with RISC-V 32-bit instructions (since there's no way for objdump to work this out from an 8 bytes that could otherwise be anything at all!)
+
+```bash
+$ $RISCV_PREFIX/bin/riscv32-unknown-elf-objdump -D -b binary -m riscv:rv32 bootloader
+
+bootloader: file format binary
+
+Disassembly of section .data:
+
+00000000 <.data>:
+   0:    b7024020    lui t0,0x20400
+   4:    67800200    jr  t0 # 0x20400000
+```
+
+And the "bootloader" is revealed!
+
+`lui t0,0x20400` basically loads the unsigned value `0x20400000` into `t0` which is a "temporary" register (also known as `x5`). You'll note that the immediate value in the instruction, `0x20400` doesn't match the value that ends up in `t0`. To clear that up, the [manual](https://content.riscv.org/wp-content/uploads/2016/06/riscv-spec-v2.1.pdf) says:
+
+> LUI (load upper immediate) is used to build 32-bit constants ... LUI places the immediate value in the top 20 bits of the destination register, filling in the lowest 12 bits with zeros.
+
+Since one hex "value" is 4 bits, that means the bottom 12 bits of the loaded value are `000`, which explains the difference!
+
+`jr t0` unconditionally jumps to the address in `t0`, which has the effect of setting `pc` to the value in `t0`.
+
+So we conclude that the bootloader just immediately jumps to the address 0x20400000! Let's try it out:
+
+```bash
+(gdb) nexti
+0x00001004 in ?? ()
+(gdb) i r pc t0
+pc    0x1004
+t0    0x20400000
+(gdb) nexti
+<execution hangs, so we press Ctrl-C>
+^C
+Program received signal SIGINT, Interrupt.
+0x00000000 in ?? ()
+(gdb) i r pc t0
+pc    0x0
+t0    0x20400000
+```
+
+That pretty much confirms what we expected to happen. We set `t0` and then jump to the address it contains, where the debugger mysteriously hangs. Even after the hang, we still see the value that we set in `t0`.
+
+## Boot Part 2
+
+So we know that after booting, control will pass to 0x20400000 immediately and then everything hangs. What's at that location?
+
+```bash
+(gdb) x 0x20400000
+0x20400000:    0x00000000
+```
+
+The answer: absolutely nothing! 0x00000000 is an illegal instruction, which causes the process to trap, setting the PC to 0x00000000... which always contains 0x0 and so causes an infinite loop!
+
+If you "cheated" like I mentioned earlier and read the HiFive1 documentation regarding the boot process, you'll notice that there's a disconnect between what qemu has and what the HiFive1 has - they're not identical!
+
+# TODO: Continue
+[hifive_bootloader on github](https://github.com/sifive/freedom-e-sdk/tree/f9271b91257e0a8a989faf3eff0757ee46694fe0/software/double_tap_dontboot)
+
+[hifive datasheet boot notes](https://sifive.cdn.prismic.io/sifive%2Ffeb6f967-ff96-418f-9af4-a7f3b7fd1dfc_fe310-g000-ds.pdf)
 
 ## Other Links
 
