@@ -10,6 +10,8 @@ such as the vanishingly simple [hello](https://github.com/sifive/example-hello/t
 
 As such we're not actually going to be _using_ the Freedom Metal library or the freedom-e-sdk directly, but since they're open source we can learn from them and take out the relevant bits. Note also that there's a lot of C, which isn't any use to us in a bedrock bare metal world.
 
+Finally, another handy guide to RISC-V assembly which makes a great reference: [rv8.io](https://rv8.io/asm.html).
+
 Now we need two things; Qemu, to run our programs locally for testing, and the GNU toolchain, to compile examples and - more importantly, in our case - provide some debugging tools such as `objdump`.
 
 ## Building Qemu
