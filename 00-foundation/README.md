@@ -2,28 +2,21 @@
 
 Before we can do _anything_ we'll need to gather some required documentation, and find a way to debug the code we're going to write.
 
-The [HiFive1 getting started guide](https://sifive.cdn.prismic.io/sifive%2F9c57065b-6d28-465b-b67d-f416894123a9_hifive1-getting-started-v1.0.2.pdf) is actually not the best place for us to get started. It uses a fairly heavyweight IDE and isn't targetted at true bare metal. There is however a [more detailed datasheet](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf) which will be a useful reference for us.
+The [HiFive1 getting started guide](https://sifive.cdn.prismic.io/sifive%2F9c57065b-6d28-465b-b67d-f416894123a9_hifive1-getting-started-v1.0.2.pdf) is actually not the best place for us to get started. It uses a fairly heavyweight IDE and isn't targeted at true bare metal. There is however a [more detailed datasheet](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf) which will be a useful reference for us.
 
 [Freedom Metal](https://sifive.github.io/freedom-metal-docs/introduction.html#what-is-freedom-metal) (on [GitHub](https://github.com/sifive/freedom-metal/tree/master)) looks more useful, as does the [freedom-e-sdk](https://github.com/sifive/freedom-e-sdk). We see they provide
 a [Board Support Package](https://github.com/sifive/freedom-e-sdk/tree/30c143eb5445f47edb351ba54c84ff8285dc27a9/bsp/sifive-hifive1) for the HiFive1, with details we need such as the architecture we're compiling for. We also see example programs
-such as the vanishingly simple [hello](https://github.com/sifive/example-hello/tree/d1397bec64187efb8b791fe1eb307aa3c760c694) which we can use as a sanity check. The Makefile is a big beast designed to support multiple different boards in testing, and we don't need most of it.
+such as the vanishingly simple [hello](https://github.com/sifive/example-hello/tree/d1397bec64187efb8b791fe1eb307aa3c760c694) which we can use as a sanity check. However, the Makefile is a big beast designed to support multiple different boards in testing, and we don't need the vast majority of it.
 
-We're not actually going to be _using_ Freedom Metal library directly, but since it's open source we can learn from it. Note also that it's in C, which isn't any use to us in a bedrock bare metal world.
+As such we're not actually going to be _using_ the Freedom Metal library or the freedom-e-sdk directly, but since they're open source we can learn from them and take out the relevant bits. Note also that there's a lot of C, which isn't any use to us in a bedrock bare metal world.
 
-While you're at it you'll probably want to clone the `freedom-e-sdk` just to have it around.
-
-```bash
-git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
-git clone --recursive https://github.com/sifive/freedom-e-sdk
-```
-
-Once that's done we'll need to build.
+Now we need two things; Qemu, to run our programs locally for testing, and the GNU toolchain, to compile examples and - more importantly, in our case - provide some debugging tools such as `objdump`.
 
 ## Building Qemu
 
-If your system has qemu >= 3.1, then in theory RISC-V support was upstreamed and you can probably install a RISC-V-supporting qemu from your system package manager. In practise, at least on macOS, there are problems connecting to an emulated kernel with gdb. Better to build it yourself; it's quick to do.
+If your system has qemu >= 3.1, then in theory RISC-V support was upstreamed and you can probably install a RISC-V-supporting qemu from your system package manager. In practise, at least on macOS, there are problems connecting to an emulated kernel with gdb. Better to build it yourself; it's not hard to do and it's actually quite quick to build.
 
-Otherwise you'll want to clone it yourself and build:
+You'll want to clone it yourself and build:
 
 ```bash
 git clone --recursive https://github.com/sifive/riscv-qemu
@@ -35,15 +28,16 @@ make -j4
 
 ## The GNU Toolchain
 
-You can use a prebuilt toolchain from [Sifive](https://www.sifive.com/boards/) (search for "GCC Toolchain") or build your own. You'll need one in either case; the compilers won't be much use, but some of the other tools will be.
+You can use a prebuilt toolchain from [SiFive](https://www.sifive.com/boards/) (search for "GCC Toolchain") or build your own. You'll need one in either case; the compilers won't be much use, but some of the other tools will be.
 
 If you're building from source, you can see in the freedom-e-sdk HiFive1 [BSP](https://github.com/sifive/freedom-e-sdk/blob/30c143eb5445f47edb351ba54c84ff8285dc27a9/bsp/sifive-hifive1/settings.mk) that we need to target a different arch and ABI, since the toolchain defaults to 64 bit.
 
-You can choose a different prefix, but we'll assume you've set `$RISCV_PREFIX` to something. You'll need that evironment variable set to do anything.
+You can choose where you want to run the tools from, but we'll assume you've set `$RISCV_PREFIX` to something. You'll need that evironment variable set to do anything. If you're installing somewhere like `/opt/riscv` you'll need to build as root (`sudo make -j4`).
 
-Before building, you're likely to need to install some additional requirements. See [the repo](https://github.com/riscv/riscv-gnu-toolchain) for requirements on various platforms including Ubuntu and macOS.
+Before building, you're likely to need to install some additional requirements. See [the repo](https://github.com/riscv/riscv-gnu-toolchain) for requirements on various platforms including popular Linus distros and macOS.
 
 ```bash
+git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
 cd riscv-gnu-toolchain
 mkdir build && cd build
 ../configure --with-arch=rv32imac --with-abi=ilp32 --with-cmodel=medlow --prefix=$RISCV_PREFIX
@@ -189,7 +183,7 @@ So we know that after booting, control will pass to 0x20400000 immediately and t
 0x20400000:    0x00000000
 ```
 
-The answer: absolutely nothing! `0x00000000` is an illegal instruction, which causes the process to trap and thereby sets the PC to `0x00000000`... which in RISC-V always contains `0x0` by definition and so causes an infinite loop!
+The answer: absolutely nothing! `0x00000000` is an illegal instruction, which causes the process to trap and thereby sets the PC to `0x00000000`... which in RISC-V always contains `0x0` by definition and so causes an infinite loop! We'll get our code running later, once we've figured out how to get to this point on actual hardware.
 
 ## Booting on the HiFive1
 
@@ -199,7 +193,7 @@ The HiFive1 comes with slightly more code with the intention of making it easier
 
 We can get the more detail in the following lightly edited description of the boot process from [a datasheet](https://sifive.cdn.prismic.io/sifive%2Ffeb6f967-ff96-418f-9af4-a7f3b7fd1dfc_fe310-g000-ds.pdf), where the sections in brackets are added.
 
-(Note also that that datasheet is actually old, but the description is in some ways easier to follow. More "up to date" details are available [here](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf).).
+(Note also that that datasheet is actually old, but the description is in some ways easier to follow. More "up to date" details are available [here](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf)).
 
 > The FE310-G000 \[starts at address `0x0001_0000`\] and boots by jumping to the beginning of OTP memory \[at `0x0002_0000`\] and executing code found there. As shipped, OTP memory at the boot location is preprogrammed to jump immediately to the end of the OTP memory \[around `0x0002_1FFF`\], which contains the following code to jump to the beginning of the SPI-Flash at `0x2000_0000`:
 
@@ -213,15 +207,20 @@ jr t0
 
 (Note that "OTP" means "one time programmable" memory - that is, once you "burn" a program there, it's there permanently. [SPI Flash](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface) means flash memory connected over SPI)
 
-What matters most from the above text is the code; `fence 0,0` is best described in [this StackOverflow answer](https://stackoverflow.com/a/26374650) and is effectively a no-op here to enable the neat trick in the second paragraph. We're not going to be burning OTP any time soon, so we'll ignore it.
+What matters most from the above text is the code; `fence 0,0` is described in [this StackOverflow answer](https://stackoverflow.com/a/26374650) and is effectively a no-op here to enable the neat trick in the second paragraph. We're not going to be burning OTP any time soon, so we'll ignore it.
 
 `li t0,0x20000000` and `jr t0` look very similar to the qemu code we saw above and there aren't any surprises: we load `0x20000000` into `t0` and then jump there.
 
-What happens at in SPI-Flash at `0x20000000`? As shipped, there's [a program](https://github.com/sifive/freedom-e-sdk/tree/f9271b91257e0a8a989faf3eff0757ee46694fe0/software/double_tap_dontboot) written there, whose source is reproduced in this directoy in `double_tap_dontboot.c`. That doesn't mean much to us since we'll be overwriting it, but it's neat (and very cool of SiFive!) to have the insight and be able to restore the program if we choose.
+What happens at in SPI-Flash at `0x20000000`? As shipped, there's [a program](https://github.com/sifive/freedom-e-sdk/tree/f9271b91257e0a8a989faf3eff0757ee46694fe0/software/double_tap_dontboot) written there, whose source is reproduced in this directoy in `double_tap_dontboot.c`. That doesn't mean much to us since we'll be overwriting it, but it's neat (and very cool of SiFive!) to have the insight and be able to restore the program later if we so choose.
 
-## NEXT
+To summarise, the HiFive1 boots like this:
 
-// TODO: Explain how we'll handle the difference between qemu and hardware and actually run some code from boot
+- Start at `0x0001_0000` (this is the same as Qemu)
+- Jump to  `0x0002_0000` (start of OTP)
+- Jump to ~`0x0002_1FFF` (end of OTP)
+- Jump to  `0x2000_0000` (start of SPI-Flash)
+
+So we need some code to live at `0x2000_0000` unless we mess around with OTP (which we have no intention of doing). We'll investigate how to do that in the next part!
 
 ## Other Links
 
