@@ -118,13 +118,13 @@ pc 0x1000     0x1000
 
 `x 0x80000000` dumps the memory at that address, which we can see is our `main` function above. We know we've loaded the file correctly into qemu.
 
-So we see our program is loaded correctly, and `info register pc` shows us that the board has defaulted `pc` to `0x1000`, and at that address there's actually an instruction already there which we didn't write! We can cheat and look up in the HiFive1 manual for clues as to what that instruction does, but this is actually a great opportunity to test something out!
+So we see our program is loaded correctly, and `info register pc` shows us that the board has defaulted `pc` to `0x1000`, and at that address there's actually an instruction already there which we didn't write! We can cheat and look up in the HiFive1 manual for clues as to what that instruction does, but this is actually a great opportunity to write our first machine code!
 
 ## Writing Raw Machine Code
 
 If we want to write in pure machine code, we'll need to be able to write raw bytes into a file. We'll come onto tooling for that later, but for now we can make do with a very quick solution.
 
-In `bootloader` there's a Python script which will dump raw binary into a file called "bootloader" in the same directory. The order looks "reversed" compared to the instructions we see above to account for endianness when we're writing to the file - gdb is showing us full hex values, which need to be written little-endian.
+In `bootloader` there's a Python script which will dump raw binary into a file called "bootloader" in the same directory. The order looks "reversed" compared to the instructions we see above to account for endianness when we're writing to the file - gdb is showing us full hex values, which we need to write little-endian.
 
 ```bash
 $ python3 write_bootloader.py && hexdump bootloader
@@ -132,11 +132,11 @@ $ python3 write_bootloader.py && hexdump bootloader
 0000008
 ```
 
-Now we've dumped the instructions into a file, we can use `riscv32-unknown-elf-objdump` to help us work out what they are, as long as we give the disassembler a little help:
+Now we've written the instructions into a file, we can use `riscv32-unknown-elf-objdump` to help us work out what they are, as long as we give the disassembler a few tips about what exactly it's disassembling:
 
-- `-D` (not `-d`) dissassembles "all" in the file, so every instruction
+- `-D` (not `-d`!) dissassembles "all" in the file, so every instruction
 - `-b binary` indicates we're dealing with a raw binary file (as oppossed to, say, an ELF)
-- `-m riscv:rv32` hints that we're dealing with RISC-V 32-bit instructions (since there's no way for objdump to work this out from an 8 bytes that could otherwise be anything at all!)
+- `-m riscv:rv32` hints that we're dealing with RISC-V 32-bit instructions, since there's no context in our binary file to indicate that this is what it contains
 
 ```bash
 $ $RISCV_PREFIX/bin/riscv32-unknown-elf-objdump -D -b binary -m riscv:rv32 bootloader
@@ -189,14 +189,39 @@ So we know that after booting, control will pass to 0x20400000 immediately and t
 0x20400000:    0x00000000
 ```
 
-The answer: absolutely nothing! 0x00000000 is an illegal instruction, which causes the process to trap, setting the PC to 0x00000000... which always contains 0x0 and so causes an infinite loop!
+The answer: absolutely nothing! `0x00000000` is an illegal instruction, which causes the process to trap and thereby sets the PC to `0x00000000`... which in RISC-V always contains `0x0` by definition and so causes an infinite loop!
 
-If you "cheated" like I mentioned earlier and read the HiFive1 documentation regarding the boot process, you'll notice that there's a disconnect between what qemu has and what the HiFive1 has - they're not identical!
+## Booting on the HiFive1
 
-# TODO: Continue
-[hifive_bootloader on github](https://github.com/sifive/freedom-e-sdk/tree/f9271b91257e0a8a989faf3eff0757ee46694fe0/software/double_tap_dontboot)
+If you "cheated" like was mentioned earlier and read the HiFive1 documentation regarding the boot process, you'll have noticed that the process for the HiFive1 is different.
 
-[hifive datasheet boot notes](https://sifive.cdn.prismic.io/sifive%2Ffeb6f967-ff96-418f-9af4-a7f3b7fd1dfc_fe310-g000-ds.pdf)
+The HiFive1 comes with slightly more code with the intention of making it easier to develop for, taking into account the fact that it's harder to develop on hardware than it is under an emulator.
+
+We can get the more detail in the following lightly edited description of the boot process from [a datasheet](https://sifive.cdn.prismic.io/sifive%2Ffeb6f967-ff96-418f-9af4-a7f3b7fd1dfc_fe310-g000-ds.pdf), where the sections in brackets are added.
+
+(Note also that that datasheet is actually old, but the description is in some ways easier to follow. More "up to date" details are available [here](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf).).
+
+> The FE310-G000 \[starts at address `0x0001_0000`\] and boots by jumping to the beginning of OTP memory \[at `0x0002_0000`\] and executing code found there. As shipped, OTP memory at the boot location is preprogrammed to jump immediately to the end of the OTP memory \[around `0x0002_1FFF`\], which contains the following code to jump to the beginning of the SPI-Flash at `0x2000_0000`:
+
+```assembly
+fence 0,0
+li t0, 0x20000000
+jr t0
+```
+
+> `fence 0,0` is encoded as `0x0000000F`, and the instruction may be modified by burning additional bits to transform it into a `JAL` instruction (opcode `0x6F`) to execute arbitrary code rather than jumping directly to the beginning of the SPI-Flash.
+
+(Note that "OTP" means "one time programmable" memory - that is, once you "burn" a program there, it's there permanently. [SPI Flash](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface) means flash memory connected over SPI)
+
+What matters most from the above text is the code; `fence 0,0` is best described in [this StackOverflow answer](https://stackoverflow.com/a/26374650) and is effectively a no-op here to enable the neat trick in the second paragraph. We're not going to be burning OTP any time soon, so we'll ignore it.
+
+`li t0,0x20000000` and `jr t0` look very similar to the qemu code we saw above and there aren't any surprises: we load `0x20000000` into `t0` and then jump there.
+
+What happens at in SPI-Flash at `0x20000000`? As shipped, there's [a program](https://github.com/sifive/freedom-e-sdk/tree/f9271b91257e0a8a989faf3eff0757ee46694fe0/software/double_tap_dontboot) written there, whose source is reproduced in this directoy in `double_tap_dontboot.c`. That doesn't mean much to us since we'll be overwriting it, but it's neat (and very cool of SiFive!) to have the insight and be able to restore the program if we choose.
+
+## NEXT
+
+// TODO: Explain how we'll handle the difference between qemu and hardware and actually run some code from boot
 
 ## Other Links
 
