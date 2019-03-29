@@ -67,3 +67,7 @@ prevalent and cheap. That said, RISC-V is open source so that's where we'll star
 
 In any case if we lack a good emulation solution running on commodity (x86\_64) hardware, the project will be nearly
 impossibly hard and that takes the sting out of a lack of physical hardware.
+
+## Useful Links
+- [ocd SPI flash driver](https://github.com/riscv/riscv-openocd/blob/riscv/src/flash/nor/fespi.c)
+- [OSDev Bare Bones](https://wiki.osdev.org/HiFive-1_Bare_Bones#The_Bare_Bones)
