@@ -12,6 +12,4 @@ ${OPENOCD} -f openocd.cfg \
       exit"
 ```
 
-See the upload guide for more details on the command.
-
-The OSDev code - main.c and linker.ld - is CC0 or public domain.
+See the OpenOCD upload guide for more details on the command.
