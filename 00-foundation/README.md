@@ -4,9 +4,9 @@ Before we can do _anything_ we'll need to gather some required documentation, an
 
 The [HiFive1 getting started guide](https://sifive.cdn.prismic.io/sifive%2F9c57065b-6d28-465b-b67d-f416894123a9_hifive1-getting-started-v1.0.2.pdf) is actually not the best place for us to get started. It uses a fairly heavyweight IDE and isn't targeted at true bare metal. There is however a [more detailed datasheet](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf) which will be a useful reference for us.
 
-[Freedom Metal](https://sifive.github.io/freedom-metal-docs/introduction.html#what-is-freedom-metal) (on [GitHub](https://github.com/sifive/freedom-metal/tree/master)) looks more useful, as does the [freedom-e-sdk](https://github.com/sifive/freedom-e-sdk). We see they provide
+[Freedom Metal](https://sifive.github.io/freedom-metal-docs/introduction.html#what-is-freedom-metal) (on [GitHub](https://github.com/sifive/freedom-metal/tree/master)) looks like a handy reference, as does the [freedom-e-sdk](https://github.com/sifive/freedom-e-sdk). We see they provide
 a [Board Support Package](https://github.com/sifive/freedom-e-sdk/tree/30c143eb5445f47edb351ba54c84ff8285dc27a9/bsp/sifive-hifive1) for the HiFive1, with details we need such as the architecture we're compiling for. We also see example programs
-such as the vanishingly simple [hello](https://github.com/sifive/example-hello/tree/d1397bec64187efb8b791fe1eb307aa3c760c694) which we can use as a sanity check. However, the Makefile is a big beast designed to support multiple different boards in testing, and we don't need the vast majority of it.
+such as the vanishingly simple [hello](https://github.com/sifive/example-hello/tree/d1397bec64187efb8b791fe1eb307aa3c760c694) which we could use as a sanity check. However, the Makefile is a big beast designed to support multiple different boards in testing, and we don't need the vast majority of it.
 
 As such we're not actually going to be _using_ the Freedom Metal library or the freedom-e-sdk directly, but since they're open source we can learn from them and take out the relevant bits. Note also that there's a lot of C, which isn't any use to us in a bedrock bare metal world.
 
@@ -213,7 +213,7 @@ What matters most from the above text is the code; `fence 0,0` is described in [
 
 `li t0,0x20000000` and `jr t0` look very similar to the qemu code we saw above and there aren't any surprises: we load `0x20000000` into `t0` and then jump there.
 
-What happens at in SPI-Flash at `0x20000000`? As shipped, there's [a program](https://github.com/sifive/freedom-e-sdk/tree/f9271b91257e0a8a989faf3eff0757ee46694fe0/software/double_tap_dontboot) written there, whose source is reproduced in this directoy in `double_tap_dontboot.c`. That doesn't mean much to us since we'll be overwriting it, but it's neat (and very cool of SiFive!) to have the insight and be able to restore the program later if we so choose.
+What happens at in SPI-Flash at `0x20000000`? As shipped, there's [a program](https://github.com/sifive/freedom-e-sdk/tree/f9271b91257e0a8a989faf3eff0757ee46694fe0/software/double_tap_dontboot) written there, whose source is reproduced in the `scratch` directory of this project along with a dump of the bootloader from real hardware. We might choose to overwrite that bootloader code later, but for now we can basically just take it as a given that it jumps to `0x2040_0000`.
 
 To summarise, the HiFive1 boots like this:
 
@@ -221,11 +221,12 @@ To summarise, the HiFive1 boots like this:
 - Jump to  `0x0002_0000` (start of OTP)
 - Jump to ~`0x0002_1FFF` (end of OTP)
 - Jump to  `0x2000_0000` (start of SPI-Flash)
+- As shipped: Do some init and magic stuff, then jump to `0x2040_0000`
 
-So we need some code to live at `0x2000_0000` unless we mess around with OTP (which we have no intention of doing). We'll investigate how to do that in the next part!
+That means our code needs to live at `0x2040_0000`. In the next section, we'll get something of our own there.
 
 ## Other Links
 
-- dwelch67 always has good guides and you can check his [uart01 sample](https://github.com/dwelch67/sifive_samples/tree/master/hifive1/uart01) for a baremetal UART example, which is getting a little ahead of ourselves if we're focusing on bedrock.
+- dwelch67 always has good guides and you can check his [uart01 sample](https://github.com/dwelch67/sifive_samples/tree/master/hifive1/uart01) for a baremetal UART example, which is getting a little ahead of ourselves if we're focusing on bedrock; we'll get there eventually!
 - Running RISC-V on qemu bare metal [google groups thread](https://groups.google.com/a/groups.riscv.org/forum/#!topic/sw-dev/IET9LBFJohU)
 - A very minimal bare metal example, similar to dwelch but based on riscv64 and SPIKE: [schoeberl](https://github.com/schoeberl/cae-examples)
