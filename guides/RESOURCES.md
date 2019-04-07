@@ -18,8 +18,14 @@ availability of resources which can be used to learn more about chips and the bo
 
 We're not going to be _using_ the "Freedom Metal" library or much of the freedom-e-sdk directly, but since they're open source we can learn from them and use any relevant bits.
 
-
 ## RISC-V
 
-- [rv8.io](https://rv8.io/asm.html) is a good references / cheat sheet for RISC-V assembly programming
-- [RISC-V Calling Convention](https://riscv.org/wp-content/uploads/2015/01/riscv-calling.pdf) details a calling convention for RISC-V programs. It's very useful to have such a calling convention to work to.
+- [RISC-V ISA Manual 2.2](https://github.com/riscv/riscv-isa-manual/blob/3f98f6087b75e52ec4f61681769b5f6931df2f06/release/riscv-spec-v2.2.pdf) is the canonical reference for RISC-V assembly. There's plenty of detailed information in there, but Chapter 20, the "RISC-V Assembly Programmer's Handbook" is well worth a read since it contains details about the calling convention we'll use along with a mapping of pseudoinstructions to base instructions.
+- [rv8.io](https://rv8.io/asm.html) is a good reference / cheat sheet for RISC-V assembly programming
+
+## Other Links
+
+- dwelch67 always has good guides for bare metal programming; for example, check out his [uart01 sample](https://github.com/dwelch67/sifive_samples/tree/master/hifive1/uart01) for a bare-metal RISC-V UART example
+- Running RISC-V on qemu bare metal [google groups thread](https://groups.google.com/a/groups.riscv.org/forum/#!topic/sw-dev/IET9LBFJohU). This thread was useful for figuring out how Qemu could be used productively with bare metal development.
+- A very minimal bare metal example, similar to dwelch but based on riscv64 and SPIKE: [schoeberl](https://github.com/schoeberl/cae-examples).
+- Embedded bare-metal Rust on the Raspberry Pi 3: [rust-raspi3-OS-tutorials](https://github.com/rust-embedded/rust-raspi3-OS-tutorials). Quite different in scope, but a brilliantly written resource in general.

@@ -189,12 +189,6 @@ To summarise, the HiFive1 boots like this:
 
 That means our code needs to live at `0x2040_0000`. In the next section, we'll get something of our own there.
 
-## Other Links
-
-- dwelch67 always has good guides and you can check his [uart01 sample](https://github.com/dwelch67/sifive_samples/tree/master/hifive1/uart01) for a baremetal UART example, which is getting a little ahead of ourselves if we're focusing on bedrock; we'll get there eventually!
-- Running RISC-V on qemu bare metal [google groups thread](https://groups.google.com/a/groups.riscv.org/forum/#!topic/sw-dev/IET9LBFJohU)
-- A very minimal bare metal example, similar to dwelch but based on riscv64 and SPIKE: [schoeberl](https://github.com/schoeberl/cae-examples)
-
 ## Notes
 
 [1] (Note also that that datasheet is actually old, but the description of the boot process is in some ways easier to follow. More "up to date" details are available [here](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf)).
