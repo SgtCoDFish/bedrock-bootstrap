@@ -1,0 +1,15 @@
+
+nothing.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+80000000 <main>:
+80000000:	00b00513          	li	a0,11
+80000004:	00008067          	ret
+
+80000008 <_start>:
+80000008:	80004137          	lui	sp,0x80004
+8000000c:	ff5ff0ef          	jal	ra,80000000 <main>
+80000010:	00100073          	ebreak
+80000014:	0000006f          	j	80000014 <_start+0xc>

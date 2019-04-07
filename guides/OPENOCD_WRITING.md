@@ -3,20 +3,6 @@
 OpenOCD (Open On-Chip Debugger) is a tool which allows us to debug and update a device which is connected to a computer. In the case of the HiFive, we can connect it to a machine via a microUSB to USB cable
 and then use GDB to write new images to the on-device flash memory, which can be booted from later.
 
-## Building OpenOCD
-
-At the time of writing, RISC-V wasn't supported by any versions of OpenOCD which were installable from package managers like apt or homebrew. There is a [patched version](https://github.com/riscv/riscv-openocd) which is easy to build, however:
-
-```bash
-git clone https://github.com/riscv/riscv-openocd
-cd riscv-openocd
-./bootstrap
-./configure
-make -j4
-```
-
-The built binary will be in `src/openocd`.
-
 ## Running OpenOCD Without `sudo`
 
 We need to add our user to the relevant group and whitelist the specific device vendor and product IDs for the HiFive.
