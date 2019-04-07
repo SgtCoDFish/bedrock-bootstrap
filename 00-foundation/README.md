@@ -82,31 +82,30 @@ pc 0x1000     0x1000
 
 `x 0x80000000` dumps the memory at that address, which we can see is our `main` function above. We know we've loaded the file correctly into qemu.
 
-So we see our program is loaded correctly, and `info register pc` shows us that the board has defaulted `pc` to `0x1000`, and at that address there's actually an instruction already there which we didn't write! We _could_ cheat and look up in the HiFive1 manual for clues as to what that instruction does, but this is actually a great opportunity to write our first machine code!
+So we see our program is loaded correctly, and `info register pc` shows us that the board has defaulted `pc` to `0x1000`, and at that address there's actually an instruction already there which we didn't write! We _could_ cheat and look up in the HiFive manual for clues as to what that instruction does, but this is actually a great opportunity to write some raw machine code and disassemble it.
 
 ## Writing Raw Machine Code
 
-If we want to write in pure machine code, we'll need to be able to write raw bytes into a file. We'll come onto tooling for that later, but for now we can make do with a very quick solution.
+If we want to write in pure machine code, we'll need to be able to write raw bytes into a file. We might need better tooling in the future, but for now we can just use `echo`.
 
-In `bootloader` there's a Python script which will dump raw binary into a file called "bootloader" in the same directory. The order looks "reversed" compared to the instructions we see above - gdb is showing us big-endian hex values, which we need to write as little-endian.
+We must remember to write the bytes as little-endian; remember that gdb shows us 32-bit instructions in hex, whereas we're writing raw bytes. We also need to pass `-n` so that echo doesn't append a newline (which would show up as `0x0a`). You can run the commands yourself or run `make BUILD/bootloader1`:
 
 ```bash
-$ python3 write_bootloader.py && hexdump bootloader
-0000000 b7 02 40 20 67 80 02 00
-0000008
+$ mkdir -p BUILD
+$ echo -n -e "\xb7\x02\x40\x20\x67\x80\x02\x00" > BUILD/bootloader1
+$ od -Ax -tx1 BUILD/bootloader1
+000000 b7 02 40 20 67 80 02 00
+000008
 ```
 
-Now we've written the instructions into a file, we can use `riscv32-unknown-elf-objdump` to help us work out what they are, as long as we give the disassembler a few tips about what exactly it's disassembling:
+Now we've written the instructions into a file, we can use `riscv32-unknown-elf-objdump` to help us work out what they are, as long as we give the disassembler a few tips:
 
-- `-D` (not `-d`) dissassembles "all" in the file, meaning every instruction
+- `-D` (not `-d` which looks similar) dissassembles "all" in the file, meaning every instruction
 - `-b binary` indicates we're dealing with a raw binary file (as oppossed to, say, an ELF)
 - `-m riscv:rv32` hints that we're dealing with RISC-V 32-bit instructions, since there's no context in a binary file which might allow objdump to work out the architecture
 
 ```bash
-$ $RISCV_PREFIX/bin/riscv32-unknown-elf-objdump -D -b binary -m riscv:rv32 bootloader
-
-bootloader: file format binary
-
+$ $RISCV_PREFIX/bin/riscv32-unknown-elf-objdump -D -b binary -m riscv:rv32 BUILD/bootloader1
 Disassembly of section .data:
 
 00000000 <.data>:
@@ -146,7 +145,7 @@ That pretty much confirms what we expected to happen. We set `t0` and then jump 
 
 ## Boot Part 2
 
-So we know that after booting, control will pass to 0x20400000 immediately and then everything hangs. What's at that location?
+So we know that after the first bootloader, control will pass to 0x20400000 immediately and then everything hangs. What's at that location?
 
 ```bash
 (gdb) x 0x20400000

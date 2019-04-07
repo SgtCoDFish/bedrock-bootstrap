@@ -1,3 +1,4 @@
+SHELL = /bin/bash
 RISCV_PREFIX ?=
 
 .PHONY: all
@@ -14,6 +15,10 @@ BUILD/start.o: start.s
 BUILD/nothing.o: nothing.c
 	@mkdir -p BUILD
 	$(RISCV_PREFIX)/bin/riscv32-unknown-elf-gcc -fPIC -O2 -g0 -static -fvisibility=hidden -nostdlib -nostartfiles -march=rv32ima -mabi=ilp32 $< -o $@
+
+BUILD/bootloader1: 
+	@mkdir -p BUILD
+	$(shell echo -n -e "\xb7\x02\x40\x20\x67\x80\x02\x00" > BUILD/bootloader1)
 
 nothing.elf: BUILD/nothing.o BUILD/start.o
 	@mkdir -p BUILD
