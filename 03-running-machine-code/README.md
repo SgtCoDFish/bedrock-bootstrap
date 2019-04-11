@@ -45,7 +45,21 @@ od -Ax -tx1 -N52 ret1234.elf
 
 `.riscv.attributes` is a special section which contains details about the specific RISC-V architecture the object was compiled for - `rv32ima` in our case - among other things. It's not important for us; all we need to get started is a `.text` section which gets put at the address `0x2040_0000`.
 
-TODO: Write a minimal ELF header.
+### Writing a Minimal ELF Header
+
+We've already seen that we can use `echo` to write binary files; for example, `echo -ne "\x30"` writes the value `0x30` (i.e. decimal 48, which is an ASCII `0`) to stdout. However, having to prefix everything with `\x` would be a pain, so we need an easier way to write hex and convert to binary.
+
+`xxd -r p` can do this. `-r` means "reverse", i.e. convert hex into binary. `-p` treats the input as a plain hexdump. For example, `echo -n "30" | xxd -r -p` gives us `0` as we'd expect.
+
+The command will also handle whitespace, so we can type `echo -n "00 00 40 20" | xxd -r -p` which will write the value of `0x20400000`. Note that we have to handle the endianness of the data ourselves.
+
+The resulting hex header is in elfheader.hex, and we can conver it to a binary file with:
+
+```bash
+xxd -r -p elfheader.hex
+```
+
+TODO: FINISH ELF HEADER
 
 ## Running and Debugging Code
 
@@ -61,7 +75,7 @@ TODO: Run with openocd/gdb and inspect a register to check output
 
 ## Notes
 
-[1] We see a call to `load_elf` which ultimately ends up [load_elf_ram_sym](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/core/loader.c#L461) - the ELF parsing logic might be useful to us later but it's neat to drill down into these things.
+[1] We see a call to `load_elf` which ultimately ends up [load\_elf\_ram\_sym](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/core/loader.c#L461) - the ELF parsing logic might be useful to us later but it's neat to drill down into these things.
 
 [2] An analysis of the ELF header in `ret1234.elf`:
 
@@ -73,15 +87,15 @@ od -Ax -tx1 -N52 ret1234.elf
 000030 06 00 05 00
 ```
 
- There's a 4 byte magic number, then `01 01 01` denoting a 32-bit little endian version 1 ELF file. The 2 OS ABI hint bytes are unused, as are 7 bytes of padding.
+ There's a 4 byte magic number, then `01 01 01` denoting a 32-bit, little endian, version 1 ELF file. The 2 OS ABI hint bytes are unused, as are 7 bytes of padding. After the 16th byte, the endianness of the data swaps to whatever endianness is denoted in the header. So, `02 00` is `0x0002`, and so on.
 
-At 0x10 we see `02 00` to mark an executable ELF file and then `F3 00` to mark a RISC-V ELF. There's another 4 byte ELF version, and then our code's entry point: `0x20400000`.
+At 0x10 we see `0x0002` to mark an executable ELF file and then `F3 00` to mark a RISC-V ELF. There's another ELF version - 4 bytes this time - and then our code's entry point: `0x20400000`.
 
-`34 00 00 00` denotes the address of the ELF program header table, which follows the ELF header and so `0x34` equals `52` which is the length of the ELF header. The ELF "section header table" pointer is `ac 10 00 00`.
+`0x00000034` denotes the address of the ELF program header table, which follows the ELF header and so `0x34` equals `52` which is the length of the ELF header. The ELF "section header table" pointer is `000010ac`.
 
-A 4-byte flag field is unused, and followed by `34 00` for the ELF header size again and `20 00` (`32` in decimal) for the size of a program header table entry. `01 00` is the number of entries in the program header table.
+A 4-byte flag field is unused, and followed by `0x0034` for the ELF header size again and `0x0020` (`32` in decimal) for the size of a program header table entry. `0x0001` is the number of entries in the program header table.
 
-Next we have `28 00` which is the size of an entry in the section header table, and `06 00` which is the count of entries in that table. Finally, `05 00` has the "index of the section header table entry that contains the section names" (from Wikipedia).
+Next we have `0x0028` which is the size of an entry in the section header table, and `0x0006` which is the count of entries in that table. Finally, `0x0005` has the "index of the section header table entry that contains the section names" (from Wikipedia).
 
 [3] Running `readelf` on `ret1234.elf` gives the following:
 
