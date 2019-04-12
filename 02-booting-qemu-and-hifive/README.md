@@ -56,7 +56,7 @@ To summarise, the HiFive1 boots like this:
 
 ## Running Code on Both Platforms
 
-We've established that on both platforms, our code needs to live at `0x2040_0000`, even if there's a little magic required to get there on the HiFive1. In the next section, we'll get something of our own running there. Now would be a good time to read the [guide](../guides/OPENOCD_WRITING.md) on using OpenOCD to write code to the HiFive 1's flash memory.
+We've established that on both platforms, our code needs to live at `0x2040_0000`, even if there's a little magic required to get there on the HiFive1. In the next section, we'll start to get something of our own running there.
 
 ## Notes
 

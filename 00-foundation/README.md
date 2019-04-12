@@ -17,15 +17,15 @@ Without the [tools](../guides/TOOLS.md) you'll struggle to do much at all.
 
 We can test our toolchain using the files in this repo.
 
-**WARNING**: the code built for these examples is intentionally placed into a "weird" location and running `nothing.elf` on a HiFive1 might give strange results. The idea here is to use Qemu to check that our toolchain is doing what we expect.
+**NOTE**: The linker-script used for these examples intentionally places code into a "weird" location in memory. Running `nothing.elf` on a HiFive1 might give strange results which you might not expect. The idea here is to use Qemu to check that our toolchain is doing what we expect; actually running stuff comes later.
 
-The command to run for building the binaries is simple and you can check the underlying `Makefile` for details of the specific commands.
+Building the binaries is simple; you can check the underlying `Makefile` for details of the specific commands.
 
 ```bash
 make RISCV_PREFIX=/path/to/riscv all
 ```
 
-Several files will be dumped into this directory and intermediate files are placed in `BUILD/`. The end-product files are also committed into Git to make it possible to test the tools without having the full GNU toolchain.
+Several files will be dumped into this directory and intermediate files are placed in `BUILD/`. The end-product files are also committed into Git to make it possible to test Qemu without having the full GNU toolchain.
 
 The most interesting files from our perspective are `nothing.bin` and `nothing.dump`:
 
@@ -52,7 +52,7 @@ $ od -Ax -tx1 nothing.bin
 000018
 ```
 
-Note that the raw binary dump (`nothing.bin`) is very small, and that the bytes match up with the disassembly in `nothing.dump`. For example, we see that the first instruction, at address `0x80000000` has the hex machine-code representation `00b00513` and that this matches the first 4 bytes of `nothing.bin` if you account for the disassembly showing big-endian and the hexdump showing raw bytes.
+Note that the raw binary dump (`nothing.bin`) is very small, and that the bytes match up with the disassembly in `nothing.dump`. For example, we see that the first instruction, at address `0x80000000` has the hex machine-code representation `00b00513` and that this matches the first 4 bytes of `nothing.bin` if you account for the disassembly showing big-endian and the hexdump showing raw bytes, which are little-endian.
 
 The dump also has assembly on the right to make it easier to read, so we can see that the sole command in `main` is `li a0,11` which loads the value `11` into the register named `a0` (which is designated by the RISC-V [Calling Convention](https://riscv.org/wp-content/uploads/2015/01/riscv-calling.pdf) as being for return values).
 

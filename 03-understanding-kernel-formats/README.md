@@ -1,15 +1,15 @@
 # Running Machine Code on Qemu and HiFive 1
 
-Now we understand the boot process and how control passes to our programs, we need to get some code into the correct location to run it.
+Now we understand the boot process and how control passes to our programs, we need to get some code into the correct location to run it, which will require some more understanding.
 
 ## Aims
 
+- Understand what format we need to use to get code running on both platforms
 - Be able to create machine-code files which can be run on Qemu or the HiFive1
-- Run code on actual hardware and confirm the results
 
 ## ret1234
 
-In this directory we have a simple assembly language program which loads the value `0x1234` into `x1`. The code is placed (via the linker script, `linker.ld`) into memory address `0x2040_0000` so it can be booted on both Qemu and the HiFive1.
+In this directory we have a simple assembly language program which loads the value `0x01234` into the upper part of `x1`. The code is placed (via the linker script, `linker.ld`) into memory address `0x2040_0000` so it can be booted on both Qemu and the HiFive1.
 
 After loading the value, it calls `ebreak` which breaks to a debugger, and then loops in the same position infinitely.
 
@@ -21,7 +21,7 @@ The binaries are once again committed to git in the form of `ret1234.elf` - an E
 
 So far we've used an ELF file to provide the kernel for Qemu, and in fact that's the only choice we have as evidenced by the riscv-qemu source code for [load_kernel](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/riscv/sifive_e.c#L77-L88)[1].
 
-That means that to run under Qemu, we always have to provide an [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) file. That introduces a decent amount of complexity in our build process that it would be desirable to avoid since it'll be harder to generate an ELF than a raw binary file if we're writing in machine code - but there's no reason it should stop us. It's worth it to be able to debug on Qemu.
+That means that to run under Qemu, we always have to provide an [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) file[2]. That introduces a decent amount of complexity in our build process that it would be desirable to avoid since it'll be harder to generate an ELF than a raw binary file if we're writing in machine code - but there's no reason it should stop us. It's worth it to be able to debug on Qemu.
 
 ### HiFive1
 
@@ -33,7 +33,7 @@ In this directory we see `ret1234.elf`. From [Wikipedia](https://en.wikipedia.or
 
 ### ELF Header
 
-We'll dump the first 52 bytes of ret1234.elf, which is the ELF header that can be compared against the detail given in the Wikipedia article on the ELF format. This header is further analysed in [2] and a full dump of the file using `readelf` is given in [3]. Despite all that, we can ignore most of the details.
+We'll dump the first 52 bytes of ret1234.elf, which is the ELF header that can be compared against the detail given in the Wikipedia article on the ELF format. This header is further analysed in [3] and a full dump of the file using `readelf` is given in [4]. Despite all that, we can ignore most of the details.
 
 ```text
 od -Ax -tx1 -N52 ret1234.elf
@@ -45,39 +45,57 @@ od -Ax -tx1 -N52 ret1234.elf
 
 `.riscv.attributes` is a special section which contains details about the specific RISC-V architecture the object was compiled for - `rv32ima` in our case - among other things. It's not important for us; all we need to get started is a `.text` section which gets put at the address `0x2040_0000`.
 
-### Writing a Minimal ELF Header
-
-We've already seen that we can use `echo` to write binary files; for example, `echo -ne "\x30"` writes the value `0x30` (i.e. decimal 48, which is an ASCII `0`) to stdout. However, having to prefix everything with `\x` would be a pain, so we need an easier way to write hex and convert to binary.
-
-`xxd -r p` can do this. `-r` means "reverse", i.e. convert hex into binary. `-p` treats the input as a plain hexdump. For example, `echo -n "30" | xxd -r -p` gives us `0` as we'd expect.
-
-The command will also handle whitespace, so we can type `echo -n "00 00 40 20" | xxd -r -p` which will write the value of `0x20400000`. Note that we have to handle the endianness of the data ourselves.
-
-The resulting hex header is in elfheader.hex, and we can conver it to a binary file with:
-
-```bash
-xxd -r -p elfheader.hex
-```
-
-TODO: FINISH ELF HEADER
-
 ## Running and Debugging Code
 
-Now we're aware of the file formats needed to get runnable code on both platforms, let's actually run some code!
+Now we're aware of the file formats needed to get runnable code on both platforms, let's actually run some code! For now we'll use `ret1234.elf` as created by the GNU toolchain's linker, but we'll soon create a bare-metal ELF file.
 
 ### Running on Qemu
 
-TODO: Run with gdb and inspect a register to check output
+We've already seen how to run something in qemu but we'll do the same again here:
+
+```bash
+$ qemu-system-riscv32 -machine sifive_e -nographic -s -S -kernel ret1234.elf
+# in another terminal...
+
+$ $RISCV_PREFIX/bin/riscv32-unknown-elf-gdb
+(gdb) target remote :1234
+Remote debugging using :1234
+0x00001000 in ?? ()
+(gdb) x 0x20400000
+0x20400000:    0x012340b7
+(gdb) x 0x20400004
+0x20400004:    0x00100073
+(gdb) x 0x20400008
+0x20400008:    0x0000006f
+(gdb) x 0x2040000c
+0x2040000c:    0x00000000
+(gdb) i r x1
+x1    0x0    0x0
+(gdb) nexti
+0x00001004 in ?? ()
+(gdb) nexti
+0x20400004 in ?? ()
+(gdb) nexti
+^C
+Program received signal SIGINT, Interrupt.
+0x00000000 in ?? ()
+(gdb) i r x1
+x1             0x1234000           0x1234000
+```
+
+That's the value we expected, so all is well for Qemu. Let's try real hardware!
 
 ### Running on HiFive1
 
-TODO: Run with openocd/gdb and inspect a register to check output
+TODO: Run with openocd/gdb and inspect `x1` to check output
 
 ## Notes
 
-[1] We see a call to `load_elf` which ultimately ends up [load\_elf\_ram\_sym](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/core/loader.c#L461) - the ELF parsing logic might be useful to us later but it's neat to drill down into these things.
+[1] We see a call to `load_elf` which ultimately ends up [load\_elf\_ram\_sym](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/core/loader.c#L461) - the ELF parsing logic might be useful to us later so it's noted here, but in any case it's neat to drill down into these things.
 
-[2] An analysis of the ELF header in `ret1234.elf`:
+[2] The alternative to generating ELF files for both platforms is to patch Qemu's HiFive-compatible device to support raw binary files, perhaps with a specified offset. We could for example patch the `load_kernel` function to parse `-kernel "0x20400000:ret1234.bin"` as "place ret1234.bin at `0x2040_0000`". It's a judgement call, but it feels like patching Qemu is further away from what we're trying to do than just banging out an ELF header, which is what we'll be doing later.
+
+[3] An analysis of the ELF header in `ret1234.elf`:
 
 ```text
 od -Ax -tx1 -N52 ret1234.elf
@@ -91,13 +109,13 @@ od -Ax -tx1 -N52 ret1234.elf
 
 At 0x10 we see `0x0002` to mark an executable ELF file and then `F3 00` to mark a RISC-V ELF. There's another ELF version - 4 bytes this time - and then our code's entry point: `0x20400000`.
 
-`0x00000034` denotes the address of the ELF program header table, which follows the ELF header and so `0x34` equals `52` which is the length of the ELF header. The ELF "section header table" pointer is `000010ac`.
+`0x00000034` denotes the address of the ELF program header table, which follows the ELF header - `0x34` equals `52` which is the length of the ELF header. The ELF "section header table" pointer is `0x000010ac`.
 
 A 4-byte flag field is unused, and followed by `0x0034` for the ELF header size again and `0x0020` (`32` in decimal) for the size of a program header table entry. `0x0001` is the number of entries in the program header table.
 
 Next we have `0x0028` which is the size of an entry in the section header table, and `0x0006` which is the count of entries in that table. Finally, `0x0005` has the "index of the section header table entry that contains the section names" (from Wikipedia).
 
-[3] Running `readelf` on `ret1234.elf` gives the following:
+[4] Running `readelf` on `ret1234.elf` gives the following:
 
 ```text
 $ $RISCV_PREFIX/bin/riscv32-unknown-elf-readelf -a ret1234.elf
