@@ -9,7 +9,7 @@ If your system has qemu >= 3.1, then in theory RISC-V support was upstreamed and
 You'll want to clone it yourself and build:
 
 ```bash
-git clone --recursive https://github.com/sifive/riscv-qemu
+git clone --recursive --depth 1 https://github.com/qemu/QEMU
 cd riscv-qemu
 mkdir build && cd build
 ../configure --target-list=riscv32-softmmu
