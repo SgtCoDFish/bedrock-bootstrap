@@ -1,4 +1,9 @@
 SHELL := /usr/bin/env bash
 
-elfheader.elf: elfheader.hex
+SOURCES := $(wildcard *.hex)
+TARGETS := $(patsubst %.hex,%.elf,$(SOURCES))
+
+all: $(TARGETS)
+
+%.elf: %.hex
 	sed "s/#.*$$//g" $< | xxd -r -p > $@
