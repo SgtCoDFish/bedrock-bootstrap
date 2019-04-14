@@ -8,6 +8,8 @@ We've already seen that we can use `echo` to write binary files; for example, `e
 
 The command will also handle whitespace, so we can type `echo -n "00 00 40 20" | xxd -r -p` which will write the value of `0x20400000`. Note that we have to handle the endianness of the data ourselves.
 
+It's also useful to be able to comment our hex files; we can use `sed` to remove the comments as a processing step. We use `sed "s/#.*$//g"` to replace everything from a # to the end of a line with nothing, repeated globally inside the file.
+
 The resulting hex header is in elfheader.hex, and we can "compile" it to a binary file with:
 
 ```bash

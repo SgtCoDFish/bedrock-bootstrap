@@ -108,7 +108,12 @@ f3 00  # RISC-V
 
 # 0x0180: Third Entry
 # Details to be filled in
-00 00 00 00 00 00 00 00 00 00 00 00 03 00 02 00
+00 00 00 00  # string table name pointer, 0 means no name
+00 00 00 00  # value of 0x0
+00 00 00 00  # size of the symbol
+03  # info: SECTION symbol type, LOCAL bind type
+00  # default visibility
+02 00  # section header table index
 
 # 0x0190: Fourth Entry
 01 00 00 00  # string table name pointer, 1 points to "_start"
