@@ -1,15 +1,133 @@
-7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00
-02 00 f3 00 01 00 00 00 00 00 40 20 34 00 00 00
-54 00 00 00 00 00 00 00 34 00 20 00 01 00 28 00
-02 00 00 00
+7f 45 4c 46  # magic
+01 01 01  # 32 bit, little endian, ELFv1
+00 00 00 00 00 00 00 00 00  # unused
+02 00  # executable ELF
+f3 00  # RISC-V
+01 00 00 00  # ELFv1
+00 00 40 20  # Entry point
+34 00 00 00  # Program Header table pointer, follows ELF header
+54 00 00 00  # Section Header table pointer, follows program header table
+00 00 00 00  # unused
+34 00  # ELF header size
+20 00  # Program Header table entry size
+01 00  # Program Header table entry count
+28 00  # Section Header table entry size
+05 00  # Section Header table entry count
+01 00  # Index of ".shstrtab" in section header table
 
-# program header which points to the program
-01 00 00 00 7c 00 00 00 00 00 40 20 00 00 40 20
-0c 00 00 00 0c 00 00 00 05 00 00 00 00 10 00 00
+# 0x34: Program Headers
 
-# section headers go here
+# The sole program header
+01 00 00 00  # loadable segment
+00 02 00 00  # segment offset in file MAY CHANGE PER PROGRAM
+00 00 40 20 00 00 40 20  # location in memory
+0c 00 00 00  # size of program            # CHANGES PER PROGRAM
+0c 00 00 00  # size of program, repeated  # CHANGES PER PROGRAM
+05 00 00 00  # segment dependent flags; readable and executable
+00 02 00 00  # alignment
 
-# the actual program, 0xc bytes
-b7 40 23 01 73 00 10 00 6f 00 00
+# 0x54: Section Headers
+# 0x54: NULL header
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
 
-# qemu fails to load this
+# 0x7C: .shstrtab
+11 00 00 00  # shstrtab name offset
+03 00 00 00  # strtab type
+00 00 00 00 00 00 00 00  # unused
+20 01 00 00  # section offset in file
+21 00 00 00  # section length
+00 00 00 00 00 00 00 00  # unused
+01 00 00 00  # alignment
+00 00 00 00  # unused
+
+# 0xA4: .strtab
+09 00 00 00  # shstrtab name offset
+03 00 00 00  # strtab type
+00 00 00 00 00 00 00 00  # unused
+50 01 00 00  # section offset in file
+08 00 00 00  # section length
+00 00 00 00 00 00 00 00  # unused
+01 00 00 00  # alignment
+00 00 00 00  # unused
+
+# 0xCC: .symtab
+01 00 00 00  # shstrtab name offset
+02 00 00 00  # symtab type
+00 00 00 00 00 00 00 00  # unused
+60 01 00 00  # section offset in file
+40 00 00 00  # section length
+02 00 00 00  # index of associated section header (strtab = 2)
+03 00 00 00  # index in symtab of first non-local symbol
+04 00 00 00  # alignment
+10 00 00 00  # size of a symbol table entry
+
+# 0xF4: .text
+1b 00 00 00  # shstrtab name offset
+01 00 00 00  # program bits type
+06 00 00 00  # flags: "occupies memory during execution" and "executable"
+00 00 40 20  # virtual address of the section
+00 02 00 00  # segment offset in file, same as in program header
+0c 00 00 00  # segment size, same as in program header
+00 00 00 00 00 00 00 00  # unused
+04 00 00 00  # alignment
+00 00 00 00  # unused
+
+# 0x011C: 4 byte padding to 0x0120
+00 00 00 00
+
+# 0x0120: .shstrtab section body
+# contains null-terminated ASCII: "\0.symtab\0.strtab\0.shstrtab\0.text\0"
+00 2e 73 79 6d 74 61 62 00 2e 73 74 72 74 61 62
+00 2e 73 68 73 74 72 74 61 62 00 2e 74 65 78 74
+00
+
+# 0x0141: F byte padding to 0x0150
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+# 0x0150: .strtab section body
+# contains null-terminated ASCII: "\0_start\0"
+00 5f 73 74 61 72 74 00
+
+# 0x0158: 8 bytes padding to 0x0160
+00 00 00 00 00 00 00 00
+
+# 0x0160: .symtab section body
+# 4 entries, each 0x10 bytes long
+# 0x0160: First entry is always null and ignored
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+# 0x0170: Second entry - not super important
+00 00 00 00  # string table name pointer, 0 means no name
+00 00 40 20  # value of the symbol, 0x2040_0000
+00 00 00 00  # size of the symbol
+03  # info: SECTION symbol type, LOCAL bind type
+00  # default visibility
+01 00  # section header table index
+
+# 0x0180: Third Entry
+# Details to be filled in
+00 00 00 00 00 00 00 00 00 00 00 00 03 00 02 00
+
+# 0x0190: Fourth Entry
+01 00 00 00  # string table name pointer, 1 points to "_start"
+00 00 40 20  # value: 0x2040_0000
+00 00 00 00  # size of symbol
+10  # info: NOTYPE, GLOBAL bind type
+00  # default visibility
+01 00  # section header table index
+
+# 0x01A0: padding to 0x0200
+
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+# 0x0200: the actual program, 0xc bytes
+b7 40 23 01
+73 00 10 00
+6f 00 00 00

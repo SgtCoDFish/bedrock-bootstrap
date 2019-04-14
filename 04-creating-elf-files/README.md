@@ -24,21 +24,51 @@ $ od -Ax -tx1 -N32 -j52 ret1234.elf
 0000044  0c  00  00  00  0c  00  00  00  05  00  00  00  00  10  00  00
 ```
 
-`01 00 00 00` - `0x00000001` identifies a LOADable segment
 
-`00 10 00 00` - `0x00001000` is the offset of the segment in this file image
+## Running and Debugging Code
 
-`00 00 40 20` - `0x20400000` is the virtual address of the segment
+Now we're aware of the file formats needed to get runnable code on both platforms, let's actually run some code! For now we'll use `ret1234.elf` as created by the GNU toolchain's linker, but we'll soon create a bare-metal ELF file.
 
-`00 00 40 20` - `0x20400000` is the physical address (the same as the virtual address in our case here)
+### Running on Qemu
 
-`0c 00 00 00` - `0x0000000c` is the size of the segment in this file (12 bytes, or 3 instructions here)
+We've already seen how to run something in qemu but we'll do the same again here:
 
-`0c 00 00 00` - `0x0000000c` is the size of the segment in memory (same as the size in the file here)
+```bash
+$ qemu-system-riscv32 -machine sifive_e -nographic -s -S -kernel ret1234.elf
+# in another terminal...
 
-`05 00 00 00` - `0x00000005` are some segment-specific flags. `5 == 1 | 4` which indicates that the segment is readable (`1`) and executable (`4`)
+$ $RISCV_PREFIX/bin/riscv32-unknown-elf-gdb
+(gdb) target remote :1234
+Remote debugging using :1234
+0x00001000 in ?? ()
+(gdb) x 0x20400000
+0x20400000:    0x012340b7
+(gdb) x 0x20400004
+0x20400004:    0x00100073
+(gdb) x 0x20400008
+0x20400008:    0x0000006f
+(gdb) x 0x2040000c
+0x2040000c:    0x00000000
+(gdb) i r x1
+x1    0x0    0x0
+(gdb) nexti
+0x00001004 in ?? ()
+(gdb) nexti
+0x20400004 in ?? ()
+(gdb) nexti
+^C
+Program received signal SIGINT, Interrupt.
+0x00000000 in ?? ()
+(gdb) i r x1
+x1             0x1234000           0x1234000
+```
 
-`00 10 00 00` - `0x00001000` is an alignment helper; the virtual address should equal the offset modulo this value.
+That's the value we expected, so all is well for Qemu. Let's try real hardware!
+
+### Running on HiFive1
+
+TODO: Run with openocd/gdb and inspect `x1` to check output
+
 
 ### Next
 
