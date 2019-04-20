@@ -1,2 +1,29 @@
 13 00 00 00  # nop
+
+# IOF0_UART0_MASK = 0x00030000
+# GPIO_IOF_SEL = 0x1001203C
+# GPIO_IOF_SEL &= ~(IOF0_UART0_MASK) to enable UART
+
 b7 27 01 10  # lui a5,0x10012
+             # addi a5, a5, 0x3c
+             # lw a0, 0(a5)
+             # addi a1, x0, 0x3
+             # slli a1, a1, 0x10
+             # neg a1, a1 # sub a1, x0, a1
+             # and a0, a1, a0
+             # sw a0, 0(a5)
+
+# GPIO_IOF_EN = 0x10012038
+# GPIO_IOF_EN |= IOF0_UART0_MASK to enable UART
+             # subi a5, a5, 0x8
+             # lw a0, 0(a5)
+             # neg a1, a1 # sub a1, x0, a1
+             # or a0, a0, a1
+
+
+# UART_REG_DIV = 0x10013018
+# UART_REG_TXCTRL = 0x10013008
+# UART_REG_RXCTRL = 0x1001300C
+# UART_REG_DIV := 8A
+# UART_REG_TXCTRL := 0x01 # Should this be 0x03?
+# UART_REG_RXCTRL := 0x01
