@@ -32,19 +32,28 @@ Being able to hook up some device and write raw machine code directly into flash
 
 ### RISC-V > ARM > x86\_64
 
-RISC-V wins by default since it's open source. x86\_64 loses by default since the instruction set is so complex and
-that would make writing machine code or the basic assembler much much harder.
+RISC-V wins by default since it's open source! But further to that, RISC-V has a beautiful simplicity and elegance in its design, which makes it attractibe as an ISA.
 
-ARM is more interesting since hardware is very widely available whereas RISC-V hardware isn't at the time of writing.
-A parallel project to do the same "bedrock bootstrap" on ARM would be great if only because Raspberry Pi boards are so
-prevalent and cheap. That said, RISC-V is open source so that's where we'll start.
+x86\_64 loses by default since the instruction set is so complex. It's possible to construct a single x86 instruction which is 15 bytes in total, and likewise a single instruction which is only 1 byte. That variety makes writing machine code much, much harder. Likewise, parsing x86 is vastly more complicated than RISC-V or ARM where we can (choose to) have every instruction take the same length.
+
+ARM is more interesting than x86 since hardware is very widely available whereas RISC-V hardware isn't at the time of writing.
+A parallel project to do the same "bedrock bootstrap" on ARM would be great if only because ARM development boards like the Raspberry Pi are so
+prevalent and cheap. RISC-V wins due to its simplicity and elegance, and because it's just neat
 
 In any case if we lack a good emulation solution running on commodity (x86\_64) hardware, the project will be nearly
-impossibly hard and that takes the sting out of a lack of physical hardware.
+impossibly hard. That means that we need an emulation solution which in turn takes the sting out of a lack of physical hardware.
+
+### RV32I
+
+RISC-V has the notion of "extensions". The base instruction set, known as `I` is relatively small compared to the base instruction set of many other ISAs. The base set is supplemented by optional extensions, which a vendor may or may not choose to implement on a per-chip basis. These include `M` for multiplication and division, `A` for atomic operations and `C` for compressed instructions which map to base instructions and take less memory to store. There are other extensions too.
+
+Together, `RV32IMAC` describes the extensions available on the HiFive1 board, but we're only going to use `I`. That's because every RISC-V processor must support `I` and that's something we can rely on for the future - so by targetting only the base set, we can maximise the portability of the code we write. When RISC-V based Linux-capable machines become more common, we'll confidently be able to target them. (Of course, the boot process differs between machines, and that would have to be tweaked - but we'd have to do that anyway.)
+
+In addition, RV32I is very simple, which reduces the "surface area" of knowledge we need to get off the ground and start developing and understanding. When we're dealing with machine code (and in fact, more generally) simplicity is king.
 
 ### Use the HiFive1 Rev A Only (to start with)
 
-The [HiFive1](https://www.sifive.com/boards/hifive1) is a RISC-V board by SiFive; it's low-cost, simple and very open indeed.
+The [HiFive1](https://www.sifive.com/boards/hifive1) is a RISC-V board by SiFive; it's low-cost, simple and very open.
 
 By settling on one hardware board to run on (alongside Qemu) we'll limit the amount of time we need to spend worrying about harware differences. We should try to keep our options open in terms of using other boards in the future, but we'll focus on the HiFive1. Specifically we're using Revision A, not Revision B or later - although the differences aren't huge.
 
@@ -52,7 +61,7 @@ By settling on one hardware board to run on (alongside Qemu) we'll limit the amo
 
 TL;DR: Why bother with this bootstrapping project?
 
-Well, frankly, it'll be fun. By implementing a whole system - or at least, the software for part of a whole system - from as close to "scratch" as possible, and making that implementation easy enough to follow, we can potentially allow for people to develop special purpose systems entirely from scratch where they _genuinely have_ audited the _whole_ system and where they really can account for _every_ line of code. For some crypto work that's a boast that could really mean something. For other stuff at least it'll be cool, so why not?
+Frankly, it'll be fun. By implementing a whole system - or at least, the software for part of a whole system - from as close to "scratch" as possible, and making that implementation easy enough to follow, we can potentially allow for people to develop special purpose systems entirely from scratch where they _genuinely have_ audited the _whole_ system and where they really can account for _every_ line of code. For some crypto work that's a boast that could really mean something. For other stuff at least it'll be cool, so why not?
 
 ### Longer Motivation
 

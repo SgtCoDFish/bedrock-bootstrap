@@ -1,5 +1,5 @@
 SHELL = /bin/bash
-RISCV_PREFIX ?=
+RISCV_PREFIX ?= riscv32-unknown-elf-
 
 .PHONY: all
 all: clean ret1234.bin ret1234.elf ret1234.dump
@@ -10,15 +10,15 @@ clean:
 
 BUILD/start.o: start.s
 	@mkdir -p BUILD
-	$(RISCV_PREFIX)/bin/riscv32-unknown-elf-as -march=rv32ima $< -o $@
+	$(RISCV_PREFIX)as -march=rv32i $< -o $@
 
 ret1234.elf: BUILD/start.o
 	@mkdir -p BUILD
-	$(RISCV_PREFIX)/bin/riscv32-unknown-elf-ld $^ -Tlinker.ld -o $@
+	$(RISCV_PREFIX)ld $^ -Tlinker.ld -o $@
 
 ret1234.bin: ret1234.elf
 	@mkdir -p BUILD
-	$(RISCV_PREFIX)/bin/riscv32-unknown-elf-objcopy $< -O binary $@
+	$(RISCV_PREFIX)objcopy $< -O binary $@
 
 ret1234.dump: ret1234.elf
-	$(RISCV_PREFIX)/bin/riscv32-unknown-elf-objdump -d $< > $@
+	$(RISCV_PREFIX)objdump -d $< > $@

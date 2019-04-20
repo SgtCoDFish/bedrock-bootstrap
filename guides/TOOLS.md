@@ -22,7 +22,9 @@ You can use a prebuilt toolchain from [SiFive](https://www.sifive.com/boards/) (
 
 If you're building from source, you can see in the freedom-e-sdk HiFive1 [BSP](https://github.com/sifive/freedom-e-sdk/blob/30c143eb5445f47edb351ba54c84ff8285dc27a9/bsp/sifive-hifive1/settings.mk) that we need to target a different arch and ABI, since the toolchain defaults to 64 bit.
 
-You can choose where you want to run the tools from, but we'll assume you've set `$RISCV_PREFIX` to something. You'll need that evironment variable set to do anything. If you're installing somewhere like `/opt/riscv` you'll need to build as root (`sudo make -j4`).
+You can choose where you want to run the tools from, but the build commands used in this project assume you've set `$RISCV_PREFIX` to point at the correct executables on the path. For example, if you install to `/opt/riscv` then you should set `$RISCV_PREFIX` to `/opt/riscv/bin/riscv32-unknown-elf-`.
+
+Also, note that if you're installing somewhere where your user doesn't have write permissions (e.g. `/opt/riscv`) you'll probably need to build as root (`sudo make -j4`).
 
 Before building, you're likely to need to install some additional requirements. See [the repo](https://github.com/riscv/riscv-gnu-toolchain) for requirements on various platforms including popular Linus distros and macOS.
 
@@ -30,13 +32,15 @@ Before building, you're likely to need to install some additional requirements. 
 git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
 cd riscv-gnu-toolchain
 mkdir build && cd build
-../configure --with-arch=rv32ima --with-abi=ilp32 --with-cmodel=medlow --prefix=$RISCV_PREFIX
+../configure --with-arch=rv32ima --with-abi=ilp32 --with-cmodel=medlow --prefix=SOME_PREFIX  # change SOME_PREFIX to whatever you like
 make -j4  # might need to be done as root depending on where you're installing
 ```
 
-Note that we're using the arch `rv32ima` which means the base RISC-V 32-bit instruction set (`i`) plus extensions for `m`ultiplication and `a`tomic operations. You'll often see a `c` used in other toolchains; its omission is a conscious decision which will be explained later. In any case, we can (and will) explicitly specify the arch later when building which will allow us to avoid using the `c` extension even if the toolchain is built with `c` support.[1]
+Note that we're using the arch `rv32ima` which means the base RISC-V 32-bit instruction set (`i`) plus extensions for `m`ultiplication and `a`tomic operations. You'll often see a `c` used in other toolchains; its omission is a conscious decision to simplify our efforts to write bare-metal machine code.
 
-The executables will be in the `$RISCV_PREFIX/bin` dir, and you can sanity check by running `$RISCV_PREFIX/bin/riscv32-unknown-elf-gcc -v`.
+In any case, we can (and will) explicitly specify the arch later when building which will allow us to avoid using extensions even if the toolchain is built with support for various extensions.[1]
+
+The executables will be in the `bin` dir.
 
 ## OpenOCD
 
