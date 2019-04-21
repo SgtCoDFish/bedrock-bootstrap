@@ -17,4 +17,4 @@ dump: BUILD/uart.bin
 
 BUILD/uart.elf: elfheader.hex uart.hex
 	@mkdir -p BUILD
-	cat elfheader.hex uart.hex | sed "s/#.*$$//g" $< | xxd -r -p > $@
+	cat elfheader.hex uart.hex | sed "s/#.*$$//g" | xxd -r -p > $@

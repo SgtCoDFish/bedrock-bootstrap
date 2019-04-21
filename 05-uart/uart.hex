@@ -32,12 +32,13 @@ b7 37 01 10  # lui a5, 0x10013
 # UART_REG_TXCTRL = 0x10013008
 # UART_REG_TXCTRL := 0x01 # Should this be 0x03?
 93 87 07 ff  # addi a5, a5, -0x10
-13 05 10 00  # addi a0, x0, 0x1
+13 05 30 00  # addi a0, x0, 0x3
 23 a0 a7 00  # sw a0, 0(a5)
 
 # UART_REG_RXCTRL = 0x1001300C
 # UART_REG_RXCTRL := 0x01
 93 87 47 00  # addi a5, a5, 0x4
+13 05 10 00  # addi a0, x0, 0x1
 23 a0 a7 00  # sw a0, 0(a5)
 
 # UART init completed!
@@ -47,10 +48,10 @@ b7 37 01 10  # lui a5, 0x10013
 13 00 00 00  # nop
 
 # Read UART0_TXDATA into a0 until (a0 & 0x80000000) == 0
-# Then put our data from a1, which we'll make 0xDEAD0000
+# Then put our data from a1, which we'll make 0x30300000
 # UART0_TXDATA = 0x10013000
 93 87 47 ff  # addi a5, a5, -0xC
-b7 05 ad de  # lui a1, 0xDEAD0
+b7 05 30 30  # lui a1, 0x30300
 37 06 00 80  # lui a2, 0x80000
 03 a5 07 00  # lw a0, 0(a5)
 33 75 c5 00  # and a0, a0, a2
