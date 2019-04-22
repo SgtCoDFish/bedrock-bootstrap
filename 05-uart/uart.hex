@@ -48,15 +48,16 @@ b7 37 01 10  # lui a5, 0x10013
 13 00 00 00  # nop
 
 # Read UART0_TXDATA into a0 until (a0 & 0x80000000) == 0
-# Then put our data from a1, which we'll make 0x30300000
+# Then put our data from a1, which we'll make 0x00000035 (an ASCII '5')
 # UART0_TXDATA = 0x10013000
 93 87 47 ff  # addi a5, a5, -0xC
-b7 05 30 30  # lui a1, 0x30300
+93 05 50 03  # addi a1, x0, 0x35
 37 06 00 80  # lui a2, 0x80000
 03 a5 07 00  # lw a0, 0(a5)
 33 75 c5 00  # and a0, a0, a2
-e3 0c 05 fe  # beqz a0, -8 == beq a0, x0, -8
+e3 1c 05 fe  # bnez a0, -8 == bne a0, x0, -8
 
-13 00 00 00  # nop
+23 a0 b7 00  # sw a1, 0(a5)
+
 13 00 00 00  # nop
 6f 00 00 00  # jal x0, 0x00
