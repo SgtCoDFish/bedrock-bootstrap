@@ -13,29 +13,13 @@ References:
 
 We're not going to list how to hand assemble every instruction, as it get boring quickly and it's not hard to reason about how it works - which is why people normally use assemblers for this kind of task!
 
-There are a couple of examples below to help with the basic concepts, and there's a scratchpad of the "working out" in [HAND_ASSEMBLY_SCRATCHPAD.md](../guides/HAND_ASSEMBLY_SCRATCHPAD.md) with fuller working for many types of instructions.
-
-### NOP (I-type)
-
-Our first attempt at assembling instructions by hand is to create a NOP. We'll use them liberally to pad out instructions and leave space for ourselves to add further instructions later.
-
-From the [RISC-V spec](https://content.riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf) we see that:
-
-> NOPs can be used to align code segments to microarchitecturally significant address boundaries, or to leave space for inline code modifications. Although there are many possible ways to encode a NOP, we define a canonical NOP encoding to  allow microarchitectural optimizations as well as for more readable disassembly output.
-
-That canonical NOP encoding is `addi x0, x0, 0`, which is an "I-type" instruction. In chapter 19 of the spec, there's a handy chart for looking up the encodings of different instruction types and the opcodes required for different instructions.
-
-`addi` has an opcode of `0010011` (note that's 7 bits, not 8). Since everything else in `addi x0, x0, 0` is 0 for a NOP (since x0 is represented as `0b00000` and the immediate value is zero too), the instruction is easy to represent: `0x0000_0013`, which we write in little endian as `13 00 00 00`.
-
-### LUI a5, 0x10012 (U-type)
-
-`lui` is an instruction we've encountered before. The spec gives us a U-type encoding, and we want to load the value `0x10012000` into `a5`, the 5th argument register (for reasons that will become clear later). The assembly is `lui a5, 0x10012`.
-
-From the guide we see the opcode `0110111`, and we need a 5-bit register (a5 is x15, so has the 5-bit encoding `01111`). Combined together the lowest 12 bits are `0111 1011 0111` (note that the lowest bit of the destination register is joined with the upper 3 bits of the opcode to create the nibble `1011`). The highest 20 bits are the immediate value, `0x10012`, so we have the complete instruction `0x100127b7` or `b7 27 01 10`.
+There are a couple of examples at [1] to help with the basic concepts, and there's a scratchpad of the "working out" in [HAND_ASSEMBLY_SCRATCHPAD.md](../guides/HAND_ASSEMBLY_SCRATCHPAD.md) with fuller working for many types of instructions.
 
 ## Running `uart.hex`
 
-`uart.hex` is the end result of our UART example; it does nothing except output a single ASCII "5". We can run on QEMU using the following slightly modified command:
+`uart.hex` is the end result of our UART example; it does nothing except output a single ASCII "5". We need to "compile" `BUILD/uart.elf` by adding an ELF header with the size of the program customised. Removing the comments and reverse-hexdumping the file.
+
+We can run on QEMU using the following slightly modified command:
 
 ```bash
 $ qemu-system-riscv32 -nographic -serial pty -s -S -M sifive_e -kernel BUILD/uart.elf
@@ -68,3 +52,25 @@ The program initialises the UART by:
 Currently we can't expand on why some of those values are used.
 
 Finally we wait until the UART_TXDATA register has its highest bit cleared (again, not sure why yet), and then write our value into the UART_TXDATA register.
+
+## Notes
+
+[1] Hand assembly notes:
+
+### nop (I-type)
+
+Our first attempt at assembling instructions by hand is to create a NOP. We'll use them liberally to pad out instructions and leave space for ourselves to add further instructions later.
+
+From the [RISC-V spec](https://content.riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf) we see that:
+
+> NOPs can be used to align code segments to microarchitecturally significant address boundaries, or to leave space for inline code modifications. Although there are many possible ways to encode a NOP, we define a canonical NOP encoding to  allow microarchitectural optimizations as well as for more readable disassembly output.
+
+That canonical NOP encoding is `addi x0, x0, 0`, which is an "I-type" instruction. In chapter 19 of the spec, there's a handy chart for looking up the encodings of different instruction types and the opcodes required for different instructions.
+
+`addi` has an opcode of `0010011` (note that's 7 bits, not 8). Since everything else in `addi x0, x0, 0` is 0 for a NOP (since x0 is represented as `0b00000` and the immediate value is zero too), the instruction is easy to represent: `0x0000_0013`, which we write in little endian as `13 00 00 00`.
+
+### lui a5, 0x10012 (U-type)
+
+`lui` is an instruction we've encountered before. The spec gives us a U-type encoding, and we want to load the value `0x10012000` into `a5`, the 5th argument register (for reasons that will become clear later). The assembly is `lui a5, 0x10012`.
+
+From the guide we see the opcode `0110111`, and we need a 5-bit register (a5 is x15, so has the 5-bit encoding `01111`). Combined together the lowest 12 bits are `0111 1011 0111` (note that the lowest bit of the destination register is joined with the upper 3 bits of the opcode to create the nibble `1011`). The highest 20 bits are the immediate value, `0x10012`, so we have the complete instruction `0x100127b7` or `b7 27 01 10`.
