@@ -45,13 +45,20 @@ The program initialises the UART by:
 
 - writing a device specific UART mask to a GPIO selector register
 - writing the inverse of that mask to a GPIO enabler register to actually enable UART
-- writing to a UART divider register to select a baud rate of 115200
-- writing 0x1 (this is 0x3 in some places?) to a UART "txctrl" register
-- writing 0x1 to a UART "rxctrl" register
+- writing 138 to a UART divider register to select a baud rate of 115200 [2]
+- writing 0x1 to a UART "txctrl" register to enable transmits [3]
+- writing 0x1 to a UART "rxctrl" register to enable receives [4]
 
-Currently we can't expand on why some of those values are used.
+Finally we wait until the UART_TXDATA register has its highest bit cleared and then write our value into the UART_TXDATA register. The [datasheet](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf) has details of this part:
 
-Finally we wait until the UART_TXDATA register has its highest bit cleared (again, not sure why yet), and then write our value into the UART_TXDATA register.
+> Writing to the `txdata` register enqueues the character contained in the data field to the transmit FIFO if the FIFO is able to accept new entries. Reading from `txdata` returns the current value of the full flag and zero in the data field.
+> The full flag indicates whether the transmit FIFO is able to accept new entries; when set, writes to data are ignored.
+
+There's also a hint in there:
+
+> A RISC-V `amoswap` instruction can be used to both read the full status and attempt to enqueue data, with a non-zero return value indicating the character was not accepted.
+
+We don't use this trick because we're only using RV32I instructions, and `amoswap` is in the `A` (atomic) extension.
 
 ## Notes
 
@@ -74,3 +81,9 @@ That canonical NOP encoding is `addi x0, x0, 0`, which is an "I-type" instructio
 `lui` is an instruction we've encountered before. The spec gives us a U-type encoding, and we want to load the value `0x10012000` into `a5`, the 5th argument register (for reasons that will become clear later). The assembly is `lui a5, 0x10012`.
 
 From the guide we see the opcode `0110111`, and we need a 5-bit register (a5 is x15, so has the 5-bit encoding `01111`). Combined together the lowest 12 bits are `0111 1011 0111` (note that the lowest bit of the destination register is joined with the upper 3 bits of the opcode to create the nibble `1011`). The highest 20 bits are the immediate value, `0x10012`, so we have the complete instruction `0x100127b7` or `b7 27 01 10`.
+
+[2] We write a value one less than the one we want (139). The whole thing is a bit confusing, but the details are in the data sheet.
+
+[3] Some guides write `0x3` here, to use a second UART stop bit. The choice is explained in this [StackOverflow question](https://electronics.stackexchange.com/questions/29945/one-or-two-uart-stop-bits). We use one stop bit to increase throughput.
+
+[4] We don't actually use the receive functionality in this example, though.
