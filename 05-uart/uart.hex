@@ -32,7 +32,7 @@ b7 37 01 10  # lui a5, 0x10013
 # UART_REG_TXCTRL = 0x10013008
 # UART_REG_TXCTRL := 0x01 # Should this be 0x03?
 93 87 07 ff  # addi a5, a5, -0x10
-13 05 30 00  # addi a0, x0, 0x3
+13 05 10 00  # addi a0, x0, 0x1
 23 a0 a7 00  # sw a0, 0(a5)
 
 # UART_REG_RXCTRL = 0x1001300C
@@ -48,7 +48,7 @@ b7 37 01 10  # lui a5, 0x10013
 13 00 00 00  # nop
 
 # Read UART0_TXDATA into a0 until (a0 & 0x80000000) == 0
-# Then put our data from a1, which we'll make 0x00000035 (an ASCII '5')
+# Then put our data from a1, which we'll make 0x00000035 (an ASCII '5', for RISC-V!)
 # UART0_TXDATA = 0x10013000
 93 87 47 ff  # addi a5, a5, -0xC
 93 05 50 03  # addi a1, x0, 0x35

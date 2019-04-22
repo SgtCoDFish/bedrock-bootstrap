@@ -5,6 +5,7 @@ Next thing is enable a connection and communication over [UART](https://en.wikip
 The UART on the `sifive_e` QEMU board matches the UART on the HiFive1 so we should be able to write once and run on both platforms.
 
 References:
+
 - [Freedom Metal UART Driver](https://github.com/sifive/freedom-metal/blob/6d69e6d48babe4472a6f4671b832cb7df941f274/src/drivers/sifive%2Cuart0.c)
 - [dwelch UART Driver](https://github.com/dwelch67/sifive_samples/blob/e93a68e4dfed9f0cc5e3d23cc4ac7c4176f15b98/hifive1/uart02/notmain.c)
 
@@ -12,11 +13,11 @@ References:
 
 We're not going to list how to hand assemble every instruction, as it get boring quickly and it's not hard to reason about how it works - which is why people normally use assemblers for this kind of task!
 
-It does help to have a couple of examples which we can use to get a feel for hand-assembly, though.
+There are a couple of examples below to help with the basic concepts, and there's a scratchpad of the "working out" in [HAND_ASSEMBLY_SCRATCHPAD.md](../guides/HAND_ASSEMBLY_SCRATCHPAD.md) with fuller working for many types of instructions.
 
 ### NOP (I-type)
 
-Our first attempt at assembling instructions by hand is to create a NOP. We'll use them liberally to pad out instructions and leave space in case we need to jump to a different address.
+Our first attempt at assembling instructions by hand is to create a NOP. We'll use them liberally to pad out instructions and leave space for ourselves to add further instructions later.
 
 From the [RISC-V spec](https://content.riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf) we see that:
 
@@ -24,7 +25,7 @@ From the [RISC-V spec](https://content.riscv.org/wp-content/uploads/2017/05/risc
 
 That canonical NOP encoding is `addi x0, x0, 0`, which is an "I-type" instruction. In chapter 19 of the spec, there's a handy chart for looking up the encodings of different instruction types and the opcodes required for different instructions.
 
-`addi` has an opcode of `0010011` (note that's 7 bits, not 8). Since everything else in `addi x0, x0, 0` is 0 for a NOP, the instruction is easy to represent: `0x0000_0013`, which we write in little endian as `13 00 00 00`.
+`addi` has an opcode of `0010011` (note that's 7 bits, not 8). Since everything else in `addi x0, x0, 0` is 0 for a NOP (since x0 is represented as `0b00000` and the immediate value is zero too), the instruction is easy to represent: `0x0000_0013`, which we write in little endian as `13 00 00 00`.
 
 ### LUI a5, 0x10012 (U-type)
 
@@ -32,138 +33,38 @@ That canonical NOP encoding is `addi x0, x0, 0`, which is an "I-type" instructio
 
 From the guide we see the opcode `0110111`, and we need a 5-bit register (a5 is x15, so has the 5-bit encoding `01111`). Combined together the lowest 12 bits are `0111 1011 0111` (note that the lowest bit of the destination register is joined with the upper 3 bits of the opcode to create the nibble `1011`). The highest 20 bits are the immediate value, `0x10012`, so we have the complete instruction `0x100127b7` or `b7 27 01 10`.
 
-#### LUI a1, 0xDEAD0
+## Running `uart.hex`
 
-1101 1110 1010 1101 0000 0101 1011 0111
-de        ad        05        b7
+`uart.hex` is the end result of our UART example; it does nothing except output a single ASCII "5". We can run on QEMU using the following slightly modified command:
 
-b7 05 ad de
+```bash
+$ qemu-system-riscv32 -nographic -serial pty -s -S -M sifive_e -kernel BUILD/uart.elf
+QEMU 3.1.0 monitor - type 'help' for more information
+char device redirected to /dev/ttys007 (label serial0)
 
-#### LUI a2, 0x80000
-1000 0000 0000 0000 0000 0110 0011 0111
-80        00        06        37
+# Note that the char device might change depending on your system.
+# In any case, you can connect to it in a different terminal using:
+screen /dev/ttys007 115200
+```
 
-37 06 00 80
+After you've connected to the emulated serial port, go back to the `(qemu)` prompt in the QEMU window and type `c` for `(c)ontinue`, and then press enter. You should see a `5` output in the screen session.
 
-### ADDI (I-type)
+Use `Ctrl+A` followed by `k` to quit the screen session, and then the `quit` command to exit QEMU.
 
-#### addi a5, a5, 0x3c
-a5 == x15 == 0b01111
+## Understanding `uart.hex`
 
-0000 0011 1100 0111 1000 0111 1001 0011
-imm----------- rs1---000 rd----opcode--
-03        c7        87        93
+The hex file itself is commented heavily, to show both the reasoning behind each section and the individual assembly instructions which the machine code segments represent. These comments are stripped by `sed` in the Makefile.
 
-93 87 c7 03
+(NB: This uart initialisation process was mostly reverse-engineered from existing code. If you know of a good guide which contains the details please do raise a PR!)
 
-#### addi a1, x0, 0x3
-a1 = x11 == 0b01011
+The program initialises the UART by:
 
-0000 0000 0011 0000 0000 0101 1001 0011
-00        30        05        93
+- writing a device specific UART mask to a GPIO selector register
+- writing the inverse of that mask to a GPIO enabler register to actually enable UART
+- writing to a UART divider register to select a baud rate of 115200
+- writing 0x1 (this is 0x3 in some places?) to a UART "txctrl" register
+- writing 0x1 to a UART "rxctrl" register
 
-93 05 30 00
+Currently we can't expand on why some of those values are used.
 
-#### addi a1, x0, 0x35
-0000 0011 0101 0000 0000 0101 1001 0011
-03        50        05        93
-
-93 05 50 03
-
-#### addi a0, x0, 0x8a
-
-0000 1000 1010 0000 0000 0101 0001 0011
-08        a0        05        13
-
-13 05 a0 08
-
-
-### LW a0, 0(a5)
-
-a0 == x10 == 0b01010
-
-0000 0000 0000 0111 1010 0101 0000 0011
-00        07        a5        03
-
-03 a5 07 00
-
-### SLLI (I-type)
-
-#### slli a1, a1, 0x10
-
-0000 0001 0000 0101 0001 0101 0001 0011
-01        05        15        13
-
-13 15 05 01
-
-### SUB (R-type)
-
-#### sub a1, x0, a1 (i.e. neg a1, a1)
-
-0100 0000 1011 0000 0000 0101 1011 0011
-40        b0        05        b3
-
-b3 05 b0 40
-
-### AND (R-type)
-
-#### and a0, a1, a0
-
-0000 0000 1010 0101 1111 0101 0011 0011
-00        a5        f5        33
-
-33 f5 a5 00
-
-#### and a0, a0, a2
-a2 = x12 = 01100
-
-0000 0000 1100 0101 0111 0101 0011 0011
-00        c5        75        33
-
-### SW (S-type)
-
-#### sw a0, 0(a5)
-
-0000 0000 1010 0111 1010 0000 0010 0011
-00        a7        a0        23
-
-23 a0 a7 00
-
-#### sw a1, 0(a5)
-
-0000 0000 1011 0111 1010 0000 0010 0011
-00        b7        a0        23
-
-23 a0 b7 00
-
-### OR (R-type)
-
-#### or a0, a0, a1
-0000 0000 1011 0101 0110 0101 0011 0011
-00        b5        65        33
-
-33 65 b5 00
-
-### BEQ (B-type)
-
-### bnez a0, -8 == bne a0, x0, -8
-
-1111 1110 0000 0101 0001 1100 1110 0011
-fe        05        1c        e3
-
-e3 1c 05 fe
-
-### beqz a0, -8 == beq a0, x0, -8
-
-1111 1110 0000 0101 0000 1100 1110 0011
-fe        05        0c        e3
-
-
-### JAL (J-type)
-
-#### j . == jal x0, 0x00
-
-0000 0000 0000 0000 0000 0000 0110 1111
-00        00        00        6f
-
-6f 00 00 00
+Finally we wait until the UART_TXDATA register has its highest bit cleared (again, not sure why yet), and then write our value into the UART_TXDATA register.
