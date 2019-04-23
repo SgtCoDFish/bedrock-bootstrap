@@ -49,7 +49,7 @@ The program initialises the UART by:
 - writing 0x1 to a UART "txctrl" register to enable transmits [3]
 - writing 0x1 to a UART "rxctrl" register to enable receives [4]
 
-Finally we wait until the UART_TXDATA register has its highest bit cleared and then write our value into the UART_TXDATA register. The [datasheet](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf) has details of this part:
+Finally we wait until the UART\_TXDATA register has its highest bit cleared and then write our value into the UART\_TXDATA register. The [datasheet](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf) has details of this part:
 
 > Writing to the `txdata` register enqueues the character contained in the data field to the transmit FIFO if the FIFO is able to accept new entries. Reading from `txdata` returns the current value of the full flag and zero in the data field.
 > The full flag indicates whether the transmit FIFO is able to accept new entries; when set, writes to data are ignored.
