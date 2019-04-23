@@ -22,6 +22,7 @@ We're not going to be _using_ the "Freedom Metal" library or much of the freedom
 
 - [RISC-V ISA Manual 2.2](https://github.com/riscv/riscv-isa-manual/blob/3f98f6087b75e52ec4f61681769b5f6931df2f06/release/riscv-spec-v2.2.pdf) is the canonical reference for RISC-V assembly. There's plenty of detailed information in there, but Chapter 20, the "RISC-V Assembly Programmer's Handbook" is well worth a read since it contains details about the calling convention we'll use along with a mapping of pseudoinstructions to base instructions.
 - [rv8.io](https://rv8.io/asm.html) is a good reference / cheat sheet for RISC-V assembly programming
+- [All Aboard](https://www.sifive.com/blog/all-aboard-part-1-compiler-args) is a blog series by SiFive with fantastic explainations about the RISC-V toolchain.
 
 ## Other Links
 
