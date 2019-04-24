@@ -2,11 +2,11 @@
 
 While we do want to minimise the amount of tooling we use so that we can minimise the amount of third-party code we need to rely on, it would be considerably harder to work without a few core tools.
 
-## Building Qemu
+## Building QEMU
 
-If your system has qemu >= 3.1, then in theory RISC-V support was upstreamed and you can probably install a RISC-V-supporting qemu from your system package manager. In practise, at least on macOS, there are problems connecting to an emulated kernel with gdb. Better to build it yourself; it's not hard to do and it's actually quite quick to build.
+If your system has QEMU >= 3.1, then in theory RISC-V support was upstreamed and you can probably install a RISC-V-supporting QEMU from your system package manager. If you run into problems using the version from your package manage, it's very easy to build QEMU from source and use that.
 
-You'll want to clone it yourself and build:
+Clone it yourself and build:
 
 ```bash
 git clone --recursive --depth 1 https://github.com/qemu/QEMU

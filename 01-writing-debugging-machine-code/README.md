@@ -48,7 +48,7 @@ Since one hex "value" is 4 bits, that means the bottom 12 bits of the loaded val
 
 `jr t0` unconditionally jumps to the address in `t0`, which has the effect of setting `pc` to the value in `t0`.
 
-So we conclude that the bootloader just immediately jumps to the address `0x2040_0000`! Let's try it out in a GDB session connected to Qemu with `nothing.elf` from the previous section:
+So we conclude that the bootloader just immediately jumps to the address `0x2040_0000`! Let's try it out in a GDB session connected to QEMU with `nothing.elf` from the previous section:
 
 ```bash
 (gdb) nexti
@@ -71,4 +71,4 @@ t0    0x20400000
 
 That pretty much confirms what we expected to happen. We set `t0` and then jump to the address it contains, where the debugger hangs after jumping to `0x0`. Even after the hang, we still see the value that we set in `t0`. This was to be expected; we didn't write any code at `0x2040_0000` and there's nothing placed there at design time.
 
-In the next section, we'll investigate the boot process further, on both Qemu and HiFive1 hardware.
+In the next section, we'll investigate the boot process further, on both QEMU and HiFive1 hardware.

@@ -55,7 +55,7 @@ In addition, RV32I is very simple, which reduces the "surface area" of knowledge
 
 The [HiFive1](https://www.sifive.com/boards/hifive1) is a RISC-V board by SiFive; it's low-cost, simple and very open.
 
-By settling on one hardware board to run on (alongside Qemu) we'll limit the amount of time we need to spend worrying about harware differences. We should try to keep our options open in terms of using other boards in the future, but we'll focus on the HiFive1. Specifically we're using Revision A, not Revision B or later - although the differences aren't huge.
+By settling on one hardware board to run on (alongside QEMU) we'll limit the amount of time we need to spend worrying about harware differences. We should try to keep our options open in terms of using other boards in the future, but we'll focus on the HiFive1. Specifically we're using Revision A, not Revision B or later - although the differences aren't huge.
 
 ## Project Motivation
 

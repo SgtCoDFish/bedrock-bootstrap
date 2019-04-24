@@ -1,6 +1,6 @@
 # HiFive1 Basic Bootloader
 
-We know that our code will start running directly at `0x2040_0000` on Qemu whereas the HiFive1 has an intermediate bootloader at `0x2000_0000` which then jumps to `0x2040_0000`. If we accept that bootloader, we can always rely on our code starting at `0x2040_0000` on both systems and not worry about it.
+We know that our code will start running directly at `0x2040_0000` on QEMU whereas the HiFive1 has an intermediate bootloader at `0x2000_0000` which then jumps to `0x2040_0000`. If we accept that bootloader, we can always rely on our code starting at `0x2040_0000` on both systems and not worry about it.
 
 However, if we want to have more complete control of the whole boot process, we can write a small bit of code at `0x2000_0000` which always jumps to `0x2040_0000`.
 
@@ -37,4 +37,4 @@ SECTIONS
 }
 ```
 
-We define the "shimloc" to be an approximately 4MB (`0x0040_0000`) block in SPI-Flash, starting at `0x2000_0000`. Then under "SECTIONS" we say that the section `.text.shim` must be placed at the beginning of shimloc. Likewise, we place `.text` - regular code - at `0x2040_0000` where both Qemu and the HiFive1 will end up jumping to.
+We define the "shimloc" to be an approximately 4MB (`0x0040_0000`) block in SPI-Flash, starting at `0x2000_0000`. Then under "SECTIONS" we say that the section `.text.shim` must be placed at the beginning of shimloc. Likewise, we place `.text` - regular code - at `0x2040_0000` where both QEMU and the HiFive1 will end up jumping to.

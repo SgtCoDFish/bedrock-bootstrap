@@ -4,20 +4,20 @@ Before we can do _anything_ we'll need to get some necessary tools, gather some 
 
 - See [TOOLS.md](../guides/TOOLS.md) for a guide to tools
 - Check [RESOURCES.md](../guides/RESOURCES.md) for a list of references and other resources which might be handy.
-- Read [OPENOCD_WRITING.md](../guides/OPENOCD_WRITING.md) for a guide to uploading code onto a HiFive1 using OpenOCD
+- Read [OPENOCD\_WRITING.md](../guides/OPENOCD_WRITING.md) for a guide to uploading code onto a HiFive1 using OpenOCD
 
 Without the [tools](../guides/TOOLS.md) you'll struggle to do much at all.
 
 ## Aims
 
 - Understand the very basics of compiling and inspecting RISC-V code.
-- Run a binary on Qemu and use some basic commands to inspect the state of the system.
+- Run a binary on QEMU and use some basic commands to inspect the state of the system.
 
 ## Compiling Our Toolchain Test
 
 We can test our toolchain using the files in this repo.
 
-**NOTE**: The linker-script used for these examples intentionally places code into a "weird" location in memory. Running `nothing.elf` on a HiFive1 might give strange results which you might not expect. The idea here is to use Qemu to check that our toolchain is doing what we expect; actually running stuff comes later.
+**NOTE**: The linker-script used for these examples intentionally places code into a "weird" location in memory. Running `nothing.elf` on a HiFive1 might give strange results which you might not expect. The idea here is to use QEMU to check that our toolchain is doing what we expect; actually running stuff comes later.
 
 Building the binaries is simple; you can check the underlying `Makefile` for details of the specific commands.
 
@@ -25,7 +25,7 @@ Building the binaries is simple; you can check the underlying `Makefile` for det
 make RISCV_PREFIX=/path/to/riscv all
 ```
 
-Several files will be dumped into this directory and intermediate files are placed in `BUILD/`. The end-product files are also committed into Git to make it possible to test Qemu without having the full GNU toolchain.
+Several files will be dumped into this directory and intermediate files are placed in `BUILD/`. The end-product files are also committed into Git to make it possible to test QEMU without having the full GNU toolchain.
 
 The most interesting files from our perspective are `nothing.bin` and `nothing.dump`:
 
@@ -56,20 +56,20 @@ Note that the raw binary dump (`nothing.bin`) is very small, and that the bytes 
 
 The dump also has assembly on the right to make it easier to read, so we can see that the sole command in `main` is `li a0,11` which loads the value `11` into the register named `a0` (which is designated by the RISC-V [Calling Convention](https://riscv.org/wp-content/uploads/2015/01/riscv-calling.pdf) as being for return values).
 
-Of course, the compiled output isn't much use to us right now. We want to run it -on qemu or on hardware - to make sure it actually runs.
+Of course, the compiled output isn't much use to us right now. We want to run it - on QEMU or on hardware - to make sure it actually runs.
 
-## Running in Qemu
+## Running in QEMU
 
-First, note that when running Qemu headless, you exit by pressing Ctrl+A, releasing and then pressing `x` (use Ctrl+A and then `h` for help on other such commands).
+First, note that when running QEMU headless, you exit by pressing Ctrl+A, releasing and then pressing `x` (use Ctrl+A and then `h` for help on other such commands).
 
 We pass a few arguments to the following command which look initially confusing:
 
 - `-s` starts a GDB debugger on port `1234` which lets us dump memory
 - `-S` pauses the CPU before running anything, giving us time to debug
-- `-machine sifive_e` tells qemu we're running a sifive-e machine (which the HiFive 1 is!)
+- `-machine sifive_e` tells QEMU we're running a sifive-e machine (which the HiFive 1 is!)
 - `-nographic` disables graphics - we're not going to need them.
 
-Finally we point at our "kernel" - which is our ELF file - and kick off Qemu. macOS users take note: you may run into problems with using the homebrew qemu with gdb. Best to compile your own qemu for this.
+Finally we point at our "kernel" - which is our ELF file - and kick off QEMU. If you encounter any issues using QEMU from a package manager, it's very easy to build your own.
 
 ```bash
 $ qemu-system-riscv32 -machine sifive_e -nographic -s -S -kernel nothing.elf
@@ -87,7 +87,7 @@ pc 0x1000     0x1000
 0x1004:    0x00028067
 ```
 
-`x 0x80000000` dumps the memory at that address, which we can see is our `main` function above. We know we've loaded the file correctly into qemu.
+`x 0x80000000` dumps the memory at that address, which we can see is our `main` function above. We know we've loaded the file correctly into QEMU.
 
 So we see our program is loaded correctly, and `info register pc` shows us that the board has defaulted `pc` to `0x1000`, and at that address there's actually an instruction already there which we didn't write!
 

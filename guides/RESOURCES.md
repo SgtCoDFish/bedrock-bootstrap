@@ -27,7 +27,7 @@ We're not going to be _using_ the "Freedom Metal" library or much of the freedom
 ## Other Links
 
 - dwelch67 always has good guides for bare metal programming; for example, check out his [uart01 sample](https://github.com/dwelch67/sifive_samples/tree/master/hifive1/uart01) for a bare-metal RISC-V UART example
-- Running RISC-V on qemu bare metal [google groups thread](https://groups.google.com/a/groups.riscv.org/forum/#!topic/sw-dev/IET9LBFJohU). This thread was useful for figuring out how Qemu could be used productively with bare metal development.
+- Running RISC-V on QEMU bare metal [google groups thread](https://groups.google.com/a/groups.riscv.org/forum/#!topic/sw-dev/IET9LBFJohU). This thread was useful for figuring out how QEMU could be used productively with bare metal development.
 - A very minimal bare metal example, similar to dwelch but based on riscv64 and SPIKE: [schoeberl](https://github.com/schoeberl/cae-examples).
 - Embedded bare-metal Rust on the Raspberry Pi 3: [rust-raspi3-OS-tutorials](https://github.com/rust-embedded/rust-raspi3-OS-tutorials). Quite different in scope, but a brilliantly written resource in general.
 - [OpenOCD SPI Flash Driver](https://github.com/riscv/riscv-openocd/blob/riscv/src/flash/nor/fespi.c) - a neat insight into how the driver works which lets us upload our code.
