@@ -117,7 +117,7 @@ File Attributes
   Tag_RISCV_arch: "rv32i2p0"
 ```
 
-The first 4 bytes are the offset into the `.shstrtab`, giving the name `.riscv.attributes`. The next 4 bytes are the identifier for a RISCV_ATTRIBUTE type: `0x70000003`.
+The first 4 bytes are the offset into the `.shstrtab`, giving the name `.riscv.attributes`. The next 4 bytes are the identifier for a RISCV\_ATTRIBUTE type: `0x70000003`.
 
 8 bytes for flags and addresses are unused, followed by the offset `0x100c` which is the location in the file and 0x24 which is the length of the section, which is dumped below.
 
@@ -138,11 +138,11 @@ $ od -Ax -v -ta -j4108 -N36 ret1234.elf
 
 Viewed in ASCII, the `.riscv.attributes` section clearly contains architectural information about the program; `rv32i2p0` is embedded in the section, and refers to 32-bit RISC-V, with only the base instruction set version 2.0 (`p` is the version separator).
 
-From the binutils [source](https://fossies.org/linux/binutils/include/elf/riscv.h) we see that "Tag_RISCV_arch" has the value 5, which is what precedes the arch information "rv32i2p0". That's a useful thing to extract from the section, but the documentation regarding the rest seems almost completely non-existant. At the time of writing there's an open [PR](https://github.com/riscv/riscv-elf-psabi-doc/pull/71) which seems to add _some_ documentation, but it's nowhere near enough to actually be able to parse the format. We can work it out, however, from binutils which wrote the section in the first place!
+From the binutils [source](https://fossies.org/linux/binutils/include/elf/riscv.h) we see that "Tag\_RISCV\_arch" has the value 5, which is what precedes the arch information "rv32i2p0". That's a useful thing to extract from the section, but the documentation regarding the rest seems almost completely non-existant. At the time of writing there's an open [PR](https://github.com/riscv/riscv-elf-psabi-doc/pull/71) which seems to add _some_ documentation, but it's nowhere near enough to actually be able to parse the format. We can work it out, however, from binutils which wrote the section in the first place!
 
 The first byte is the letter 'A', which identifies the section as an "attributes" section according to [binutils](https://github.com/bminor/binutils-gdb/blob/4a4153dfc945701938b6f52795cf234fa0a5f5fe/binutils/readelf.c#L15533-L15534).
 
-Next is a 4 byte section length (0x19), followed by a null-terminated section name "riscv\0". `01` tells us we're reading [file attributes](https://github.com/bminor/binutils-gdb/blob/4a4153dfc945701938b6f52795cf234fa0a5f5fe/binutils/readelf.c#L15648) and the 4-byte `0x0000000f` is the size of the section. `05` is the RISCV_arch tag as above, and then the null-terminated string follows. The rest of the null bytes are just waste.
+Next is a 4 byte section length (0x19), followed by a null-terminated section name "riscv\0". `01` tells us we're reading [file attributes](https://github.com/bminor/binutils-gdb/blob/4a4153dfc945701938b6f52795cf234fa0a5f5fe/binutils/readelf.c#L15648) and the 4-byte `0x0000000f` is the size of the section. `05` is the RISCV\_arch tag as above, and then the null-terminated string follows. The rest of the null bytes are just waste.
 
 #### `.strtab` Section
 

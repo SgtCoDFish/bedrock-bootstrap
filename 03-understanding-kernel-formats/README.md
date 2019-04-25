@@ -21,7 +21,7 @@ So what binary file format - ELF or raw binary - do we actually need? We'll need
 
 ### QEMU
 
-So far we've used an ELF file to provide the kernel for QEMU, and in fact that's the only choice we have as evidenced by the riscv-qemu source code for [load_kernel](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/riscv/sifive_e.c#L77-L88)[1].
+So far we've used an ELF file to provide the kernel for QEMU, and in fact that's the only choice we have as evidenced by the riscv-qemu source code for [load\_kernel](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/riscv/sifive_e.c#L77-L88)[1].
 
 That means that to run under QEMU, we always have to provide an [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) file[2].
 
@@ -29,7 +29,7 @@ That introduces a decent amount of complexity in our build process that it would
 
 ### HiFive1
 
-When developing for the HiFive1 we can choose to produce ELF files (which can be uploaded natively by OpenOCD) but we also have the option to use OpenOCD's `write_image` directive to write a raw binary file at a memory offset we specify. This is friendlier to raw machine code since we could avoid the cost of having to create an ELF header, but QEMU forces our hand
+When developing for the HiFive1 we can choose to produce ELF files (which can be uploaded natively by OpenOCD) but we also have the option to use OpenOCD's `write_image` directive to write a raw binary file at a memory offset we specify. This is friendlier to raw machine code since we could avoid the cost of having to create an ELF header, but QEMU forces our hand.
 
 ## ELF Files
 
@@ -68,7 +68,7 @@ The types are summarised here, with more detail available [in this doc](https://
 
 - a null, empty section, which appears to be required
 - `.text` is the most important section type since it contains our code! The others are less important, but some are required.
-- `.riscv.attributes` is a special RISC-V section which contains details about the specific RISC-V architecture the object was compiled for - `rv32i` in this case - among other things. We can ignore it for now, and it's not well documented in any case.
+- `.riscv.attributes` is a special RISC-V section which contains details about the specific RISC-V architecture the object was compiled for - `rv32i` in this case. It's not at all well-documented and so we avoid adding it for now. Since we're writing a single ELF as output, the information contained within this section is not particularly useful.
 - `.symtab` is the [symbol table](https://docs.oracle.com/cd/E23824_01/html/819-0690/chapter6-79797.html#scrolltoc), which is needed to perform relocations on symbolic definitions and references.
 - `.strtab` is a table containing null-terminated strings relating to symbol table entries.
 - `.shstrtab` is a table also containting null-terminated strings which are the names of section headers

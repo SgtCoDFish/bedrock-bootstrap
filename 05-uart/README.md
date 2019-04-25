@@ -60,6 +60,10 @@ There's also a hint in there:
 
 We don't use this trick because we're only using RV32I instructions, and `amoswap` is in the `A` (atomic) extension.
 
+## Next
+
+Now that we've written a more complicated program - including a re-usable UART initialisation "driver", we can do something more complicated and write a program which takes input from UART.
+
 ## Notes
 
 [1] Hand assembly notes:
