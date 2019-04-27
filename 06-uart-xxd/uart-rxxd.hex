@@ -40,15 +40,69 @@ b7 37 01 10  # lui a5, 0x10013
 # t0 / x05: current word
 # t1 / x06: nibble count
 # s0 / x08: flags - 0x1 == in comment mode
+# a2 / x12: 0x8000_0000 *used for reading/writing UART)
 # a4 / x14: RAM write pointer, starts at 0x8001_0000
 # a5 / x15: UART0_TXDATA = 0x10013000 (write UART)
 # a6 / x16: UART0_RXDATA = 0x10013004 (receive UART)
+# a7 / x17: 0xa (used for comparing in comment mode)
 
-## ## ## ##  # mv t0, x0
-## ## ## ##  # mv t1, x0
-## ## ## ##  # mv s0, x0
-## ## ## ##  # lui a4, 80010
-## ## ## ##  # lui a5, 0x10013
-## ## ## ##  # addi a6, a5, 0x4
+93 02 00 00  # mv x05, x00 == addi x05, x00, 0x0
+13 03 00 00  # mv x06, x0 == addi x06, x00, 0x0
+13 04 00 00  # mv x08, x0 == addi x08, x00, 0x0
+37 06 00 80  # lui x12, 0x80000
+37 07 01 80  # lui x14, 0x80010
+b7 37 01 10  # lui x15, 0x10013
+13 88 47 00  # addi x16, x15, 0x4
+93 08 a0 00  # addi x17, x00, 0xa
 
-# TBC...
+# Pad to 0xB0
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# .READ_UART
+# Read a byte from UART
+03 25 08 00  # lw x10, 0(x16)
+33 75 c5 00  # and x10, x10, x12
+e3 1c 05 fe  # bnez x10, -8 == bne x10, x0, -8
+13 75 f5 0f  # andi x10, x10, 0xFF
+
+# Pad to 0xD0
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# If we're in comment mode, ignore everything that isn't 0xa
+# Since we only have 1 flag at the moment, we just skip comment mode
+# if the flags register is zero
+63 02 04 02  # beq x08, x00, 0x20
+
+# Comment mode: skip anything which isn't 0xa
+63 16 15 01  # bne x10, x17, +0x8
+13 04 00 00  # addi x08, x00, 0x0
+13 00 00 00  # nop
+e3 0a 00 fc  # beq x0, x0, .READ_UART
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# If we're here, we're not in comment mode
+# We need to check if we got 0x23 (#) and if so,
+# enter comment mode
+
+## ## ## ##  # addi x09, x00, 0x23
+## ## ## ##  # beq x10, x09, +0x10
+
+# We got a #, so enter comment mode
+## ## ## ##  # addi x08, x00, 0x1
+## ## ## ##  # beq x00, x00, .READ_UART
+## ## ## ##  # nop
+## ## ## ##  # nop
+
+# If we didn't get 0x23, then we can ignore anything below 0x30 ('0')
+## ## ## ##  # addi x09, x00, 0x30
+## ## ## ##  # bge x10, x09, +0x4
+## ## ## ##  # beq x00, x00, .READ_UART
