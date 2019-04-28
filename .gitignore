@@ -33,3 +33,5 @@
 
 **/BUILD/*
 *.*.sw[o|p]
+
+.idea
