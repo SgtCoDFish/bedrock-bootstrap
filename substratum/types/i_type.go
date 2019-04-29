@@ -39,14 +39,6 @@ type ITypeInstruction struct {
 	Args   ITypeArgs
 }
 
-func NewADDI(args ITypeArgs) ITypeInstruction {
-	return ITypeInstruction{
-		Opcode: 0x13,
-		Funct3: 0x0,
-		Args:   args,
-	}
-}
-
 func (i *ITypeInstruction) Assemble() []byte {
 	insn := uint32(0)
 
@@ -60,4 +52,12 @@ func (i *ITypeInstruction) Assemble() []byte {
 	binary.LittleEndian.PutUint32(b, insn)
 
 	return b
+}
+
+func NewADDI(args ITypeArgs) ITypeInstruction {
+	return ITypeInstruction{
+		Opcode: 0x13,
+		Funct3: 0x0,
+		Args:   args,
+	}
 }

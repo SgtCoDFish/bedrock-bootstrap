@@ -47,6 +47,24 @@ func main() {
 		Immediate: uint16(imm & 0xFFF),
 	})
 
-	out := i.Assemble()
-	fmt.Printf("%v\n", hex.Dump(out[:]))
+	out_i := i.Assemble()
+	fmt.Printf("addi\n----\n%v\n", hex.Dump(out_i))
+
+	s := types.NewSW(types.STypeArgs{
+		Rs1:       0xa,
+		Rs2:       0xf,
+		Immediate: 0x00,
+	})
+
+	out_s := s.Assemble()
+
+	fmt.Printf("sw\n--\n%v\n", hex.Dump(out_s))
+
+	u := types.NewLUI(types.UTypeArgs{
+		Immediate: 0x10013000,
+		Rd:        0xF,
+	})
+
+	out_u := u.Assemble()
+	fmt.Printf("lui\n---\n%v\n", hex.Dump(out_u))
 }
