@@ -57,7 +57,6 @@ func main() {
 	})
 
 	out_s := s.Assemble()
-
 	fmt.Printf("sw\n--\n%v\n", hex.Dump(out_s))
 
 	u := types.NewLUI(types.UTypeArgs{
@@ -67,4 +66,31 @@ func main() {
 
 	out_u := u.Assemble()
 	fmt.Printf("lui\n---\n%v\n", hex.Dump(out_u))
+
+	r := types.NewADD(types.RTypeArgs{
+		Rd:  0xa,
+		Rs1: 0xb,
+		Rs2: 0xa,
+	})
+
+	out_r := r.Assemble()
+	fmt.Printf("add\n---\n%v\n", hex.Dump(out_r))
+
+	b1 := types.NewBEQ(types.BTypeArgs{
+		Immediate: -0x8,
+		Rs1:       0x0a,
+		Rs2:       0x00,
+	})
+
+	out_b1 := b1.Assemble()
+	fmt.Printf("beq -ve\n------\n%v\n", hex.Dump(out_b1))
+
+	b2 := types.NewBEQ(types.BTypeArgs{
+		Immediate: 0x20,
+		Rs1:       0x08,
+		Rs2:       0x00,
+	})
+
+	out_b2 := b2.Assemble()
+	fmt.Printf("beq +ve\n------\n%v\n", hex.Dump(out_b2))
 }
