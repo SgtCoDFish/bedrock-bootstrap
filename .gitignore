@@ -35,3 +35,5 @@
 *.*.sw[o|p]
 
 .idea
+
+substratum/bin

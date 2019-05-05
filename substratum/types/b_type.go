@@ -1,7 +1,6 @@
 package types
 
 import (
-	"encoding/binary"
 	"fmt"
 )
 
@@ -37,32 +36,6 @@ type BTypeInstruction struct {
 	Opcode uint8
 	Funct3 uint8
 	Args   BTypeArgs
-}
-
-func (i *BTypeInstruction) Assemble() []byte {
-	insn := uint32(0)
-	fmt.Printf("[  11]: %d\n[ 1:4]: %d\n[5:11]: %d\n[  12]: %d\n",
-		(uint32(i.Args.Immediate)&0x400)>>10,
-		(i.Args.Immediate&0x1E)>>1,
-		(i.Args.Immediate&0x7E0)>>5,
-		(i.Args.Immediate&0x800)>>11,
-	)
-
-	// TODO: Remove debug above and fix
-
-	insn |= uint32(i.Opcode & 0x7F)
-	insn |= uint32((i.Args.Immediate&0x400)>>10) << 7
-	insn |= uint32((i.Args.Immediate&0x1E)>>1) << 8
-	insn |= uint32(i.Funct3&0x7) << 12
-	insn |= uint32(i.Args.Rs1&0x1F) << 15
-	insn |= uint32(i.Args.Rs2&0x1F) << 20
-	insn |= uint32((i.Args.Immediate&0x7E0)>>5) << 25
-	insn |= uint32((i.Args.Immediate&0x800)>>11) << 31
-
-	b := make([]byte, 4)
-	binary.LittleEndian.PutUint32(b, insn)
-
-	return b
 }
 
 func NewBEQ(args BTypeArgs) BTypeInstruction {

@@ -1,7 +1,6 @@
 package types
 
 import (
-	"encoding/binary"
 	"fmt"
 )
 
@@ -30,19 +29,6 @@ func (a *UTypeArgs) Sanitize() {
 type UTypeInstruction struct {
 	Opcode uint8
 	Args   UTypeArgs
-}
-
-func (i *UTypeInstruction) Assemble() []byte {
-	insn := uint32(0)
-
-	insn |= uint32(i.Opcode & 0x7F)
-	insn |= uint32(i.Args.Rd&0x1F) << 7
-	insn |= i.Args.Immediate & 0xFFFFF000
-
-	b := make([]byte, 4)
-	binary.LittleEndian.PutUint32(b, insn)
-
-	return b
 }
 
 func NewLUI(args UTypeArgs) UTypeInstruction {
