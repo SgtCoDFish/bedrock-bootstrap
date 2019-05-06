@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"os"
 	"strings"
 	"testing"
 )
@@ -28,8 +27,12 @@ func TestITypes(t *testing.T) {
 			expected: 0x00478813,
 		},
 		{
-			args:     []string{"slli", "a1", "a1", "16"},
+			args:     []string{"slli", "a0", "a0", "0x10"},
 			expected: 0x01051513,
+		},
+		{
+			args:     []string{"slli", "a1", "a1", "16"},
+			expected: 0x01059593,
 		},
 		{
 			args:     []string{"andi", "x10", "x10", "0xFF"},
@@ -48,14 +51,8 @@ func TestITypes(t *testing.T) {
 		binary.LittleEndian.PutUint32(expBytes, c.expected)
 
 		if !bytes.Equal(out, expBytes) {
-			t.Errorf("%s: calculated value did not match expected value: %+v != %+v", strings.Join(c.args, " "),
+			t.Errorf("%s: calculated value did not match expected value: %x != %x", strings.Join(c.args, " "),
 				out, expBytes)
 		}
 	}
-}
-
-func mockArgs(args []string) {
-	oldArgs := os.Args
-	os.Args = args
-	defer func() { os.Args = oldArgs }()
 }

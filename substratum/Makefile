@@ -32,7 +32,7 @@ fmt:
 .PHONY: staticcheck
 staticcheck:
 	@echo "+ $@"
-	@if [[ ! -z "$(shell staticcheck $(GOLIST))" ]]; then exit 1; fi
+	@if [[ ! -z "$(shell staticcheck $(GOLIST) | tee /dev/stderr)" ]]; then exit 1; fi
 
 
 .PHONY: lint
@@ -48,7 +48,6 @@ verify-vendor:
 .PHONY: build
 build: bin/$(NAME)
 
-bin/$(NAME): $(wildcard *.go) $(wildcard */*.go)
+bin/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go)
 	mkdir -p bin
-	$(GO) build -mod=vendor -o $@ .
-
+	$(GO) build -mod=vendor -o $@ cmd/$(NAME)/main.go

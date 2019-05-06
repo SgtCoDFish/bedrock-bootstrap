@@ -7,13 +7,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sgtcodfish/substratum/types"
+	"github.com/sgtcodfish/substratum"
 )
 
 func process(rawArgs []string) ([]byte, error) {
 	instructionName := strings.ToLower(rawArgs[0])
 
-	instruction, err := types.GetInstructionByName(instructionName)
+	instruction, err := substratum.GetInstructionByName(instructionName)
 	if err != nil {
 		return nil, err
 	}

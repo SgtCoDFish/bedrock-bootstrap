@@ -1,4 +1,4 @@
-package types
+package substratum
 
 import (
 	"encoding/binary"
@@ -6,14 +6,27 @@ import (
 	"strings"
 )
 
+// InstructionType is a marker for the different possible RISC-V instruction types.
+// An example would be "I-type", which the "addi" instruction is formatted using.
 type InstructionType int
 
 const (
+	// BType is used for RISC-V B-type instructions such as "beq"
 	BType InstructionType = iota
+
+	// IType is used for RISC-V I-type instructions such as "addi"
 	IType
+
+	// JType is used for RISC-V J-type instructions such as "jal"
 	JType
+
+	// RType is used for RISC-V R-type instructions such as "add"
 	RType
+
+	// SType is used for RISC-V S-type instructions such as "sw"
 	SType
+
+	// UType is used for RISC-V U-type instructions such as "lui"
 	UType
 )
 
@@ -23,6 +36,11 @@ type Opcodes struct {
 	Opcode uint8
 	Funct3 uint8
 	Funct7 uint8
+
+	// ImmediateMask, if set, masks the immediate value to make it smaller. This helps
+	// for instructions such as "slli" which don't have a full 12-bit immediate value,
+	// and rather have 6-bits of zeroes in the upper part of the immediate.
+	ImmediateMask uint32
 }
 
 // Instruction is a full representation of a given instruction minus the arguments
@@ -89,20 +107,25 @@ func (i Instruction) ArgumentCount() int {
 
 // Assemble returns an assembled version of the given Instruction using the provided
 // Args, as a little endian byte slice.
-func (i Instruction) Assemble(args Args) []byte {
+func (i Instruction) Assemble(args Args) ([]byte, error) {
+	err := i.verifyArgs(args)
+	if err != nil {
+		return nil, err
+	}
+
 	switch i.Type {
 	case BType:
-		return i.assembleBType(args)
+		return i.assembleBType(args), nil
 	case IType:
-		return i.assembleIType(args)
+		return i.assembleIType(args), nil
 	case JType:
-		return i.assembleJType(args)
+		return i.assembleJType(args), nil
 	case RType:
-		return i.assembleRType(args)
+		return i.assembleRType(args), nil
 	case SType:
-		return i.assembleSType(args)
+		return i.assembleSType(args), nil
 	case UType:
-		return i.assembleUType(args)
+		return i.assembleUType(args), nil
 	default:
 		panic(fmt.Sprintf("unknown instruction type in Assemble: %+v", i))
 	}
@@ -134,7 +157,7 @@ func (i Instruction) AssembleRaw(rawArgs []string) ([]byte, error) {
 		return nil, err
 	}
 
-	return i.Assemble(args), nil
+	return i.Assemble(args)
 }
 
 func (i Instruction) assembleBType(args Args) []byte {
@@ -166,11 +189,17 @@ func (i Instruction) assembleBType(args Args) []byte {
 func (i Instruction) assembleIType(args Args) []byte {
 	insn := uint32(0)
 
+	imm := args.Immediate & 0xFFF
+
+	if i.Opcodes.ImmediateMask != 0 {
+		imm &= i.Opcodes.ImmediateMask
+	}
+
 	insn |= uint32(i.Opcodes.Opcode & 0x7F)
 	insn |= uint32(args.Rd&0x1F) << 7
 	insn |= uint32(i.Opcodes.Funct3&0x7) << 12
 	insn |= uint32(args.Rs1&0x1F) << 15
-	insn |= uint32(args.Immediate&0xFFF) << 20
+	insn |= uint32(imm) << 20
 
 	b := make([]byte, 4)
 	binary.LittleEndian.PutUint32(b, insn)
@@ -184,6 +213,7 @@ func (i Instruction) assembleJType(args Args) []byte {
 	b := make([]byte, 4)
 	binary.LittleEndian.PutUint32(b, insn)
 
+	// TODO: implement this
 	panic("NYI: j type")
 
 	return b
@@ -262,6 +292,14 @@ var instructionMap = map[string]Instruction{
 			Funct3: 0x00,
 		},
 	},
+	"andi": {
+		Name: "andi",
+		Type: IType,
+		Opcodes: Opcodes{
+			Opcode: 0x13,
+			Funct3: 0x07,
+		},
+	},
 	"beq": {
 		Name: "beq",
 		Type: BType,
@@ -275,6 +313,16 @@ var instructionMap = map[string]Instruction{
 		Type: UType,
 		Opcodes: Opcodes{
 			Opcode: 0x37,
+		},
+	},
+	"slli": {
+		Name: "slli",
+		Type: IType,
+		Opcodes: Opcodes{
+			Opcode:        0x13,
+			Funct3:        0x01,
+			Funct7:        0x00,
+			ImmediateMask: 0x3F,
 		},
 	},
 	"sw": {
