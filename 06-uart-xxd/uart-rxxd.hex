@@ -93,7 +93,7 @@ e3 0a 00 fc  # beq x0, x0, .READ_UART
 # We need to check if we got 0x23 (#) and if so,
 # enter comment mode
 
-## ## ## ##  # addi x09, x00, 0x23
+93 04 30 02  # addi x09, x00, 0x23
 ## ## ## ##  # beq x10, x09, +0x10
 
 # We got a #, so enter comment mode

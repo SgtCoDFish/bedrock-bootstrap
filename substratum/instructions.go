@@ -161,8 +161,7 @@ func (i Instruction) AssembleRaw(rawArgs []string) ([]byte, error) {
 }
 
 func (i Instruction) assembleBType(args Args) []byte {
-	insn := uint32(0)
-	fmt.Printf("%s:\n[  11]: %x\n[ 1:4]: %x\n[5:11]: %x\n[  12]: %x\n---------\n",
+	fmt.Printf("%s:\n[  11]: %01b\n[ 1:4]: %03b\n[5:11]: %06b\n[  12]: %01b\n---------\n",
 		i.Name,
 		(uint32(args.Immediate)&0x400)>>10,
 		(args.Immediate&0x1E)>>1,
@@ -170,7 +169,9 @@ func (i Instruction) assembleBType(args Args) []byte {
 		(args.Immediate&0x800)>>11,
 	)
 
-	// TODO: Remove debug above and fix
+	// todo: remove the logging above and fix this assembly
+
+	insn := uint32(0)
 
 	insn |= uint32(i.Opcodes.Opcode & 0x7F)
 	insn |= uint32((args.Immediate&0x400)>>10) << 7

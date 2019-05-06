@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -32,10 +31,25 @@ func main() {
 		log.Fatal("missing required argument: instruction (e.g. addi)")
 	}
 
-	out, err := process(os.Args[1:])
+	rawArgs := make([]string, len(os.Args[1:]))
+
+	for i, s := range os.Args[1:] {
+		rawArgs[i] = strings.TrimRight(s, ",")
+	}
+
+	out, err := process(rawArgs)
 	if err != nil {
 		log.Fatalf("fatal error: %v", err)
 	}
 
-	fmt.Printf("val: %s", hex.Dump(out))
+	for _, b := range out {
+		fmt.Printf("%08b ", b)
+	}
+	fmt.Print("\n")
+
+	for _, b := range out {
+		fmt.Printf("%02x       ", b)
+	}
+
+	fmt.Print("\n")
 }
