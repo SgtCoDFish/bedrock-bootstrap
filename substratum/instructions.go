@@ -162,7 +162,8 @@ func (i Instruction) AssembleRaw(rawArgs []string) ([]byte, error) {
 
 func (i Instruction) assembleBType(args Args) []byte {
 	insn := uint32(0)
-	fmt.Printf("[  11]: %d\n[ 1:4]: %d\n[5:11]: %d\n[  12]: %d\n",
+	fmt.Printf("%s:\n[  11]: %x\n[ 1:4]: %x\n[5:11]: %x\n[  12]: %x\n---------\n",
+		i.Name,
 		(uint32(args.Immediate)&0x400)>>10,
 		(args.Immediate&0x1E)>>1,
 		(args.Immediate&0x7E0)>>5,
@@ -256,7 +257,7 @@ func (i Instruction) assembleUType(args Args) []byte {
 
 	insn |= uint32(i.Opcodes.Opcode & 0x7F)
 	insn |= uint32(args.Rd&0x1F) << 7
-	insn |= args.Immediate & 0xFFFFF000
+	insn |= (args.Immediate & 0xFFFFF) << 12
 
 	b := make([]byte, 4)
 	binary.LittleEndian.PutUint32(b, insn)
@@ -292,6 +293,15 @@ var instructionMap = map[string]Instruction{
 			Funct3: 0x00,
 		},
 	},
+	"and": {
+		Name: "and",
+		Type: RType,
+		Opcodes: Opcodes{
+			Opcode: 0x33,
+			Funct3: 0x07,
+			Funct7: 0x00,
+		},
+	},
 	"andi": {
 		Name: "andi",
 		Type: IType,
@@ -308,11 +318,28 @@ var instructionMap = map[string]Instruction{
 			Funct3: 0x00,
 		},
 	},
+	"bne": {
+		Name: "bne",
+		Type: BType,
+		Opcodes: Opcodes{
+			Opcode: 0x63,
+			Funct3: 0x01,
+		},
+	},
 	"lui": {
 		Name: "lui",
 		Type: UType,
 		Opcodes: Opcodes{
 			Opcode: 0x37,
+		},
+	},
+	"or": {
+		Name: "or",
+		Type: RType,
+		Opcodes: Opcodes{
+			Opcode: 0x33,
+			Funct3: 0x06,
+			Funct7: 0x00,
 		},
 	},
 	"slli": {
@@ -323,6 +350,15 @@ var instructionMap = map[string]Instruction{
 			Funct3:        0x01,
 			Funct7:        0x00,
 			ImmediateMask: 0x3F,
+		},
+	},
+	"sub": {
+		Name: "sub",
+		Type: RType,
+		Opcodes: Opcodes{
+			Opcode: 0x33,
+			Funct3: 0x00,
+			Funct7: 0x20,
 		},
 	},
 	"sw": {

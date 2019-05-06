@@ -158,6 +158,6 @@ func parseUTypeArgs(args []string) (Args, error) {
 	return Args{
 		set:       1,
 		Rd:        rd,
-		Immediate: uint32(imm & 0xFFFFF000),
+		Immediate: uint32(imm & 0xFFFFF),
 	}, nil
 }
