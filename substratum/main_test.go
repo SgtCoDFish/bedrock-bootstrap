@@ -16,7 +16,7 @@ type testCase struct {
 func TestITypes(t *testing.T) {
 	var cases = []testCase{
 		{
-			args:     []string{"addi", "a0", "x0", "0x3"},
+			args:     []string{"addi", "a1", "x0", "0x3"},
 			expected: 0x00300593,
 		},
 		{
@@ -41,6 +41,7 @@ func TestITypes(t *testing.T) {
 		out, err := process(c.args)
 		if err != nil {
 			t.Errorf("got an error response from process(%v): %v", c.args, err)
+			continue
 		}
 
 		expBytes := make([]byte, 4)
