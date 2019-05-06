@@ -1,6 +1,6 @@
 # Hand Assembly Scratchpad
 
-This file holds the "working out" for RISC-V hand assembly. It's not documented much, and might be hard to follow, but it allows you to see how different commands are hand assembled.
+This file holds the "working out" for some RISC-V hand assembly. It's not documented much, and might be hard to follow, but it allows you to see how different commands are hand assembled. Most of the instructions are used in the basic UART machine code example; most instructions after that are "assembled" using substratum.
 
 Of great use for this exercise was the book [The RISC-V Reader](https://www.amazon.co.uk/RISC-V-Reader-Open-Architecture-Atlas/dp/0999249118), which has a great reference for both RV32 and RV64, including all the relevant extensions.
 
@@ -265,15 +265,6 @@ fe        05        1c        e3
 fe        05        0c        e3
 
 => e3 0c 05 fe
-```
-
-#### bne x10, x17, 0x8
-
-```text
-0000 0001 0001 0101 0001 0110 0110 0011
-01        15        16        63
-
-=> 63 16 15 01
 ```
 
 #### beq x0, x0, -0x2c
