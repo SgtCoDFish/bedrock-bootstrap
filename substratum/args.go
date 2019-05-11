@@ -77,15 +77,16 @@ func parseJTypeArgs(args []string) (Args, error) {
 		return a, err
 	}
 
-	imm, err := strconv.ParseInt(args[2], 0, 21)
+	imm, err := strconv.ParseInt(args[1], 0, 20)
 	if err != nil {
-		return a, fmt.Errorf("invalid immediate value: %s", args[2])
+		fmt.Println(err)
+		return a, fmt.Errorf("invalid immediate value: %s", args[1])
 	}
 
 	return Args{
 		set:       1,
 		Rd:        rd,
-		Immediate: uint32(imm & 0x2FFFFFF),
+		Immediate: uint32(imm) & 0x1FFFFF,
 	}, nil
 }
 

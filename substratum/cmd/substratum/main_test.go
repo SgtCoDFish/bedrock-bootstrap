@@ -26,6 +26,10 @@ func TestBTypes(t *testing.T) {
 			args:     []string{"beq", "x0", "x0", "-0x2C"},
 			expected: 0xFC000AE3,
 		},
+		{
+			args:     []string{"beq", "a0", "s1", "+0x10"},
+			expected: 0x00950863,
+		},
 	}
 
 	for _, c := range cases {
@@ -70,6 +74,35 @@ func TestITypes(t *testing.T) {
 		{
 			args:     []string{"andi", "x10", "x10", "0xFF"},
 			expected: 0x0ff57513,
+		},
+	}
+
+	for _, c := range cases {
+		out, err := process(c.args)
+		if err != nil {
+			t.Errorf("got an error response from process(%v): %v", c.args, err)
+			continue
+		}
+
+		expBytes := make([]byte, 4)
+		binary.LittleEndian.PutUint32(expBytes, c.expected)
+
+		if !bytes.Equal(out, expBytes) {
+			t.Errorf("%s: calculated value did not match expected value: %x != %x", strings.Join(c.args, " "),
+				out, expBytes)
+		}
+	}
+}
+
+func TestJTypes(t *testing.T) {
+	var cases = []testCase{
+		{
+			args:     []string{"jal", "x0", "0"},
+			expected: 0x0000006F,
+		},
+		{
+			args:     []string{"jal", "ra", "-0xC"},
+			expected: 0xFF5FF0EF,
 		},
 	}
 

@@ -161,15 +161,14 @@ func (i Instruction) AssembleRaw(rawArgs []string) ([]byte, error) {
 }
 
 func (i Instruction) assembleBType(args Args) []byte {
-	fmt.Printf("%s:\n[  11]: %01b\n[ 1:4]: %03b\n[5:11]: %06b\n[  12]: %01b\n---------\n",
-		i.Name,
-		(uint32(args.Immediate)&0x400)>>10,
-		(args.Immediate&0x1E)>>1,
-		(args.Immediate&0x7E0)>>5,
-		(args.Immediate&0x800)>>11,
-	)
-
-	// todo: remove the logging above and fix this assembly
+	// fmt.Printf("%s:\n%032b\n[  11]: %01b\n[ 4:1]: %04b\n[11:5]: %06b\n[  12]: %01b\n---------\n",
+	// 	i.Name,
+	// 	args.Immediate,
+	// 	(uint32(args.Immediate)&0x400)>>10,
+	// 	(uint32(args.Immediate&0x1E))>>1,
+	// 	(uint32(args.Immediate&0x7E0))>>5,
+	// 	(uint32(args.Immediate&0x800))>>11,
+	// )
 
 	insn := uint32(0)
 
@@ -212,11 +211,25 @@ func (i Instruction) assembleIType(args Args) []byte {
 func (i Instruction) assembleJType(args Args) []byte {
 	insn := uint32(0)
 
+	insn |= uint32(i.Opcodes.Opcode & 0x7F)
+	insn |= uint32(args.Rd&0x1F) << 7
+	insn |= uint32((args.Immediate&0xFF000)>>12) << 12
+	insn |= uint32((args.Immediate&0x800)>>11) << 20
+	insn |= uint32((args.Immediate&0x7FF)>>1) << 21
+	insn |= uint32((args.Immediate&0x100000)>>20) << 31
+
 	b := make([]byte, 4)
 	binary.LittleEndian.PutUint32(b, insn)
 
-	// TODO: implement this
-	panic("NYI: j type")
+	// fmt.Printf("%s\n---\n[19:12] %08b\n[   11] %01b\n[10:01] %010b\n[   20] %01b\n%08x\n%032b\n\n\n",
+	// 	i.Name,
+	// 	uint32((args.Immediate&0xFF000)>>12),
+	// 	uint32((args.Immediate&0x800)>>11),
+	// 	uint32((args.Immediate&0x7FE)>>1),
+	// 	uint32((args.Immediate&0x100000)>>20),
+	// 	insn,
+	// 	insn,
+	// )
 
 	return b
 }
@@ -368,6 +381,13 @@ var instructionMap = map[string]Instruction{
 		Opcodes: Opcodes{
 			Opcode: 0x23,
 			Funct3: 0x02,
+		},
+	},
+	"jal": {
+		Name: "jal",
+		Type: JType,
+		Opcodes: Opcodes{
+			Opcode: 0x6F,
 		},
 	},
 }

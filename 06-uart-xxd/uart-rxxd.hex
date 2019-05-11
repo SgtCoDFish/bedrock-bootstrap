@@ -94,7 +94,7 @@ e3 0a 00 fc  # beq x0, x0, .READ_UART
 # enter comment mode
 
 93 04 30 02  # addi x09, x00, 0x23
-## ## ## ##  # beq x10, x09, +0x10
+63 08 95 00  # beq x10, x09, +0x10
 
 # We got a #, so enter comment mode
 ## ## ## ##  # addi x08, x00, 0x1
