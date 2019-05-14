@@ -97,12 +97,17 @@ e3 0a 00 fc  # beq x0, x0, .READ_UART
 63 08 95 00  # beq x10, x09, +0x10
 
 # We got a #, so enter comment mode
-## ## ## ##  # addi x08, x00, 0x1
-## ## ## ##  # beq x00, x00, .READ_UART
-## ## ## ##  # nop
-## ## ## ##  # nop
+13 04 10 00  # addi x08, x00, 0x1
+e3 0a 00 fa  # beq x00, x00, .READ_UART (-0x4C)
+13 00 00 00  # nop
+13 00 00 00  # nop
 
 # If we didn't get 0x23, then we can ignore anything below 0x30 ('0')
-## ## ## ##  # addi x09, x00, 0x30
-## ## ## ##  # bge x10, x09, +0x4
-## ## ## ##  # beq x00, x00, .READ_UART
+93 04 00 03  # addi x09, x00, 0x30
+63 58 95 00  # bge x10, x09, +0xC
+13 00 00 00  # nop
+13 00 00 00  # nop
+e3 0c 00 f8  # beq x00, x00, .READ_UART
+
+# The value is >= 0x30, so it could be a hex char
+# If the value is less than 0x40, we just subtract 0x30 and that's the value

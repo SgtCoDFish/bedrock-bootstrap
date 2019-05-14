@@ -390,4 +390,12 @@ var instructionMap = map[string]Instruction{
 			Opcode: 0x6F,
 		},
 	},
+	"bge": {
+		Name: "bge",
+		Type: BType,
+		Opcodes: Opcodes{
+			Opcode: 0x63,
+			Funct3: 0x05,
+		},
+	},
 }
