@@ -110,4 +110,25 @@ e3 0a 00 fa  # beq x00, x00, .READ_UART (-0x4C)
 e3 0c 00 f8  # beq x00, x00, .READ_UART
 
 # The value is >= 0x30, so it could be a hex char
-# If the value is less than 0x40, we just subtract 0x30 and that's the value
+# If the value is less than 0x3a, we just subtract 0x30 and that's the value
+13 04 a0 03  # addi x08, x00, 0x3a
+63 5a 85 00  # bge x10, x08, +0x14
+
+# We got a value in the range 0x30 - 0x39 inclusive. Subtract 0x30 and we have our raw value
+13 05 00 fd  # addi x10, x00, -0x30
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # TODO: CHANGEME to beq x0, x0, +.ADDRAW
+
+# Otherwise, we got a value >= 0x3A, so it could be a lower or uppercase letter.
+# We OR 0x10 with 0x20 to force lowercase, and then check that the value is in
+# the range 0x61 ('a') to 0x66 ('f'). If it is, we subtract 0x57 to get the raw value
+# in the range 0xA - 0xF
+
+## ## ## ##  # ori  x10, x00, 0x20
+## ## ## ##  # addi x08, x00, 0x61
+## ## ## ##  # blt  x10, x08, .PANIC
+## ## ## ##  # addi x08, x00, 0x67
+## ## ## ##  # bgt  x10, x08, .PANIC
+## ## ## ##  # addi x10, x00, -0x57
+13 00 00 00  # TODO: CHANGEME to beq x0, x0, +.ADDRAW
