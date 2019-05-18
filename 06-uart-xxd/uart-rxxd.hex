@@ -125,10 +125,10 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 # the range 0x61 ('a') to 0x66 ('f'). If it is, we subtract 0x57 to get the raw value
 # in the range 0xA - 0xF
 
-## ## ## ##  # ori  x10, x00, 0x20
-## ## ## ##  # addi x08, x00, 0x61
-## ## ## ##  # blt  x10, x08, .PANIC
-## ## ## ##  # addi x08, x00, 0x67
-## ## ## ##  # bgt  x10, x08, .PANIC
-## ## ## ##  # addi x10, x00, -0x57
+13 65 00 02  # ori  x10, x00, 0x20
+13 04 10 06  # addi x08, x00, 0x61
+13 00 00 00  # blt  x10, x08, .PANIC # TODO: CHANGEME
+13 04 70 06  # addi x08, x00, 0x67
+13 00 00 00  # bgt  x10, x08, .PANIC = blt x08, x10, .PANIC TODO: CHANGEME
+13 05 95 fa  # addi x10, x10, -0x57
 13 00 00 00  # TODO: CHANGEME to beq x0, x0, +.ADDRAW

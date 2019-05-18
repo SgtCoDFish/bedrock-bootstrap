@@ -75,6 +75,10 @@ func TestITypes(t *testing.T) {
 			args:     []string{"andi", "x10", "x10", "0xFF"},
 			expected: 0x0ff57513,
 		},
+		{
+			args:     []string{"ori", "x10", "x00", "0x20"},
+			expected: 0x02006513,
+		},
 	}
 
 	for _, c := range cases {
