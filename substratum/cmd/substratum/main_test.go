@@ -145,6 +145,10 @@ func TestRTypes(t *testing.T) {
 			args:     []string{"or", "a0", "a0", "a1"},
 			expected: 0x00B56533,
 		},
+		{
+			args:     []string{"sll", "ra", "sp", "gp"},
+			expected: 0x003110b3,
+		},
 	}
 
 	for _, c := range cases {

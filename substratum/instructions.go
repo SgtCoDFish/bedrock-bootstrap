@@ -364,6 +364,15 @@ var instructionMap = map[string]Instruction{
 			Funct3: 0x06,
 		},
 	},
+	"sll": {
+		Name: "sll",
+		Type: RType,
+		Opcodes: Opcodes{
+			Opcode: 0x33,
+			Funct3: 0x01,
+			Funct7: 0x00,
+		},
+	},
 	"slli": {
 		Name: "slli",
 		Type: IType,
