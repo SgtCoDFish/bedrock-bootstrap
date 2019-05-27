@@ -132,3 +132,18 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 13 00 00 00  # bgt  x10, x08, .PANIC = blt x08, x10, .PANIC TODO: CHANGEME
 13 05 95 fa  # addi x10, x10, -0x57
 13 00 00 00  # TODO: CHANGEME to beq x0, x0, +.ADDRAW
+
+
+# ADDRAW: we got a value to be added to our "running word" which will be written
+# when it's complete.
+# We shift left by some multiple of 4 bits and OR the resulting value with the
+# running value in x05. If we shifted left by K, we reset the shift amount and write
+# x5 to the RAM at x14 and increment x14 by 4.
+# After all steps, we jump back and read another byte from UART.
+
+## ## ## ##
+## ## ## ##
+## ## ## ##
+## ## ## ##
+## ## ## ##
+## ## ## ##
