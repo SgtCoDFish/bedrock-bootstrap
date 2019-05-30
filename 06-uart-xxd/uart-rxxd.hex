@@ -76,6 +76,7 @@ e3 1c 05 fe  # bnez x10, -8 == bne x10, x0, -8
 # If we're in comment mode, ignore everything that isn't 0xa
 # Since we only have 1 flag at the moment, we just skip comment mode
 # if the flags register is zero
+
 63 02 04 02  # beq x08, x00, 0x20
 
 # Comment mode: skip anything which isn't 0xa
