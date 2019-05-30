@@ -14,7 +14,7 @@ BUILD/start.o: start.s
 
 BUILD/uart-rxxd.o: uart-rxxd.c
 	@mkdir -p BUILD
-	$(RISCV_PREFIX)gcc -fPIC -O0 -g0 -static -fvisibility=hidden -nostdlib -nostartfiles -march=rv32i -mabi=ilp32 $< -o $@
+	$(RISCV_PREFIX)gcc -fPIC -O2 -g0 -static -fvisibility=hidden -nostdlib -nostartfiles -march=rv32i -mabi=ilp32 $< -o $@
 
 BUILD/uart-rxxd.elf: BUILD/start.o BUILD/uart-rxxd.o
 	@mkdir -p BUILD

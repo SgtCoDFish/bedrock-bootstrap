@@ -38,34 +38,37 @@ b7 37 01 10  # lui a5, 0x10013
 
 # Register allocation:
 # t0 / x05: current word
-# t1 / x06: nibble count
-# s0 / x08: flags - 0x1 == in comment mode
+# t1 / x06: shift for placement in word
+# t2 / x07: byte shift, starts at 4
+# s0 / x08: flags, where 0x1 means we're in comment mode
+# s1 / x09: current little endian byte
+# a0 / x10: current received byte from UART
+# a1 / x11: tmp scratch area for reading from UART
 # a2 / x12: 0x8000_0000 *used for reading/writing UART)
 # a4 / x14: RAM write pointer, starts at 0x8001_0000
 # a5 / x15: UART0_TXDATA = 0x10013000 (write UART)
 # a6 / x16: UART0_RXDATA = 0x10013004 (receive UART)
 # a7 / x17: 0xa (used for comparing in comment mode)
+# s2 / x18: 0x20 (used for comparing x06)
 
-93 02 00 00  # mv x05, x00 == addi x05, x00, 0x0
+93 02 00 00  # mv x05, x0 == addi x05, x00, 0x0
 13 03 00 00  # mv x06, x0 == addi x06, x00, 0x0
+93 03 40 00  # addi x07, x00, 0x4
 13 04 00 00  # mv x08, x0 == addi x08, x00, 0x0
+93 04 00 00  # mv x09, x0 == addi x09, x00, 0x0
+93 05 00 00  # mv x11, x0, 0x00 == addi x11, x00, 0x0
 37 06 00 80  # lui x12, 0x80000
 37 07 01 80  # lui x14, 0x80010
 b7 37 01 10  # lui x15, 0x10013
 13 88 47 00  # addi x16, x15, 0x4
 93 08 a0 00  # addi x17, x00, 0xa
-
-# Pad to 0xB0
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
+13 09 00 02  # addi x18, x00, 0x20
 
 # .READ_UART
 # Read a byte from UART
 03 25 08 00  # lw x10, 0(x16)
-33 75 c5 00  # and x10, x10, x12
-e3 1c 05 fe  # bnez x10, -8 == bne x10, x0, -8
+b3 75 c5 00  # and x11, x10, x12
+e3 9c 05 fe  # bnez x10, -8 == bne x10, x0, -8
 13 75 f5 0f  # andi x10, x10, 0xFF
 
 # Pad to 0xD0
@@ -142,6 +145,28 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 # x5 to the RAM at x14 and increment x14 by 4.
 # After all steps, we jump back and read another byte from UART.
 
+# There's some nuance to handling little endian incoming ASCII,
+# since the shifts aren't linear. To explain that, consider:
+# We get the input "4a 8b 01 3c" which should translate as 0x3c018b4a
+# The shifts are:
+# 4 << 04 , a << 00
+# 8 << 12 , b << 08
+# 0 << 20 , 1 << 16
+# 3 << 24 , c << 28
+# So we have to build bytes (which we store in x09) by storing a shift
+# in x07, which starts as 4. We get a nibble from uart, shift it by
+# the number of places in x07 and then OR it with x09.
+# If x07 == 4, we set x07 to 0 and read another value from UART
+# If x07 == 0, we:
+# - add 4 to x07
+# - shift x09 left by x06 places
+# - x05 |= x09
+# - add 8 to x06
+# - if x09 == 32:
+# -- set x09 to 0
+# -- write the byte to x14
+# -- add 4 to x14
+# - finally, read another value from UART
 ## ## ## ##
 ## ## ## ##
 ## ## ## ##
