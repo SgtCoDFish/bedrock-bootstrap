@@ -137,6 +137,15 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 13 05 95 fa  # addi x10, x10, -0x57
 13 00 00 00  # TODO: CHANGEME to beq x0, x0, +.ADDRAW
 
+# Some padding just in case
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
 
 # ADDRAW: we got a value to be added to our "running word" which will be written
 # when it's complete.
