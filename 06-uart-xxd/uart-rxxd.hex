@@ -176,9 +176,40 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 # -- write the byte to x14
 # -- add 4 to x14
 # - finally, read another value from UART
-## ## ## ##
-## ## ## ##
-## ## ## ##
-## ## ## ##
-## ## ## ##
-## ## ## ##
+
+## ## ## ##  # sll x10, x10, x07
+## ## ## ##  # or x09, x09, x10
+## ## ## ##  # beq x07, x00, +0x10
+## ## ## ##  # addi x07, x00, 0x00
+## ## ## ##  # beq x00, x00, READ_UART
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# ADDBYTE
+## ## ## ##  # addi x07, x00, 0x4
+## ## ## ##  # sll x09, x09, x06
+## ## ## ##  # or x05, x05, x09
+## ## ## ##  # addi x06, x06, 0x8
+
+## ## ## ##  # beq x06, x18, 0x10
+## ## ## ##  # beq x00, x00, READ_UART
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# WRITEWORD
+
+## ## ## ##  # sw x14, 0(x05)
+## ## ## ##  # addi x14, x14, 0x4
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+## ## ## ##  # beq x00, x00, READ_UART
+
+# PANIC
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+## ## ## ##  # beq x00, x00, -0x4

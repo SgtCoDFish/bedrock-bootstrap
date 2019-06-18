@@ -43,6 +43,7 @@ inline static void __attribute__((always_inline)) uart_init (void) {
 void __attribute__((noreturn)) xmain(void) {
 	//uart_init();
 
+// SETUP:
 	uint32_t x05 = 0x00;
 	uint32_t x06 = 0x00;
 	uint32_t x07 = 0x04;
