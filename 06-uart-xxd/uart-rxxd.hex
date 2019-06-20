@@ -177,8 +177,8 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 # -- add 4 to x14
 # - finally, read another value from UART
 
-## ## ## ##  # sll x10, x10, x07
-## ## ## ##  # or x09, x09, x10
+33 15 75 00  # sll x10, x10, x07
+b3 e4 a4 00  # or x09, x09, x10
 ## ## ## ##  # beq x07, x00, +0x10
 ## ## ## ##  # addi x07, x00, 0x00
 ## ## ## ##  # beq x00, x00, READ_UART
