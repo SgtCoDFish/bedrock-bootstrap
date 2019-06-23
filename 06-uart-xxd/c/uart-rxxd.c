@@ -42,21 +42,34 @@ inline static void __attribute__((always_inline)) uart_init (void) {
 
 void __attribute__((noreturn)) xmain(void) {
 	//uart_init();
+	uint32_t x05;
+	uint32_t x06;
+	uint32_t x07;
+	uint32_t x08;
+	uint32_t x09;
+	uint32_t x10;
+	uint32_t x11;
+	uint32_t x12;
+	uint32_t x14;
+	uint32_t x15;
+	uint32_t x16;
+	uint32_t x17;
+	uint32_t x18;
 
-// SETUP:
-	uint32_t x05 = 0x00;
-	uint32_t x06 = 0x00;
-	uint32_t x07 = 0x04;
-	uint32_t x08 = 0x00;
-	uint32_t x09 = 0x00;
-	uint32_t x10 = 0x00;
-	uint32_t x11 = 0x00;
-	uint32_t x12 = 0x80000000;
-	uint32_t x14 = 0x80010000;
-	uint32_t x15 = UART0_TXDATA;
-	uint32_t x16 = UART0_RXDATA;
-	uint32_t x17 = 0xA;
-	uint32_t x18 = 0x20;
+SETUP:
+	x05 = 0x00;
+	x06 = 0x00;
+	x07 = 0x04;
+	x08 = 0x00;
+	x09 = 0x00;
+	x10 = 0x00;
+	x11 = 0x00;
+	x12 = 0x80000000;
+	x14 = 0x80010000;
+	x15 = UART0_TXDATA;
+	x16 = UART0_RXDATA;
+	x17 = 0xA;
+	x18 = 0x20;
 
 READ_UART:
 	//x10 = GET32(x16);

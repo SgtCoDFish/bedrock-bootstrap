@@ -64,14 +64,13 @@ b7 37 01 10  # lui x15, 0x10013
 93 08 a0 00  # addi x17, x00, 0xa
 13 09 00 02  # addi x18, x00, 0x20
 
-# .READ_UART
+# b0: .READ_UART
 # Read a byte from UART
 03 25 08 00  # lw x10, 0(x16)
 b3 75 c5 00  # and x11, x10, x12
 e3 9c 05 fe  # bnez x10, -8 == bne x10, x0, -8
 13 75 f5 0f  # andi x10, x10, 0xFF
 
-# Pad to 0xD0
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
@@ -82,7 +81,7 @@ e3 9c 05 fe  # bnez x10, -8 == bne x10, x0, -8
 
 63 02 04 02  # beq x08, x00, 0x20
 
-# Comment mode: skip anything which isn't 0xa
+# d0: Comment mode: skip anything which isn't 0xa
 63 16 15 01  # bne x10, x17, +0x8
 13 04 00 00  # addi x08, x00, 0x0
 13 00 00 00  # nop
@@ -122,7 +121,7 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 13 05 00 fd  # addi x10, x00, -0x30
 13 00 00 00  # nop
 13 00 00 00  # nop
-13 00 00 00  # TODO: CHANGEME to beq x0, x0, +.ADDRAW
+63 00 00 04  # beq x0, x0, +.ADDRAW +0x40
 
 # Otherwise, we got a value >= 0x3A, so it could be a lower or uppercase letter.
 # We OR 0x10 with 0x20 to force lowercase, and then check that the value is in
@@ -131,13 +130,12 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 
 13 65 00 02  # ori  x10, x00, 0x20
 13 04 10 06  # addi x08, x00, 0x61
-13 00 00 00  # blt  x10, x08, .PANIC # TODO: CHANGEME
+63 48 85 08  # blt  x10, x08, .PANIC +0x90
 13 04 70 06  # addi x08, x00, 0x67
-13 00 00 00  # bgt  x10, x08, .PANIC = blt x08, x10, .PANIC TODO: CHANGEME
+63 44 a4 08  # blt  x08, x10, .PANIC +0x88
 13 05 95 fa  # addi x10, x10, -0x57
-13 00 00 00  # TODO: CHANGEME to beq x0, x0, +.ADDRAW
+63 02 00 02  # beq x0, x0, +.ADDRAW +0x24
 
-# Some padding just in case
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
@@ -147,7 +145,7 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 13 00 00 00  # nop
 13 00 00 00  # nop
 
-# ADDRAW: we got a value to be added to our "running word" which will be written
+# 170: ADDRAW: we got a value to be added to our "running word" which will be written
 # when it's complete.
 # We shift left by some multiple of 4 bits and OR the resulting value with the
 # running value in x05. If we shifted left by K, we reset the shift amount and write
@@ -179,37 +177,37 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 
 33 15 75 00  # sll x10, x10, x07
 b3 e4 a4 00  # or x09, x09, x10
-## ## ## ##  # beq x07, x00, +0x10
-## ## ## ##  # addi x07, x00, 0x00
-## ## ## ##  # beq x00, x00, READ_UART
+63 88 03 00  # beq x07, x00, +0x10
+13 04 00 00  # addi x07, x00, 0x00
+e3 08 00 f2  # beq x00, x00, READ_UART -0xb0
 13 00 00 00  # nop
 13 00 00 00  # nop
 
-# ADDBYTE
-## ## ## ##  # addi x07, x00, 0x4
-## ## ## ##  # sll x09, x09, x06
-## ## ## ##  # or x05, x05, x09
-## ## ## ##  # addi x06, x06, 0x8
+# 18c: ADDBYTE
+93 03 40 00  # addi x07, x00, 0x4
+b3 94 64 00  # sll x09, x09, x06
+b3 e2 92 00  # or x05, x05, x09
+13 03 83 00  # addi x06, x06, 0x8
 
-## ## ## ##  # beq x06, x18, 0x10
-## ## ## ##  # beq x00, x00, READ_UART
+63 08 23 01  # beq x06, x18, 0x10
+e3 08 00 f0  # beq x00, x00, READ_UART -0xf0
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
 
-# WRITEWORD
+# 1b0: WRITEWORD
 
-## ## ## ##  # sw x14, 0(x05)
-## ## ## ##  # addi x14, x14, 0x4
+23 a0 e2 00  # sw x14, 0(x05)
+13 07 47 00  # addi x14, x14, 0x4
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
-## ## ## ##  # beq x00, x00, READ_UART
+e3 04 00 ee  # beq x00, x00, READ_UART -0x118
 
-# PANIC
+# 1cc: PANIC
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
-## ## ## ##  # beq x00, x00, -0x4
+e3 0e 00 fe  # beq x00, x00, -0x4
