@@ -53,14 +53,11 @@ $ screen /dev/ttys005 115200 # note the same serial port as above!
 Finally, you'll want to connect to qemu using gdb:
 
 ```bash
-$ riscv32-unknown-elf-gdb
-...
-(gdb) target remote :1234
+$ riscv32-unknown-elf-gdb -q -ex "set architecture riscv:rv32" -ex "target remote :1234"
 Remote debugging using :1234
 warning: No executable has been specified and target does not support
 determining executable automatically.  Try using the "file" command.
 0x00001000 in ?? ()
-(gdb)
 ```
 
 The gdb warning is just telling us that there's no debugging information for the target. It would take a huge amount of work to add that to our ELF headers and it might not even work properly if we did add it, so we'll have to take a more analytical approach.

@@ -65,7 +65,7 @@ SETUP:
 	x10 = 0x00;
 	x11 = 0x00;
 	x12 = 0x80000000;
-	x14 = 0x80010000;
+	x14 = 0x80001000;
 	x15 = UART0_TXDATA;
 	x16 = UART0_RXDATA;
 	x17 = 0xA;

@@ -42,7 +42,7 @@ b7 37 01 10  # lui a5, 0x10013
 # s1 / x09: scratch register used for comparison values
 # a0 / x10: current received byte from UART
 # a1 / x11: tmp scratch area for reading from UART
-# a2 / x12: 0x8000_0000 *used for reading/writing UART)
+# a2 / x12: 0x8000_0000 (used for reading/writing UART)
 # a4 / x14: RAM write pointer, starts at 0x8001_0000
 # a5 / x15: UART0_TXDATA = 0x10013000 (write UART)
 # a6 / x16: UART0_RXDATA = 0x10013004 (receive UART)
@@ -58,7 +58,7 @@ b7 37 01 10  # lui a5, 0x10013
 93 04 00 00  # mv x09, x0 == addi x09, x00, 0x0
 93 05 00 00  # mv x11, x0, 0x00 == addi x11, x00, 0x0
 37 06 00 80  # lui x12, 0x80000
-37 07 01 80  # lui x14, 0x80010
+37 17 00 80  # lui x14, 0x80001
 b7 37 01 10  # lui x15, 0x10013
 13 88 47 00  # addi x16, x15, 0x4
 93 08 a0 00  # addi x17, x00, 0xa
