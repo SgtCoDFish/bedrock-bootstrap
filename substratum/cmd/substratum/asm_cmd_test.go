@@ -1,13 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"flag"
+	"log"
 	"testing"
 )
 
 type testCase struct {
 	args     []string
 	expected uint32
+}
+
+func makeTestLogger() (*log.Logger, *bytes.Buffer) {
+	buf := new(bytes.Buffer)
+
+	return log.New(buf, "", 0), buf
 }
 
 func TestBTypes(t *testing.T) {
@@ -30,6 +38,8 @@ func TestBTypes(t *testing.T) {
 		},
 	}
 
+	logger, buffer := makeTestLogger()
+
 	for _, c := range cases {
 		flagSet := flag.NewFlagSet("", flag.ExitOnError)
 		err := flagSet.Parse(c.args)
@@ -38,12 +48,17 @@ func TestBTypes(t *testing.T) {
 			continue
 		}
 
-		err = processASM(flagSet)
+		err = processASM(flagSet, logger)
 		if err != nil {
 			t.Errorf("got an error response from process(%v): %v", c.args, err)
 			continue
 		}
-		//
+
+		output := buffer.String()
+		if len(output) == 0 {
+			t.Errorf("got a 0 length buffer response but expected some output")
+		}
+
 		//expBytes := make([]byte, 4)
 		//binary.LittleEndian.PutUint32(expBytes, c.expected)
 		//
@@ -87,7 +102,7 @@ func TestBTypes(t *testing.T) {
 //	}
 //
 //	for _, c := range cases {
-//		out, err := processASM(c.args)
+//		err := processASM(c.args)
 //		if err != nil {
 //			t.Errorf("got an error response from process(%v): %v", c.args, err)
 //			continue
@@ -116,7 +131,14 @@ func TestBTypes(t *testing.T) {
 //	}
 //
 //	for _, c := range cases {
-//		out, err := processASM(c.args)
+//		flagSet := flag.NewFlagSet("", flag.ExitOnError)
+//		err := flagSet.Parse(c.args)
+//		if err != nil {
+//			t.Errorf("couldn't parse flags: %+v", c.args)
+//			continue
+//		}
+//
+//		err = processASM(flagSet)
 //		if err != nil {
 //			t.Errorf("got an error response from process(%v): %v", c.args, err)
 //			continue

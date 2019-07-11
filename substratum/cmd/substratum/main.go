@@ -11,6 +11,7 @@ const ASMCommand = "asm"
 const AutoTestCMD = "autotest"
 
 func main() {
+	logger := log.New(os.Stdout, "", 0)
 	asmCmd := flag.NewFlagSet(ASMCommand, flag.ExitOnError)
 
 	autoTestCMD := flag.NewFlagSet(AutoTestCMD, flag.ExitOnError)
@@ -23,25 +24,32 @@ func main() {
 
 	switch strings.ToLower(os.Args[1]) {
 	case ASMCommand:
-		err := asmCmd.Parse(os.Args[2:])
-		if err != nil {
-			log.Fatalf("failed to parse 'asm' command: %s", err.Error())
+		if len(os.Args) < 3 {
+			logger.Fatalf("missing required arguments for asm command")
 		}
 
-		err = processASM(asmCmd)
+		err := asmCmd.Parse(os.Args[2:])
 		if err != nil {
-			log.Fatalf("failed to process 'asm' command: %s", err.Error())
+			logger.Fatalf("failed to parse 'asm' command: %s", err.Error())
+		}
+
+		err = processASM(asmCmd, logger)
+		if err != nil {
+			logger.Fatalf("failed to process 'asm' command: %s", err.Error())
 		}
 
 	case AutoTestCMD:
 		err := autoTestCMD.Parse(os.Args[2:])
 		if err != nil {
-			log.Fatalf("failed to parse 'autotest' command: %s", err.Error())
+			logger.Fatalf("failed to parse 'autotest' command: %s", err.Error())
 		}
 
-		log.Fatalf("autotest nyi")
+		err = processAutotest(logger)
+		if err != nil {
+			logger.Fatalf("failed to process 'autotest' command successfully: %s", err.Error())
+		}
 
 	default:
-		log.Fatalf("unrecognised command '%s'", os.Args[1])
+		logger.Fatalf("unrecognised command '%s'", os.Args[1])
 	}
 }

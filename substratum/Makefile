@@ -55,7 +55,7 @@ build: bin/$(NAME)
 
 bin/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go)
 	mkdir -p bin
-	$(GO) build -mod=vendor -o $@ cmd/$(NAME)/main.go
+	$(GO) build -mod=vendor -o $@ cmd/$(NAME)/*.go
 
 .PHONY: docker-build-env
 docker-build-env: VERSION.txt Dockerfile

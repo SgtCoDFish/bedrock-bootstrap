@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -10,6 +11,13 @@ import (
 // flag argument. The argument count is also checked; pass "-1" to mean any amount of arguments.
 func CheckTailArgs(args []string, argCount int) error {
 	for _, arg := range args {
+		_, err := strconv.ParseInt(arg, 0, 64)
+
+		if err == nil {
+			// we don't want to warn that negative integers look like flags!
+			continue
+		}
+
 		if strings.HasPrefix(arg, "-") {
 			return fmt.Errorf("argument '%s' looks like a flag; all flags should be at the beginning of the subcommand", arg)
 		}

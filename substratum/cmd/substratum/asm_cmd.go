@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/sgtcodfish/substratum"
 )
 
-func processASM(flags *flag.FlagSet) error {
+func processASM(flags *flag.FlagSet, logger *log.Logger) error {
 	rawArgs := flags.Args()
 	instructionName := strings.ToLower(rawArgs[0])
 
@@ -18,7 +19,7 @@ func processASM(flags *flag.FlagSet) error {
 	}
 
 	if err = CheckTailArgs(rawArgs[1:], instruction.ArgumentCount()); err != nil {
-		return err
+		return fmt.Errorf("invalid argument list or count for '%s': %v", instructionName, err)
 	}
 
 	args := make([]string, len(rawArgs[1:]))
@@ -31,16 +32,20 @@ func processASM(flags *flag.FlagSet) error {
 		return err
 	}
 
+	builder := new(strings.Builder)
 	for _, b := range out {
-		fmt.Printf("%08b ", b)
-	}
-	fmt.Print("\n")
-
-	for _, b := range out {
-		fmt.Printf("%02x       ", b)
+		builder.WriteString(fmt.Sprintf("%08b ", b))
 	}
 
-	fmt.Print("\n")
+	builder.WriteString("\n")
+
+	for _, b := range out {
+		builder.WriteString(fmt.Sprintf("%02x       ", b))
+	}
+
+	builder.WriteString("\n")
+
+	logger.Print(builder.String())
 
 	return nil
 }
