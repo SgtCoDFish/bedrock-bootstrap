@@ -4,113 +4,59 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
-	"strings"
+	"reflect"
 
 	"github.com/sgtcodfish/substratum"
-
-	"github.com/cyrus-and/gdb"
-
-	"github.com/mitchellh/mapstructure"
 )
-
-type GdbConnection struct {
-	Conn   *gdb.Gdb
-	Logger *log.Logger
-
-	// TODO: fill these in!
-	registerList    []string
-	registerNumbers []string
-}
-
-type gdbRegisterNamesResponse struct {
-	Payload gdbRegisterNamesResponsePayload `json:"payload",mapstructure:"payload"`
-}
-
-type gdbRegisterNamesResponsePayload struct {
-	RegisterNames []string `json:"register-names",mapstructure:"register-names"`
-}
-
-func NewGDBConnection(logger *log.Logger, gdbPath string, remoteTarget string) (*GdbConnection, error) {
-	conn, err := gdb.NewCmd([]string{gdbPath, "--nx", "--quiet", "--interpreter=mi2", "-ex", "set architecture riscv:rv32"}, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = conn.CheckedSend(fmt.Sprintf("target-select remote %s", remoteTarget))
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := conn.CheckedSend("data-list-register-names")
-	if err != nil {
-		return nil, err
-	}
-
-	var registerNames gdbRegisterNamesResponse
-	err = mapstructure.Decode(resp, &registerNames)
-	if err != nil {
-		return nil, err
-	}
-
-	registerList := substratum.GetRegisterList()
-	names := resp["payload"].(map[string]interface{})["register-names"].([]interface{})
-	registerNumbers := make([]string, len(registerList))
-
-	return &GdbConnection{
-		Logger: logger,
-		Conn:   conn,
-	}, nil
-}
-
-func (s *GdbConnection) dumpIntegerRegisters() error {
-	resp, err := s.Conn.CheckedSend("data-list-register-names")
-	if err != nil {
-		return err
-	}
-
-	registerList := substratum.GetRegisterList()
-	names := resp["payload"].(map[string]interface{})["register-names"].([]interface{})
-	registerNumbers := make([]string, len(registerList))
-
-	for i, regName := range registerList {
-		for j, foundNameRaw := range names {
-			foundName := foundNameRaw.(string)
-			if regName == foundName {
-				registerNumbers[i] = strconv.Itoa(j)
-				break
-			}
-		}
-	}
-
-	resp, err = s.Conn.CheckedSend(fmt.Sprintf("data-list-register-values x %s", strings.Join(registerNumbers, " ")))
-	if err != nil {
-		return err
-	}
-
-	s.Logger.Printf("%+v", resp)
-
-	return nil
-}
 
 func processAutotest(logger *log.Logger) error {
 	gdbPath := os.Getenv("RISCV_PREFIX") + "gdb"
+	remoteTarget := ":1234"
 
-	gdbConn, err := NewGDBConnection(logger, gdbPath)
+	conn, err := substratum.NewGdbConnection(logger, gdbPath, remoteTarget)
 	if err != nil {
 		return err
 	}
 
-	logger.Printf("%+v", resp)
-
-	for i := 0; i < 1; i++ {
-		resp, err = gdbConn.Conn.CheckedSend("exec-step-instruction")
+	for {
+		pcReg, err := conn.FetchPC()
 		if err != nil {
 			return err
 		}
 
-		logger.Printf("%+v", resp)
+		if pcReg == 0x204000b0 {
+			break
+		}
+
+		_, err = conn.Conn.CheckedSend("exec-step-instruction")
+		if err != nil {
+			return err
+		}
 	}
+
+	frame, err := conn.FetchRegisterFrame()
+	if err != nil {
+		return err
+	}
+
+	frame.Dump(logger)
+
+	expectedInitialFrame := substratum.GDBRegisterFrame{
+		T2: 0x4,
+		A2: 0x80000000,
+		A4: 0x80001000,
+		A5: 0x10013000,
+		A6: 0x10013004,
+		A7: 0xa,
+		S2: 0x20,
+		PC: 0x204000b0,
+	}
+
+	if !reflect.DeepEqual(expectedInitialFrame, frame) {
+		return fmt.Errorf("registers were not initialised correctly.\ngot : %#v\nwant: %#v", frame, expectedInitialFrame)
+	}
+
+	logger.Printf("registers initialised as expected")
 
 	return nil
 }

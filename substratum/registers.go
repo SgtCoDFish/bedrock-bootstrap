@@ -142,8 +142,19 @@ func GetRegisterValue(name string) (uint8, error) {
 func GetABINameForNumberRegister(numberRegister string) (string, error) {
 	name, ok := registerNumberToABIName[strings.ToLower(numberRegister)]
 	if !ok {
-		return "x0", fmt.Errorf("invalid number register: %s", numberRegister)
+		return "zero", fmt.Errorf("invalid number register: %s", numberRegister)
 	}
 
 	return name, nil
+}
+
+// GetNumberRegisterForABIName returns the number register (e.g. "x10") for a given ABI register name (such as "a0").
+// It handles both names for s0/fp
+func GetNumberRegisterForABIName(abiName string) (string, error) {
+	num, ok := registerMap[strings.ToLower(abiName)]
+	if !ok {
+		return "x0", fmt.Errorf("invalid RISC-V register ABI name: %s", abiName)
+	}
+
+	return fmt.Sprintf("x%d", num), nil
 }

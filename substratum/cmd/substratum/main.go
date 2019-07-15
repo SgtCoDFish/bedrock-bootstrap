@@ -7,7 +7,10 @@ import (
 	"strings"
 )
 
+// ASMCommand is the command which runs the basic Substratum RISC-V "assembler"
 const ASMCommand = "asm"
+
+// AutoTestCMD is the command which runs automated, GDB-backed tests of RISC-V baremetal programs
 const AutoTestCMD = "autotest"
 
 func main() {

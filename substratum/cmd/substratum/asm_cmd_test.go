@@ -8,8 +8,8 @@ import (
 )
 
 type testCase struct {
-	args     []string
-	expected uint32
+	args []string
+	// expected uint32
 }
 
 func makeTestLogger() (*log.Logger, *bytes.Buffer) {
@@ -21,20 +21,20 @@ func makeTestLogger() (*log.Logger, *bytes.Buffer) {
 func TestBTypes(t *testing.T) {
 	var cases = []testCase{
 		{
-			args:     []string{"bne", "a0", "x0", "-8"},
-			expected: 0xFE051CE3,
+			args: []string{"bne", "a0", "x0", "-8"},
+			// expected: 0xFE051CE3,
 		},
 		{
-			args:     []string{"beq", "a0", "x0", "-0x8"},
-			expected: 0xFE050CE3,
+			args: []string{"beq", "a0", "x0", "-0x8"},
+			// expected: 0xFE050CE3,
 		},
 		{
-			args:     []string{"beq", "x0", "x0", "-0x2C"},
-			expected: 0xFC000AE3,
+			args: []string{"beq", "x0", "x0", "-0x2C"},
+			// expected: 0xFC000AE3,
 		},
 		{
-			args:     []string{"beq", "a0", "s1", "+0x10"},
-			expected: 0x00950863,
+			args: []string{"beq", "a0", "s1", "+0x10"},
+			// expected: 0x00950863,
 		},
 	}
 
@@ -59,13 +59,13 @@ func TestBTypes(t *testing.T) {
 			t.Errorf("got a 0 length buffer response but expected some output")
 		}
 
-		//expBytes := make([]byte, 4)
-		//binary.LittleEndian.PutUint32(expBytes, c.expected)
-		//
-		//if !bytes.Equal(out, expBytes) {
-		//	t.Errorf("%s: calculated value did not match expected value: %x != %x", strings.Join(c.args, " "),
-		//		out, expBytes)
-		//}
+		// expBytes := make([]byte, 4)
+		// binary.LittleEndian.PutUint32(expBytes, c.expected)
+
+		// if !bytes.Equal([]byte(output), expBytes) {
+		// 	t.Errorf("%s: calculated value did not match expected value: %x != %x", strings.Join(c.args, " "),
+		// 		output, expBytes)
+		// }
 	}
 }
 
