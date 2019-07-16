@@ -7,12 +7,16 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sgtcodfish/substratum/autotest"
+
+	"github.com/jacobsa/go-serial/serial"
+
 	"github.com/sgtcodfish/substratum"
 	"github.com/sgtcodfish/substratum/autotest/uart_rxxd"
 )
 
 func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
-	testMap := map[string]func(connection *substratum.GdbConnection) error{
+	testMap := map[string]func(state *autotest.State) error{
 		"uart-rxxd-basic": uart_rxxd.ProcessUARTRxxdBasic,
 		"uart-rxxd-full":  uart_rxxd.ProcessUARTRxxdFull,
 	}
@@ -22,26 +26,53 @@ func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 		allTests = append(allTests, k)
 	}
 
-	if flags.NArg() == 0 {
-		return fmt.Errorf("missing required argument <test-name>: must be one of: %s", strings.Join(allTests, " | "))
+	serialDevice := flags.Lookup("serial")
+	if serialDevice == nil {
+		return fmt.Errorf("missing required flag %s", "serial")
 	}
 
-	testName := strings.ToLower(flags.Arg(0))
+	command := flags.Lookup("test-name")
+	if command == nil {
+		return fmt.Errorf("missing required flag %s", "test-name")
+	}
+
+	testName := strings.ToLower(command.Value.String())
 
 	testFn, ok := testMap[testName]
 	if !ok {
-		return fmt.Errorf("unknown test name '%s'", testName)
+		return fmt.Errorf("unknown test name '%s'; must be one of %s", testName, strings.Join(allTests, " | "))
 	}
 
 	gdbPath := os.Getenv("RISCV_PREFIX") + "gdb"
 	remoteTarget := ":1234"
 
-	conn, err := substratum.NewGdbConnection(logger, gdbPath, remoteTarget)
+	conn, err := substratum.NewGdbConnection(gdbPath, remoteTarget)
 	if err != nil {
 		return err
 	}
 
-	err = testFn(conn)
+	serialPort, err := serial.Open(serial.OpenOptions{
+		PortName:        serialDevice.Value.String(),
+		BaudRate:        115200,
+		DataBits:        8,
+		StopBits:        1,
+		ParityMode:      serial.PARITY_NONE,
+		MinimumReadSize: 4,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	defer func() { _ = serialPort.Close() }()
+
+	testState := &autotest.State{
+		Logger:     logger,
+		GdbConn:    conn,
+		SerialConn: serialPort,
+	}
+
+	err = testFn(testState)
 	if err != nil {
 		return err
 	}

@@ -50,7 +50,7 @@ verify-vendor:
 .PHONY: build
 build: bin/$(NAME)
 
-bin/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go)
+bin/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard autotest/*.go) $(wildcard autotest/uart_rxxd/*.go)
 	@mkdir -p bin
 	$(GO) build -mod=vendor -o $@ cmd/$(NAME)/*.go
 

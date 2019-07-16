@@ -18,9 +18,6 @@ type GdbConnection struct {
 	// Conn is the underlying connection to GDB which can be used manually to make requests
 	Conn *gdb.Gdb
 
-	// Logger is a simple log.Logger which is used to log informational messages
-	Logger *log.Logger
-
 	// registerToGDBNumber is a map of register names (both ABI like "zero" and number like "x0") to their underlying
 	// GDB register numbers. It includes the program counter.
 	registerToGDBNumber map[string]int
@@ -52,7 +49,7 @@ type gdbRegisterNamesResponsePayload struct {
 
 // NewGdbConnection creates a GdbConnection with given parameters, and initialises that connection
 // to use the RISC-V rv32 architecture.
-func NewGdbConnection(logger *log.Logger, gdbPath string, remoteTarget string) (*GdbConnection, error) {
+func NewGdbConnection(gdbPath string, remoteTarget string) (*GdbConnection, error) {
 	conn, err := gdb.NewCmd([]string{gdbPath, "--nx", "--quiet", "--interpreter=mi2", "-ex", "set architecture riscv:rv32"}, nil)
 	if err != nil {
 		return nil, err
@@ -77,8 +74,7 @@ func NewGdbConnection(logger *log.Logger, gdbPath string, remoteTarget string) (
 	regList := append(GetRegisterList(), "pc")
 
 	gdbConn := GdbConnection{
-		Logger: logger,
-		Conn:   conn,
+		Conn: conn,
 
 		registerToGDBNumber:      make(map[string]int),
 		abiRegistersToGDBNumbers: make(map[string]int),
@@ -106,7 +102,7 @@ func NewGdbConnection(logger *log.Logger, gdbPath string, remoteTarget string) (
 				numberRegName, err := GetNumberRegisterForABIName(regName)
 
 				if err != nil {
-					logger.Printf("[warning] couldn't find number register for %s", regName)
+					break
 				} else {
 					gdbConn.registerToGDBNumber[numberRegName] = i
 				}
@@ -313,4 +309,9 @@ func (s *GdbConnection) AdvancePC(targetPC uint32, maxSteps int) error {
 	}
 
 	return fmt.Errorf("step count reached maximum of %d when trying to advance PC to 0x%8.8x", maxSteps, targetPC)
+}
+
+func (s *GdbConnection) StepOnce() error {
+	_, err := s.Conn.CheckedSend("exec-step-instruction")
+	return err
 }

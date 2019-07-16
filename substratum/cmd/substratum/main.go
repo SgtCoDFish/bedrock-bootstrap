@@ -20,6 +20,8 @@ func main() {
 	autoTestCMD := flag.NewFlagSet(AutoTestCMD, flag.ExitOnError)
 	autoTestCMD.String("gdb", "", "The path to the GDB executable to use")
 	autoTestCMD.String("qemu", "", "The path to the QEMU executable to use")
+	autoTestCMD.String("serial", "", "The serial device to use for communication")
+	autoTestCMD.String("test-name", "", "The name of the test to run")
 
 	if len(os.Args) < 2 {
 		log.Fatalf("missing required argument: command (one of '%s')", strings.Join([]string{ASMCommand, AutoTestCMD}, ", "))
