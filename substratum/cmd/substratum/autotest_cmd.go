@@ -1,15 +1,38 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
-	"reflect"
+	"strings"
 
 	"github.com/sgtcodfish/substratum"
+	"github.com/sgtcodfish/substratum/autotest/uart_rxxd"
 )
 
-func processAutotest(logger *log.Logger) error {
+func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
+	testMap := map[string]func(connection *substratum.GdbConnection) error{
+		"uart-rxxd-basic": uart_rxxd.ProcessUARTRxxdBasic,
+		"uart-rxxd-full":  uart_rxxd.ProcessUARTRxxdFull,
+	}
+
+	allTests := make([]string, 0)
+	for k := range testMap {
+		allTests = append(allTests, k)
+	}
+
+	if flags.NArg() == 0 {
+		return fmt.Errorf("missing required argument <test-name>: must be one of: %s", strings.Join(allTests, " | "))
+	}
+
+	testName := strings.ToLower(flags.Arg(0))
+
+	testFn, ok := testMap[testName]
+	if !ok {
+		return fmt.Errorf("unknown test name '%s'", testName)
+	}
+
 	gdbPath := os.Getenv("RISCV_PREFIX") + "gdb"
 	remoteTarget := ":1234"
 
@@ -18,45 +41,11 @@ func processAutotest(logger *log.Logger) error {
 		return err
 	}
 
-	for {
-		pcReg, err := conn.FetchPC()
-		if err != nil {
-			return err
-		}
-
-		if pcReg == 0x204000b0 {
-			break
-		}
-
-		_, err = conn.Conn.CheckedSend("exec-step-instruction")
-		if err != nil {
-			return err
-		}
-	}
-
-	frame, err := conn.FetchRegisterFrame()
+	err = testFn(conn)
 	if err != nil {
 		return err
 	}
 
-	frame.Dump(logger)
-
-	expectedInitialFrame := substratum.GDBRegisterFrame{
-		T2: 0x4,
-		A2: 0x80000000,
-		A4: 0x80001000,
-		A5: 0x10013000,
-		A6: 0x10013004,
-		A7: 0xa,
-		S2: 0x20,
-		PC: 0x204000b0,
-	}
-
-	if !reflect.DeepEqual(expectedInitialFrame, frame) {
-		return fmt.Errorf("registers were not initialised correctly.\ngot : %#v\nwant: %#v", frame, expectedInitialFrame)
-	}
-
-	logger.Printf("registers initialised as expected")
-
+	logger.Printf("'%s' test ran successfully", testName)
 	return nil
 }

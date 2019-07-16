@@ -292,3 +292,25 @@ func (s *GdbConnection) FetchRegisterFrame() (GDBRegisterFrame, error) {
 
 	return registerFrame, nil
 }
+
+// AdvancePC uses the "step-instruction" GDB command until the program counter equals targetPC
+// or until maxSteps instructions have been executed. maxSteps provides a guard against infinite loops
+func (s *GdbConnection) AdvancePC(targetPC uint32, maxSteps int) error {
+	for i := 0; i < maxSteps; i++ {
+		pcReg, err := s.FetchPC()
+		if err != nil {
+			return err
+		}
+
+		if pcReg == targetPC {
+			return nil
+		}
+
+		_, err = s.Conn.CheckedSend("exec-step-instruction")
+		if err != nil {
+			return err
+		}
+	}
+
+	return fmt.Errorf("step count reached maximum of %d when trying to advance PC to 0x%8.8x", maxSteps, targetPC)
+}

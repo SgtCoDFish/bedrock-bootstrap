@@ -47,7 +47,7 @@ func main() {
 			logger.Fatalf("failed to parse 'autotest' command: %s", err.Error())
 		}
 
-		err = processAutotest(logger)
+		err = processAutotest(autoTestCMD, logger)
 		if err != nil {
 			logger.Fatalf("failed to process 'autotest' command successfully: %s", err.Error())
 		}
