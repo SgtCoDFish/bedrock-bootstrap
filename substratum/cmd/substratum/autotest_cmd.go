@@ -12,13 +12,12 @@ import (
 	"github.com/jacobsa/go-serial/serial"
 
 	"github.com/sgtcodfish/substratum"
-	"github.com/sgtcodfish/substratum/autotest/uart_rxxd"
 )
 
 func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 	testMap := map[string]func(state *autotest.State) error{
-		"uart-rxxd-basic": uart_rxxd.ProcessUARTRxxdBasic,
-		"uart-rxxd-full":  uart_rxxd.ProcessUARTRxxdFull,
+		"uart-rxxd-basic": autotest.ProcessUARTRxxdBasic,
+		"uart-rxxd-full":  autotest.ProcessUARTRxxdFull,
 	}
 
 	allTests := make([]string, 0)
@@ -51,25 +50,19 @@ func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 		return err
 	}
 
-	serialPort, err := serial.Open(serial.OpenOptions{
+	serialOptions := serial.OpenOptions{
 		PortName:        serialDevice.Value.String(),
 		BaudRate:        115200,
 		DataBits:        8,
-		StopBits:        1,
+		StopBits:        2,
 		ParityMode:      serial.PARITY_NONE,
-		MinimumReadSize: 4,
-	})
-
-	if err != nil {
-		return err
+		MinimumReadSize: 1,
 	}
 
-	defer func() { _ = serialPort.Close() }()
-
 	testState := &autotest.State{
-		Logger:     logger,
-		GdbConn:    conn,
-		SerialConn: serialPort,
+		Logger:        logger,
+		GdbConn:       conn,
+		SerialOptions: serialOptions,
 	}
 
 	err = testFn(testState)

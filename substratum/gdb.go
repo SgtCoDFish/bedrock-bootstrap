@@ -311,6 +311,8 @@ func (s *GdbConnection) AdvancePC(targetPC uint32, maxSteps int) error {
 	return fmt.Errorf("step count reached maximum of %d when trying to advance PC to 0x%8.8x", maxSteps, targetPC)
 }
 
+// StepOnce is a helper function for stepping exactly one instruction. This is equivalent to sending a single `si`
+// command in GDB.
 func (s *GdbConnection) StepOnce() error {
 	_, err := s.Conn.CheckedSend("exec-step-instruction")
 	return err

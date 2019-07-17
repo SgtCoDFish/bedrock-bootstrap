@@ -1,10 +1,10 @@
-package uart_rxxd
+package autotest
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"reflect"
-
-	"github.com/sgtcodfish/substratum/autotest"
 
 	"github.com/sgtcodfish/substratum"
 )
@@ -12,26 +12,20 @@ import (
 // ProcessUARTRxxdBasic verifies the execution of the given GDB target and checks that it handles input as expected
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "basic" test has only basic UART input, whose presence is checked in memory after running the whole program
-func ProcessUARTRxxdBasic(state *autotest.State) error {
-	err := checkInitialization(state)
+func ProcessUARTRxxdBasic(state *State) error {
+	err := state.SendSerial([]byte("13000000"))
 	if err != nil {
 		return err
 	}
 
-	msg := "13 00 00 00"
-	bytesWritten, err := state.SerialConn.Write([]byte(msg))
-
+	err = checkInitialization(state)
 	if err != nil {
 		return err
 	}
 
-	if bytesWritten != len(msg) {
-		return fmt.Errorf("couldn't write whole test message '%s', only wrote %d/%d bytes", msg, bytesWritten, len(msg))
-	}
+	_, _ = bufio.NewReader(os.Stdin).ReadBytes('\n')
 
-	state.Logger.Printf("successfully wrote %d bytes over UART", bytesWritten)
-
-	err = state.GdbConn.AdvancePC(0x204000cc, 10)
+	err = state.GdbConn.AdvancePC(0x204000cc, 1000)
 	if err != nil {
 		return err
 	}
@@ -55,13 +49,13 @@ func ProcessUARTRxxdBasic(state *autotest.State) error {
 // ProcessUARTRxxdFull verifies the execution of the given GDB target and checks that it handles input as expected
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "full" test includes comments, invalid characters and multiple lines of text in the UART input
-func ProcessUARTRxxdFull(state *autotest.State) error {
+func ProcessUARTRxxdFull(state *State) error {
 	return fmt.Errorf("uart-rxxd-full NYI: %v", state.Logger.Flags())
 }
 
 // checkInitialization advances execution until UART input is read and asserts that the registers
 // were initialized as expected.
-func checkInitialization(state *autotest.State) error {
+func checkInitialization(state *State) error {
 	err := state.GdbConn.AdvancePC(0x204000b0, 100)
 	if err != nil {
 		return err
