@@ -54,15 +54,14 @@ func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 		PortName:        serialDevice.Value.String(),
 		BaudRate:        115200,
 		DataBits:        8,
-		StopBits:        2,
+		StopBits:        1,
 		ParityMode:      serial.PARITY_NONE,
 		MinimumReadSize: 1,
 	}
 
-	testState := &autotest.State{
-		Logger:        logger,
-		GdbConn:       conn,
-		SerialOptions: serialOptions,
+	testState, err := autotest.NewState(logger, conn, serialOptions)
+	if err != nil {
+		return err
 	}
 
 	err = testFn(testState)

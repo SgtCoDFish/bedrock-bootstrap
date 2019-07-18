@@ -1,9 +1,7 @@
 package autotest
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"reflect"
 
 	"github.com/sgtcodfish/substratum"
@@ -13,19 +11,35 @@ import (
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "basic" test has only basic UART input, whose presence is checked in memory after running the whole program
 func ProcessUARTRxxdBasic(state *State) error {
-	err := state.SendSerial([]byte("13000000"))
+	_ = state.GdbConn.StepOnce()
+
+	err := checkInitialization(state)
 	if err != nil {
 		return err
 	}
 
-	err = checkInitialization(state)
+	err = state.SendSerial([]byte("13000000\n13000000"))
 	if err != nil {
 		return err
 	}
 
-	_, _ = bufio.NewReader(os.Stdin).ReadBytes('\n')
+	err = state.GdbConn.AdvancePC(0x204000cc, 100)
+	if err != nil {
+		return err
+	}
 
-	err = state.GdbConn.AdvancePC(0x204000cc, 1000)
+	a0, err := state.GdbConn.FetchRegister("a0")
+	if err != nil {
+		return err
+	}
+
+	if a0 != uint32('1') {
+		return fmt.Errorf("a0 == 0x%8.8x but expected 0x%8.8x", a0, uint32('1'))
+	}
+
+	state.Logger.Printf("a0 was set correctly after a read from UART")
+
+	err = state.GdbConn.AdvancePC(0x204000b0, 200)
 	if err != nil {
 		return err
 	}
@@ -35,12 +49,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 		return err
 	}
 
-	if frame.A0 != uint32('1') {
-		return fmt.Errorf("a0 == 0x%8.8x but expected 0x%8.8x", frame.A0, uint32('1'))
-	}
-
-	state.Logger.Printf("a0 was set correctly after a read from UART")
-
+	state.Logger.Printf("frame after first loop:")
 	frame.Dump(state.Logger)
 
 	return nil
