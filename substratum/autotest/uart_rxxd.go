@@ -18,30 +18,39 @@ func ProcessUARTRxxdBasic(state *State) error {
 		return err
 	}
 
-	err = state.SendSerial([]byte("13000000\n13000000"))
+	msg := []byte("13000000")
+	err = state.SendSerial(msg)
 	if err != nil {
 		return err
 	}
 
-	err = state.GdbConn.AdvancePC(0x204000cc, 100)
+	word, err := state.GdbConn.ReadMemoryWord(0x20400000)
 	if err != nil {
 		return err
 	}
+	fmt.Printf("word up: %s\n", word)
 
-	a0, err := state.GdbConn.FetchRegister("a0")
-	if err != nil {
-		return err
-	}
+	for i := 0; i < len(msg); i++ {
+		err = state.GdbConn.AdvancePC(0x204000cc, 200)
+		if err != nil {
+			return err
+		}
 
-	if a0 != uint32('1') {
-		return fmt.Errorf("a0 == 0x%8.8x but expected 0x%8.8x", a0, uint32('1'))
-	}
+		a0, err := state.GdbConn.FetchRegister("a0")
+		if err != nil {
+			return err
+		}
 
-	state.Logger.Printf("a0 was set correctly after a read from UART")
+		if a0 != uint32(msg[i]) {
+			return fmt.Errorf("a0 == 0x%8.8x but expected 0x%8.8x", a0, uint32('1'))
+		}
 
-	err = state.GdbConn.AdvancePC(0x204000b0, 200)
-	if err != nil {
-		return err
+		state.Logger.Printf("a0 was set correctly to 0x%8.8x after a read from UART", msg[i])
+
+		err = state.GdbConn.AdvancePC(0x204000b0, 200)
+		if err != nil {
+			return err
+		}
 	}
 
 	frame, err := state.GdbConn.FetchRegisterFrame()
@@ -49,7 +58,6 @@ func ProcessUARTRxxdBasic(state *State) error {
 		return err
 	}
 
-	state.Logger.Printf("frame after first loop:")
 	frame.Dump(state.Logger)
 
 	return nil

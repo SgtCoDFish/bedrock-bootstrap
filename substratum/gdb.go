@@ -47,6 +47,34 @@ type gdbRegisterNamesResponsePayload struct {
 	RegisterNames []string `json:"register-names" mapstructure:"register-names"`
 }
 
+type gdbRegisterValuesResponse struct {
+	Payload gdbRegisterValuesResponsePayload `json:"payload" mapstructure:"payload"`
+}
+
+type gdbRegisterValue struct {
+	RegNumber string `json:"number" mapstructure:"number"`
+	Value     string `json:"value" mapstructure:"value"`
+}
+
+type gdbRegisterValuesResponsePayload struct {
+	RegisterValues []gdbRegisterValue `json:"register-values" mapstructure:"register-values"`
+}
+
+type gdbMemoryDumpResponse struct {
+	Payload gdbMemoryDumpPayload `json:"payload" mapstructure:"payload"`
+}
+
+type gdbMemoryDumpPayload struct {
+	Memory []gdbMemoryDumpMemory `json:"memory" mapstructure:"memory"`
+}
+
+type gdbMemoryDumpMemory struct {
+	Begin    string `json:"begin" mapstructure:"begin"`
+	End      string `json:"end" mapstructure:"begin"`
+	Contents string `json:"contents" mapstructure:"contents"`
+	Offset   string `json:"offset" mapstructure:"offset"`
+}
+
 // NewGdbConnection creates a GdbConnection with given parameters, and initialises that connection
 // to use the RISC-V rv32 architecture.
 func NewGdbConnection(gdbPath string, remoteTarget string) (*GdbConnection, error) {
@@ -121,19 +149,6 @@ func NewGdbConnection(gdbPath string, remoteTarget string) (*GdbConnection, erro
 	gdbConn.allRegNumbers = numberStringBuilder.String()
 
 	return &gdbConn, nil
-}
-
-type gdbRegisterValuesResponse struct {
-	Payload gdbRegisterValuesResponsePayload `json:"payload" mapstructure:"payload"`
-}
-
-type gdbRegisterValue struct {
-	RegNumber string `json:"number" mapstructure:"number"`
-	Value     string `json:"value" mapstructure:"value"`
-}
-
-type gdbRegisterValuesResponsePayload struct {
-	RegisterValues []gdbRegisterValue `json:"register-values" mapstructure:"register-values"`
 }
 
 // GDBRegisterFrame holds the typed values of every regular RISC-V rv32 integer register along with the PC
@@ -316,4 +331,22 @@ func (s *GdbConnection) AdvancePC(targetPC uint32, maxSteps int) error {
 func (s *GdbConnection) StepOnce() error {
 	_, err := s.Conn.CheckedSend("exec-step-instruction")
 	return err
+}
+
+// ReadMemoryWord dumps the word in memory at the given address and returns it if possible.
+func (s *GdbConnection) ReadMemoryWord(addr uint32) (string, error) {
+	addrStr := fmt.Sprintf("0x%8.8x", addr)
+
+	result, err := s.Conn.CheckedSend("data-read-memory-bytes", addrStr, "4")
+	if err != nil {
+		return "", err
+	}
+
+	var memoryDumpResponse gdbMemoryDumpResponse
+	err = mapstructure.Decode(result, &memoryDumpResponse)
+	if err != nil {
+		return "", err
+	}
+
+	return memoryDumpResponse.Payload.Memory[0].Contents[0:8], nil
 }
