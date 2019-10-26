@@ -1,5 +1,3 @@
 module github.com/sgtcodfish/substratum
 
-go 1.11
-
-require golang.org/x/arch v0.0.0-20190312162104-788fe5ffcd8c // indirect
+go 1.13
