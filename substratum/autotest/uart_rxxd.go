@@ -24,11 +24,14 @@ func ProcessUARTRxxdBasic(state *State) error {
 		return err
 	}
 
-	word, err := state.GdbConn.ReadMemoryWord(0x20400000)
+	initialMemoryLoc := uint32(0x20400000)
+
+	word, err := state.GdbConn.ReadMemoryWord(initialMemoryLoc)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("word up: %s\n", word)
+
+	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
 		err = state.GdbConn.AdvancePC(0x204000cc, 200)
@@ -41,11 +44,12 @@ func ProcessUARTRxxdBasic(state *State) error {
 			return err
 		}
 
-		if a0 != uint32(msg[i]) {
-			return fmt.Errorf("a0 == 0x%8.8x but expected 0x%8.8x", a0, uint32('1'))
+		expected := uint32(msg[i])
+		if a0 != expected {
+			return fmt.Errorf("a0 == 0x%8.8X but expected 0x%8.8X", a0, expected)
 		}
 
-		state.Logger.Printf("a0 was set correctly to 0x%8.8x after a read from UART", msg[i])
+		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
 
 		err = state.GdbConn.AdvancePC(0x204000b0, 200)
 		if err != nil {
@@ -59,6 +63,27 @@ func ProcessUARTRxxdBasic(state *State) error {
 	}
 
 	frame.Dump(state.Logger)
+
+	for i := uint32(0x80000FFC); i < 0x8000100C; i += 4 {
+		word, err := state.GdbConn.ReadMemoryWord(i)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("word at 0x%8.8X: %s\n", i, word)
+
+		// we only want to write our single word at the initial memory location
+		// and we don't want to touch any of the surrounding memory
+		if i == 0x80001000 {
+			if word != "13000000" {
+				return fmt.Errorf("wanted memory at 0x%8.8X == 0x13000000 but got %s", i, word)
+			}
+		} else {
+			if word != "00000000" {
+				return fmt.Errorf("wanted memory at 0x%8.8X == 0x00000000 but got %s", i, word)
+			}
+		}
+	}
 
 	return nil
 }
