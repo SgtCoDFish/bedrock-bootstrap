@@ -4,11 +4,13 @@ NAME=substratum
 VERSION := $(shell cat VERSION.txt)
 
 GO = go
-GOLIST := $(shell $(GO) list ./... | grep -v vendor)
+GOLIST := $(shell $(GO) list -mod=vendor ./... | grep -v vendor)
+GOLINT = golint
+GOSTATICCHECK = staticcheck
 GOLANGCILINT = golangci-lint
 
 .PHONY: ci
-ci: clean test vet fmt lint staticcheck golangci-lint verify-vendor bin/$(NAME)
+ci: clean test fmt lint staticcheck golangci-lint verify-vendor bin/$(NAME)
 
 .PHONY: clean
 clean:
@@ -18,12 +20,7 @@ clean:
 .PHONY: test
 test:
 	@echo "+ $@"
-	@$(GO) test $(GOLIST)
-
-.PHONY: vet
-vet:
-	@echo "+ $@"
-	@if [[ ! -z "$(shell $(GO) vet $(GOLIST))" ]]; then exit 1; fi
+	@$(GO) test -mod=vendor $(GOLIST)
 
 .PHONY: fmt
 fmt:
@@ -33,13 +30,12 @@ fmt:
 .PHONY: staticcheck
 staticcheck:
 	@echo "+ $@"
-	@if [[ ! -z "$(shell staticcheck $(GOLIST) | tee /dev/stderr)" ]]; then exit 1; fi
-
+	@if [[ ! -z "$(shell $(GOSTATICCHECK) $(GOLIST) | tee /dev/stderr)" ]]; then exit 1; fi
 
 .PHONY: lint
 lint:
 	@echo "+ $@"
-	@if [[ ! -z '$(shell golint ./... | grep -v vendor | tee /dev/stderr)' ]]; then exit 1; fi
+	@if [[ ! -z '$(shell $(GOLINT) ./... | grep -v vendor | tee /dev/stderr)' ]]; then exit 1; fi
 
 .PHONY: golangci-lint
 golangci-lint:
@@ -48,14 +44,15 @@ golangci-lint:
 
 .PHONY: verify-vendor
 verify-vendor:
-	@$(GO) mod verify
+	@echo "+ $@"
+	@$(GO) mod verify > /dev/null
 
 .PHONY: build
 build: bin/$(NAME)
 
-bin/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go)
-	mkdir -p bin
-	$(GO) build -mod=vendor -o $@ cmd/$(NAME)/main.go
+bin/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard autotest/*.go) $(wildcard autotest/uart_rxxd/*.go)
+	@mkdir -p bin
+	$(GO) build -mod=vendor -o $@ cmd/$(NAME)/*.go
 
 .PHONY: docker-build-env
 docker-build-env: VERSION.txt Dockerfile
