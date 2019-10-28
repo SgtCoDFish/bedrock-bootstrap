@@ -14,6 +14,20 @@ import (
 	"github.com/sgtcodfish/substratum"
 )
 
+func getStringFlag(flags *flag.FlagSet, name string) (string, error) {
+	flagVar := flags.Lookup(name)
+	if flagVar == nil {
+		return "", fmt.Errorf("missing required flag '%s'", name)
+	}
+
+	flagVal := flagVar.Value.String()
+	if flagVal == "" {
+		return "", fmt.Errorf("missing flag value for '%s'", name)
+	}
+
+	return flagVal, nil
+}
+
 func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 	testMap := map[string]func(state *autotest.State) error{
 		"uart-rxxd-basic": autotest.ProcessUARTRxxdBasic,
@@ -25,17 +39,17 @@ func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 		allTests = append(allTests, k)
 	}
 
-	serialDevice := flags.Lookup("serial")
-	if serialDevice == nil {
-		return fmt.Errorf("missing required flag %s", "serial")
+	serialDevice, err := getStringFlag(flags, "serial")
+	if err != nil {
+		return err
 	}
 
-	command := flags.Lookup("test-name")
-	if command == nil {
-		return fmt.Errorf("missing required flag %s", "test-name")
+	command, err := getStringFlag(flags, "test-name")
+	if err != nil {
+		return err
 	}
 
-	testName := strings.ToLower(command.Value.String())
+	testName := strings.ToLower(command)
 
 	testFn, ok := testMap[testName]
 	if !ok {
@@ -47,11 +61,11 @@ func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 
 	conn, err := substratum.NewGdbConnection(gdbPath, remoteTarget)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open GDB connection to '%s' using '%s': %w", remoteTarget, gdbPath, err)
 	}
 
 	serialOptions := serial.OpenOptions{
-		PortName:        serialDevice.Value.String(),
+		PortName:        serialDevice,
 		BaudRate:        115200,
 		DataBits:        8,
 		StopBits:        1,
@@ -61,7 +75,7 @@ func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 
 	testState, err := autotest.NewState(logger, conn, serialOptions)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create new autotest state: %w", err)
 	}
 
 	err = testFn(testState)

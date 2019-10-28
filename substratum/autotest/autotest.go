@@ -30,7 +30,7 @@ type State struct {
 func NewState(logger *log.Logger, gdbConn *substratum.GdbConnection, serialOptions serial.OpenOptions) (*State, error) {
 	serialConn, err := serial.Open(serialOptions)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open serial connection to '%s': %w", serialOptions.PortName, err)
 	}
 
 	return &State{
