@@ -42,6 +42,9 @@ func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 		return fmt.Errorf("unknown test name '%s'; must be one of %s", testName, strings.Join(allTests, " | "))
 	}
 
+	logger.Printf("processing autotest for '%s'", testName)
+	logger.Printf("starting GDB")
+
 	gdbPath := os.Getenv("RISCV_PREFIX") + "gdb"
 	remoteTarget := ":1234"
 
@@ -58,6 +61,8 @@ func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 		ParityMode:      serial.PARITY_NONE,
 		MinimumReadSize: 1,
 	}
+
+	logger.Printf("starting serial connection")
 
 	testState, err := autotest.NewState(logger, conn, serialOptions)
 	if err != nil {
