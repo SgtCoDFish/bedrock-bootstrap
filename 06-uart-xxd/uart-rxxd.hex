@@ -207,7 +207,7 @@ e3 06 00 f0  # beq x00, x00, READ_UART -0xf0
 23 20 57 00  # sw x05, 0(x14)
 13 07 47 00  # addi x14, x14, 0x4
 93 02 00 00  # addi x05, x00, 0x0
-13 00 00 00  # nop
+13 03 00 00  # addi x06, x00, 0x0
 13 00 00 00  # nop
 13 00 00 00  # nop
 e3 04 00 ee  # beq x00, x00, READ_UART -0x118

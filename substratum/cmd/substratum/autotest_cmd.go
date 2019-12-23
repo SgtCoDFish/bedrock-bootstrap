@@ -16,8 +16,9 @@ import (
 
 func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 	testMap := map[string]func(state *autotest.State) error{
-		"uart-rxxd-basic": autotest.ProcessUARTRxxdBasic,
-		"uart-rxxd-full":  autotest.ProcessUARTRxxdFull,
+		"uart-rxxd-basic":   autotest.ProcessUARTRxxdBasic,
+		"uart-rxxd-comment": autotest.ProcessUARTRxxdComment,
+		"uart-rxxd-full":    autotest.ProcessUARTRxxdFull,
 	}
 
 	allTests := make([]string, 0)
