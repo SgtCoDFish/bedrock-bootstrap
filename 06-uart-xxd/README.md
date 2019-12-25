@@ -2,7 +2,11 @@
 
 Our aim is to (eventually!) bootstrap a simple compiler for a higher-level language. A sensible place to start is the "compiler" we use to convert `.hex` files to binaries - `xxd -r -p`, which will let us self-host the "0th" stage of our bootstrapping process.
 
-We'll accept a stream of ASCII hex chars over UART and then convert them into binary, storing them in RAM as we go. For example, given the UART input `13 00 00 00` (a no-op instruction) we'll end up writing `0x13000000` at `0x80001000` in memory. Given further input of `12 34 56 78` we'll write `0x12345678` at `0x80001004`.
+We'll accept a stream of ASCII hex chars over UART and then convert them into binary, storing them in RAM as we go. For example, given the UART input `13 00 00 00` (a no-op instruction) we'll end up writing `0x13000000` at `0x80001000` in memory. Given further input of `12 34 56 78` we'll write `0x12345678` at `0x80001004`, and so on.
+
+We'll support comments in the form of a `#` character, which will mean we ignore anything until a newline (`\n`, 0xA).
+
+Finally, we need a way of actually executing the code we write. If we receive an ASCII `j` or `J` character over UART, we'll jump to the beginning of the memory block where we started writing code - 0x80001000 after we write an infinite loop instruction to the end of that block.
 
 ## Aims
 
