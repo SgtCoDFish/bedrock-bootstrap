@@ -3,6 +3,7 @@ package autotest
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/sgtcodfish/substratum"
 )
@@ -181,7 +182,7 @@ func ProcessUARTRxxdFull(state *State) error {
 		return err
 	}
 
-	msg := []byte("12345678 # dummy command\naaaaaaaa # endless screaming\n\n    13000000 # nop")
+	msg := []byte("13000000 # nop dummy command\n13 00 00 00 # endless screaming\n\n    13 0f 30 12 # addi x30 x00 0x123 #\nJ")
 	err = state.SendSerial(msg)
 	if err != nil {
 		return err
@@ -197,6 +198,7 @@ func ProcessUARTRxxdFull(state *State) error {
 	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
+		// advance to 2040_00CC which is just after UART has been read from
 		err = state.GdbConn.AdvancePC(0x204000cc, 200)
 		if err != nil {
 			return err
@@ -214,28 +216,23 @@ func ProcessUARTRxxdFull(state *State) error {
 
 		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
 
+		if strings.ToLower(string(msg[i])) == "j" {
+			fmt.Println("found a J in input")
+
+			err = state.GdbConn.WalkPC(0x20400164, 50)
+			if err != nil {
+				return err
+			}
+
+			break
+		}
+
+		// advance to 2040_00B0 which is the start of reading from UART
 		err = state.GdbConn.AdvancePC(0x204000b0, 200)
 		if err != nil {
 			return err
 		}
 	}
-
-	err = state.GdbConn.AdvancePC(0x204000b0, 200)
-	if err != nil {
-		return err
-	}
-
-	err = state.GdbConn.AdvancePC(0x204000b0, 200)
-	if err != nil {
-		return err
-	}
-
-	frame, err := state.GdbConn.FetchRegisterFrame()
-	if err != nil {
-		return err
-	}
-
-	frame.Dump(state.Logger)
 
 	for i := uint32(0x80000FFC); i < 0x80001010; i += 4 {
 		word, err := state.GdbConn.ReadMemoryWord(i)
@@ -248,16 +245,20 @@ func ProcessUARTRxxdFull(state *State) error {
 		// we only want to write our single word at the initial memory location
 		// and we don't want to touch any of the surrounding memory
 		if i == 0x80001000 {
-			if word != "12345678" {
-				return fmt.Errorf("wanted memory at 0x%8.8X == 0x12345678 but got %s", i, word)
-			}
-		} else if i == 0x80001004 {
-			if word != "aaaaaaaa" {
-				return fmt.Errorf("wanted memory at 0x%8.8X == 0xaaaaaaaa but got %s", i, word)
-			}
-		} else if i == 0x80001008 {
 			if word != "13000000" {
 				return fmt.Errorf("wanted memory at 0x%8.8X == 0x13000000 but got %s", i, word)
+			}
+		} else if i == 0x80001004 {
+			if word != "13000000" {
+				return fmt.Errorf("wanted memory at 0x%8.8X == 0x13000000 but got %s", i, word)
+			}
+		} else if i == 0x80001008 {
+			if word != "130f3012" {
+				return fmt.Errorf("wanted memory at 0x%8.8X == 0x130f3012 but got %s", i, word)
+			}
+		} else if i == 0x8000100C {
+			if word != "63000000" {
+				return fmt.Errorf("wanted memory at 0x%8.8X == 0x63000000 but got %s", i, word)
 			}
 		} else {
 			if word != "00000000" {
@@ -265,6 +266,22 @@ func ProcessUARTRxxdFull(state *State) error {
 			}
 		}
 	}
+
+	err = state.GdbConn.WalkPC(0x8000100C, 50)
+	if err != nil {
+		return err
+	}
+
+	frame, err := state.GdbConn.FetchRegisterFrame()
+	if err != nil {
+		return err
+	}
+
+	if frame.T5 != 0x123 {
+		return fmt.Errorf("wanted x30/t5 to be 0x123 but got %8.8X", frame.T5)
+	}
+
+	frame.Dump(state.Logger)
 
 	return nil
 }
@@ -292,6 +309,7 @@ func checkInitialization(state *State) error {
 		A6: 0x10013004,
 		A7: 0xa,
 		S2: 0x20,
+		S5: 0x80001000,
 		PC: 0x204000b0,
 	}
 

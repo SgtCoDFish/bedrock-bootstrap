@@ -2,20 +2,7 @@
 
 Our aim is to (eventually!) bootstrap a simple compiler for a higher-level language. A sensible place to start is the "compiler" we use to convert `.hex` files to binaries - `xxd -r -p`, which will let us self-host the "0th" stage of our bootstrapping process.
 
-We'll accept a stream of ASCII hex chars over UART and later convert them into binary, storing them in RAM as we go.
-
-- If we read a pound `#` (`0x23`) we'll ignore everything until we read a newline `\n` (`0x0A`).
-- If we read an `0xFF` we'll:
-- - Write, at the end of the RAM area to which we've written code an unconditional jump back to the beginning of this the uart-rxxd program (likely at `0x2040_0000`)
-- - Jump to the start of the area in RAM to which we've written code
-- If we read anything which isn't mentioned above or else correspond to a hexadecimal character (`[0-9a-fA-F]`), we'll ignore it.
-- When we receive the first hexadecimal nibble of a byte, we'll convert it to a number, shift left by 4 bits and store it in a temp register.
-- When we receive the second hexadecimal nibble of a byte, we'll:
-- - Convert it to a number
-- - Add it to the temp register
-- - Store that register in RAM at a pre-defined pointer
-- - Increase the pointer
-- - Clear the register
+We'll accept a stream of ASCII hex chars over UART and then convert them into binary, storing them in RAM as we go. For example, given the UART input `13 00 00 00` (a no-op instruction) we'll end up writing `0x13000000` at `0x80001000` in memory. Given further input of `12 34 56 78` we'll write `0x12345678` at `0x80001004`.
 
 ## Aims
 
@@ -25,7 +12,7 @@ We'll accept a stream of ASCII hex chars over UART and later convert them into b
 
 Assembling instructions by hand is no fun at all beyond a few instructions, and we're starting to need quite a lot more instructions for our code. We don't want to go the whole way of using an actual assembler, so we've provided a very small assembly-to-machine-code converter called [substratum](../substratum/README.md).
 
-Substratum _isn't_ an assembler. It won't support calculating offsets, it doesn't support storing data or labels or anything. It takes an RV32I instruction and, assuming it knows about that instruction, returns the 4-byte machine code representation. The cleverest thing it does is support both types of register naming (e.g. `a0` == `x10`).
+Substratum _isn't_ an assembler. It won't support calculating offsets for jump instructions, it doesn't support storing data or labels or generally anything which is provided by a regular assembler. It takes an RV32I instruction and, assuming it knows about that instruction, returns the 4-byte machine code representation. The cleverest thing it does is support both types of register naming (e.g. `a0` == `x10`).
 
 We can use substratum to help us write machine code quicker. This comes in handy not just here, but also in future "steps" where we'll still have to write some machine code.
 
@@ -43,7 +30,7 @@ char device redirected to /dev/ttys005 (label serial0)
 
 Note the output about the serial port, which will likely differ depending on your OS and could change between runs.
 
-Second, you'll need to connect to that serial port using GNU screen:
+Second, you'll need to connect to that serial port using GNU screen for sending input over the serial device:
 
 ```bash
 $ screen /dev/ttys005 115200 # note the same serial port as above!
@@ -60,7 +47,7 @@ determining executable automatically.  Try using the "file" command.
 0x00001000 in ?? ()
 ```
 
-The gdb warning is just telling us that there's no debugging information for the target. It would take a huge amount of work to add that to our ELF headers and it might not even work properly if we did add it, so we'll have to take a more analytical approach.
+The gdb warning is just telling us that there's no debugging information for the target. It would take a non-trivial amount of work to add that to our ELF headers and it might not even work properly if we did add it, so we'll have to take a more manual, analytical approach.
 
 ### Navigating in GDB
 
@@ -70,7 +57,7 @@ The other main instructions have been mentioned before: `i r` to dump registers 
 
 ### Sending Over Serial
 
-We'll need a way to send data over UART to be read by our program. Say we have a file, `/tmp/t.hex` which contains only a single NOP: `13000000`.
+We'll need a way to send data over UART to be read by our program. Say we have a file, `/tmp/t.hex` which contains only a single no-op instruction (NOP) which is encoded as follows: `13000000`.
 
 To send it, we go to our `screen` session, and press `Ctrl+A` followed by `:` which opens a command prompt. We type `readreg p /tmp/t.hex` which loads the file into a register called `p` but doesn't send it.
 
@@ -93,4 +80,22 @@ We inspect the source and see that here was an incorrect instruction at `0x20400
 63 1a 95 00  # bne x10 x09 0x14    - correct
  ```
 
- If this seems clunky, that's because it is! But pretty quickly it becomes natural to browse using gdb and check the control flow of the program.
+If this seems clunky, that's because it is! But pretty quickly it becomes natural to browse using gdb and check the control flow of the program.
+
+## Autotest
+
+Of course, we don't need to manually debug every program. We can run it, and assert that it does what we expect programmatically. This is another feature of substratum!
+
+```bash
+substratum autotest -serial /dev/serialdevicename -test-name uart-rxxd-basic
+substratum autotest -serial /dev/serialdevicename -test-name uart-rxxd-comment
+substratum autotest -serial /dev/serialdevicename -test-name uart-rxxd-full
+```
+
+autotest will connect over a serial connection (which you'll need to specify) and then use GDB to run the program. For this program - uart-rxxd - it'll confirm that the correct input is being read by the program (i.e. that an ASCII value of `1` is correctly loaded into `x05` as `0x31`) and that the input is being written correctly when a full word is received. That's all the `basic` test does.
+
+The `comment` test is similar to the basic test, but also confirms that comments are handled correctly.
+
+The `full` test is more rigorous: it has multiple comments, multiple words and more checks.
+
+If you want to try writing your own uart-rxxd implementation, you can still use autotest to confirm that it works, although some underlying assumptions - e.g. that received words are written to `0x8000_1000` - are baked in.

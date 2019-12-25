@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 
@@ -321,6 +322,37 @@ func (s *GdbConnection) AdvancePC(targetPC uint32, maxSteps int) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return fmt.Errorf("step count reached maximum of %d when trying to advance PC to 0x%8.8x", maxSteps, targetPC)
+}
+
+// WalkPC slowly uses the "step-instruction" GDB command until the program counter equals targetPC
+// or until maxSteps instructions have been executed. maxSteps provides a guard against infinite loops.
+// In contrast with AdvancePC, WalkPC will sleep briefly inbetween steps and will print the value of the PC
+// after each step. This makes the function uesful for following control flow.
+func (s *GdbConnection) WalkPC(targetPC uint32, maxSteps int) error {
+	fmt.Printf("walking until PC is %8.8X or until %d steps hvae been made", targetPC, maxSteps)
+
+	for i := 0; i < maxSteps; i++ {
+		pcReg, err := s.FetchPC()
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("PC is %8.8X\n", pcReg)
+
+		if pcReg == targetPC {
+			fmt.Println("PC matches target value, stopping walk")
+			return nil
+		}
+
+		_, err = s.Conn.CheckedSend("exec-step-instruction")
+		if err != nil {
+			return err
+		}
+
+		time.Sleep(time.Millisecond * 250)
 	}
 
 	return fmt.Errorf("step count reached maximum of %d when trying to advance PC to 0x%8.8x", maxSteps, targetPC)

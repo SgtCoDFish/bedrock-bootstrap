@@ -30,7 +30,6 @@ b7 37 01 10  # lui a5, 0x10013
 # Pad to 0x80
 13 00 00 00  # nop
 13 00 00 00  # nop
-13 00 00 00  # nop
 
 
 # Register allocation:
@@ -42,13 +41,16 @@ b7 37 01 10  # lui a5, 0x10013
 # a0 / x10: current received byte from UART
 # a1 / x11: tmp scratch area for reading from UART
 # a2 / x12: 0x8000_0000 (used for reading/writing UART)
-# a4 / x14: RAM write pointer, starts at 0x8001_0000
+# a4 / x14: RAM write pointer, starts at 0x8000_1000
 # a5 / x15: UART0_TXDATA = 0x10013000 (write UART)
 # a6 / x16: UART0_RXDATA = 0x10013004 (receive UART)
 # a7 / x17: 0xa (used for comparing in comment mode)
 # s2 / x18: 0x20 (used for comparing x06)
 # s3 / x19: current little endian byte
 # s4 / x20: flags, where nonzero means we're in comment mode
+# s5 / x21: the location - 0x8000_1000 - to which we jump when
+#            we're done accepting input same as the initial
+#            value of x14
 
 93 02 00 00  # mv x05, x0 == addi x05, x00, 0x0
 13 03 00 00  # mv x06, x0 == addi x06, x00, 0x0
@@ -65,6 +67,7 @@ b7 37 01 10  # lui x15, 0x10013
 13 09 00 02  # addi x18, x00, 0x20
 93 09 00 00  # addi x19, x0, 0x00
 13 0a 00 00  # addi x20, x0, 0x00
+b7 1a 00 80  # lui x21, 0x80001
 
 # b0: .READ_UART
 # Read a byte from UART
@@ -134,17 +137,24 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 13 04 10 06  # addi x08, x00, 0x61
 63 48 85 08  # blt  x10, x08, .PANIC +0x90
 13 04 70 06  # addi x08, x00, 0x67
-63 44 a4 08  # blt  x08, x10, .PANIC +0x88
+63 46 a4 00  # blt  x08, x10, +0xC (check for `j`)
 13 05 95 fa  # addi x10, x10, -0x57
 63 02 00 02  # beq x0, x0, +.ADDRAW +0x24
 
-# TODO: need some sort of check for a "finish" here, e.g. if we got 'x' we jump to some finish routine
+# Check if we got a "j" - if so, jump to the starting point where we began writing
+# instructions we received, which is stored in x21
 
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
+13 04 a0 06  # addi x08, 00, 0x6A
+63 1c 85 06  # bne x10, x08, .PANIC + 0x78
+
+# If we're here, we need to jump to the location in x21
+# but first, we need to write an infinite loop instruction to the location stored in x14
+# so that we don't jump to x21, execute a few instructions and then hit an invalid
+# 0000_0000 instruction and trap
+
+13 05 30 06  # addi x10, x00, 0x63
+23 20 a7 00  # sw x10, 0(x14)
+67 80 0a 00  # jalr x0, x21, 0x00
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
