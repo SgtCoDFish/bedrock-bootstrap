@@ -332,7 +332,7 @@ func (s *GdbConnection) AdvancePC(targetPC uint32, maxSteps int) error {
 // In contrast with AdvancePC, WalkPC will sleep briefly inbetween steps and will print the value of the PC
 // after each step. This makes the function uesful for following control flow.
 func (s *GdbConnection) WalkPC(targetPC uint32, maxSteps int) error {
-	fmt.Printf("walking until PC is %8.8X or until %d steps hvae been made", targetPC, maxSteps)
+	fmt.Printf("walking until PC is %8.8X or until %d steps hvae been made\n", targetPC, maxSteps)
 
 	for i := 0; i < maxSteps; i++ {
 		pcReg, err := s.FetchPC()

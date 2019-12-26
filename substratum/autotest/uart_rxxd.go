@@ -218,12 +218,6 @@ func ProcessUARTRxxdFull(state *State) error {
 
 		if strings.ToLower(string(msg[i])) == "j" {
 			fmt.Println("found a J in input")
-
-			err = state.GdbConn.WalkPC(0x20400164, 50)
-			if err != nil {
-				return err
-			}
-
 			break
 		}
 
@@ -233,6 +227,18 @@ func ProcessUARTRxxdFull(state *State) error {
 			return err
 		}
 	}
+
+	err = state.GdbConn.WalkPC(0x20400160, 50)
+	if err != nil {
+		return err
+	}
+
+	frame, err := state.GdbConn.FetchRegisterFrame()
+	if err != nil {
+		return err
+	}
+
+	frame.Dump(state.Logger)
 
 	for i := uint32(0x80000FFC); i < 0x80001010; i += 4 {
 		word, err := state.GdbConn.ReadMemoryWord(i)
@@ -272,16 +278,21 @@ func ProcessUARTRxxdFull(state *State) error {
 		return err
 	}
 
-	frame, err := state.GdbConn.FetchRegisterFrame()
+	err = state.GdbConn.StepOnce()
 	if err != nil {
 		return err
 	}
 
-	if frame.T5 != 0x123 {
-		return fmt.Errorf("wanted x30/t5 to be 0x123 but got %8.8X", frame.T5)
+	frame, err = state.GdbConn.FetchRegisterFrame()
+	if err != nil {
+		return err
 	}
 
 	frame.Dump(state.Logger)
+
+	if frame.T5 != 0x123 {
+		return fmt.Errorf("wanted x30/t5 to be 0x123 but got %8.8X", frame.T5)
+	}
 
 	return nil
 }
