@@ -1,4 +1,4 @@
-# `xxd -r` Over UART
+# BB0: `xxd -r` Over UART
 
 Our aim is to (eventually!) bootstrap a simple compiler for a higher-level language. A sensible place to start is the "compiler" we use to convert `.hex` files to binaries - `xxd -r -p`, which will let us self-host the "0th" stage of our bootstrapping process.
 
