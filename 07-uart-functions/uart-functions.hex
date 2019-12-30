@@ -82,28 +82,30 @@ e3 9c 05 fe  # bnez x10, -8 == bne x10, x0, -8
 
 # If the flags register is zero, we continue as normal, otherwise
 # we need to check which flags are enabled and handle them as appropriate
-63 02 0a 02  # beq x20, x00, 0x24
+63 04 0a 00  # beq x20, x00, 0x8
 
-# If the flags register is nonzero we need to check which flag is enabled
-63 08 00 10  # bne x00, x00, .HANDLE_FLAGS
-13 00 00 00  # nop
-13 00 00 00  # nop
+# d0: If the flags register is nonzero we need to check which flag is enabled
+63 08 00 10  # beq x00, x00, .HANDLE_FLAGS
 13 00 00 00  # nop
 
-13 00 00 00  # nop
-13 00 00 00  # nop
+# Check for "." (0x2E) to start function definition mode
+13 04 e0 02  # addi x08, x00, 0x2e
+63 18 85 00  # bne x10 x08 0x10
+
+# If we got a ".", set bit 2 of flags and jump back to READ_UART
+13 6a 2a 00  # ori x20, x20, 0x2
+e3 06 00 fc  # beq x00, x00, .READ_UART (-0x34)
 13 00 00 00  # nop
 13 00 00 00  # nop
 
-# f0: If we're here, we're not in comment mode
-# We need to check if we got 0x23 (#) and if so,
-# enter comment mode
+# f0: If we're here, we're not in any kind of flag mode
+# We need to check if we got 0x23 (#) and if so, enter comment mode
 
 13 04 30 02  # addi x08, x00, 0x23
 63 1a 85 00  # bne x10 x08 0x14
 
 # We got a #, so enter comment mode
-xx xx xx xx  # ori x20, x20, 0x1
+13 6a 1a 00  # ori x20, x20, 0x1
 e3 0a 00 fa  # beq x00, x00, .READ_UART (-0x4C)
 13 00 00 00  # nop
 13 00 00 00  # nop
@@ -239,8 +241,8 @@ e3 04 00 ee  # beq x00, x00, READ_UART -0x118
 
 # check for comment mode
 
-xx xx xx xx  # andi x08, x20, 0x1
-xx xx xx xx  # bge x08, x00, +0x20
+13 74 1a 00  # andi x08, x20, 0x1
+63 50 04 02  # bge x08, x00, +0x20
 
 # handle comment mode
 
