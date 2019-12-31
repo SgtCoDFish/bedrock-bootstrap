@@ -2,7 +2,7 @@
 
 It's not a great deal of fun to have to calculate offsets for jumps by hand, and even ignoring the lack of fun it's error prone and makes our programs brittle; if we add extra instructions in between the start and end of a jump, we might need to recalculate offsets.
 
-Being able to label sections of code - and then later jump to those labels and have the assembler calculate the offset for us - is a staple of assembly languge, and adopting it for our code will make it much easier to write larger programs. To do this, we'll add the ability to define up to 26 functions, each with a single ASCII letter as a label.
+Being able to label sections of code - and then later jump to those labels and have the assembler calculate the offset for us - is a staple of assembly languge, and adopting it for our code will make it much easier to write larger programs. To do this, we'll add the ability to define functions, each with a single ASCII letter as a label.
 
 We'll start by adopting a convention: that registers will be used as in the RISC-V ABI with regards to their being preserved across calls. There's no compelling reason to deviate from that ABI.
 
@@ -10,7 +10,7 @@ We also need to make a choice about what kind of program layout we'll adopt.
 
 ## Functions First
 
-One option is to have everything be defined in functions. We can choose a convention whereby the `main` or `_start` function is labelled `z`, and insert an unconditional jump to that function when we write the program. This approach broadly mirrors how a higher-level language such as C or assembly would work.
+One option is to have everything be defined in functions. We can choose a convention whereby the `main` or `_start` function has a label by convention, say `m`, and unconditionally jump to that function when we jump to the program. This approach broadly mirrors how a higher-level language such as C or assembly would work.
 
 The downside to this approach is that no code written for BB0 - i.e. "raw" ASCII machine code - would work without changes. That said, who's writing a lot of code in BB0?
 
@@ -30,13 +30,11 @@ On balance, we choose to go with "functions first". Working pragmatically, the o
 
 We define some new control characters:
 
-- `.` denotes a function. It must be followed by a single letter, which will be converted to lowercase and will be the name of the function. For example, `.Z` defines a function called `z`.
-- `x` is a function call - it should be followed by a single letter which is converted into lowercase and which denotes the function to be called. For example, `xX` calls the function called `x`
+- `.` denotes a function. It must be followed by a single letter, which will be converted to lowercase and will be the name of the function. For example, `.M` defines a function called `m`.
+- `x` is a function call - it should be followed by a single letter which is converted into lowercase and which denotes the function to be called. For example, `xM` calls the function called `m`
 
-We define `z` to be the main function. Every BB1 program must have `z`. The output of the program will start with an unconditional jump to the start of `z`, followed by an infinite loop in case `z` returns.
+We define `m` to be the main function. Every BB1 program must have `m`, and the bootstrapper will jump to `m` to start the program.
 
-To simplify further, we _do not allow_ function calls from one function to another _except_ for `z`, which may call any function. So, `a` cannot call `b` or `z`, but `z` can call `a` and `b`. This simplifies the calculation of offsets, since we only need to do it for `z`.
+Given our desire to target the HiFive1, and the advantage of being able to stay within the on-chip memory for now (which removes the need to write any complicated "driver" code for the flash memory), we have a hard limit of 0x1000 (4096) bytes of instructions, which in RV32I translates to 1024 instructions. To avoid having to build a hash table which points to the start of each function on disk, we blindly assign each function from A-L 0x138 (312) bytes each, which gives an upper limit of 78 instructions in each function.
 
-In addition, we require that `z` is defined last in the file, and is followed by a `j` character which will cause execution to jump to the start of the program received over UART.
-
-Otherwise, the syntax is the same as BB0.
+The main function is therefore located at the end, and has an extra 40 bytes (10 instructions) worth of space.
