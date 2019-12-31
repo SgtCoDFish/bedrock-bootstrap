@@ -27,10 +27,7 @@ b7 37 01 10  # lui a5, 0x10013
 13 05 10 00  # addi a0, x0, 0x1
 23 a0 a7 00  # sw a0, 0(a5)
 
-# Pad to 0x80
-13 00 00 00  # nop
-13 00 00 00  # nop
-
+13 00 00 00 # padding
 
 # Register allocation:
 # t0 / x05: current word
@@ -41,16 +38,19 @@ b7 37 01 10  # lui a5, 0x10013
 # a0 / x10: current received byte from UART
 # a1 / x11: tmp scratch area for reading from UART
 # a2 / x12: 0x8000_0000 (used for reading/writing UART)
-# a4 / x14: RAM write pointer, starts at 0x8000_0000
+# a3 / x13: 0x8000_0ea0 (location of function "m" in memory)
+# a4 / x14: RAM write pointer, starts at the value in x13 but is
+#           changed whenever a new function is defined
 # a5 / x15: UART0_TXDATA = 0x10013000 (write UART)
 # a6 / x16: UART0_RXDATA = 0x10013004 (receive UART)
-# a7 / x17: function name; holds the name of the function we're currently writing.
+# a7 / x17: max size in bytes of each function, set to 312 (0x138)
+#           this gives us room for 13 functions each with a maximum
+#           of 78 instructions. The main function is "m", and can have
+#           an extra 40 bytes / 10 instructions at the end if we're to
+#           fit into 4096 (0x1000) bytes of RAM
 # s2 / x18: 0x20 (used for comparing x06)
 # s3 / x19: current little endian byte
 # s4 / x20: flags, where nonzero means we're in comment mode
-# s5 / x21: the location to which we jump when we're done
-#            accepting input. same as the initial value of
-#            x14
 
 93 02 00 00  # mv x05, x0 == addi x05, x00, 0x0
 13 03 00 00  # mv x06, x0 == addi x06, x00, 0x0
@@ -60,14 +60,15 @@ b7 37 01 10  # lui a5, 0x10013
 13 05 00 00  # mv x10, x0 == addi x10, x00, 0x0
 93 05 00 00  # mv x11, x0, 0x00 == addi x11, x00, 0x0
 37 06 00 80  # lui x12, 0x80000
-37 07 00 80  # lui x14, 0x80000
+b7 16 00 80  # lui x13, 0x80001
+93 86 06 ea  # addi x13, x13, -0x160
+13 87 06 00  # mv x14, x13
 b7 37 01 10  # lui x15, 0x10013
 13 88 47 00  # addi x16, x15, 0x4
-93 08 00 00  # mv x17, x0 == addi x17, x00, 0x0
+93 08 80 13  # mv x17, 0x138 (decimal 312)
 13 09 00 02  # addi x18, x00, 0x20
 93 09 00 00  # addi x19, x0, 0x00
 13 0a 00 00  # addi x20, x0, 0x00
-93 0a 07 00  # mv x21, x14 == addi x21, x14, 0x0
 
 # b0: .READ_UART
 # Read a byte from UART
@@ -236,33 +237,52 @@ e3 04 00 ee  # beq x00, x00, READ_UART -0x118
 13 00 00 00  # nop
 
 # 1 is comment mode
-# 2 is function definition mode; expect 1 ASCII char which should be
-# lowercased, and then turned into an integer from 0-25 and stored in x17
+# 2 is function definition mode; expect 1 ASCII char from a-m which should be
+# lowercased, and then turned into an integer from 0-12. The value is then multiplied
+# by the value in x17 to give the location at which the function is written
 
 # check for comment mode
 
 13 74 1a 00  # andi x08, x20, 0x1
-63 50 04 02  # bge x08, x00, +0x20
+63 02 04 02  # beq x08, x00, +0x24
 
 # handle comment mode
 
-xx xx xx xx  # mv x08, 0xa
-xx xx xx xx  # bne x10, x17, +0x8
-xx xx xx xx  # CLEAR BIT 1
-13 00 00 00  # nop
+# if the byte we read is not 0xa (\n) just go back to read more
+13 04 a0 00  # mv x08, 0xa
+63 1c 85 00  # bne x10, x08, +0x18
+
+# otherwise, if we got 0xa we need to clear bit 1 and then go back
+13 04 10 00  # mv x08, 0x1
+13 44 f4 ff  # not x08, x08 == xori x08, x08, -1
+33 7a 8a 00  # and x20, x20, x08
 
 13 00 00 00  # nop
 13 00 00 00  # nop
-13 00 00 00  # nop
-xx xx xx xx  # beq x0, x0, .READ_UART
+
+# 0x214: jump back after handling comment node
+e3 0e 00 e8  # beq x0, x0, .READ_UART
 
 # check function definition mode
 
-xx xx xx xx  # andi x08, x20, 0x2
-xx xx xx xx  # bge x08, x00, +0x20
+13 74 2a 00  # andi x08, x20, 0x2
+63 10 04 02  # bne x08, x00, +0x24
 
 # handle function definition mode
 
+# force the function name to lowercase, and then convert it into a number from 0-25 inclusive
+13 65 05 02  # ori  x10, x10, 0x20
+13 05 f5 f9  # addi x10, x10, -0x61
+
+# if x10 is lower than 0 or higher than 25 (0x19) just skip and continue to read the next char
+63 4e 05 02  # blt x10, x00, +0x3C
+13 04 90 01  # mv x08, 0x19
+63 5a 85 02  # bge x10, x08, +0x34
+
+# otherwise, it's a valid function name so we need to set the current function register
+# and then clear bit 2 of the flags register
+# TODO: this needs a loop to store (*x10) * (*x17) into x14
+# also needs to reset "shift" registers, etc: x19, x07, x06, x05
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
@@ -271,4 +291,12 @@ xx xx xx xx  # bge x08, x00, +0x20
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
-xx xx xx xx  # beq x0, x0, .READ_UART
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 04 20 00  # mv x08, 0x2
+13 44 f4 ff  # not x08, x08 == xori x08, x08, -1
+33 7a 8a 00  # and x20, x20, x08
+
+# 0x264: jump back after handling function definition mode
+e3 06 00 e4  # beq x0, x0, .READ_UART
