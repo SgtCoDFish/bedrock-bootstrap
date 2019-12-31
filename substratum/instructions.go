@@ -295,7 +295,7 @@ var instructionMap = map[string]Instruction{
 		Type: RType,
 		Opcodes: Opcodes{
 			Opcode: 0x33,
-			Funct3: 0x07,
+			Funct3: 0x00,
 			Funct7: 0x00,
 		},
 	},
