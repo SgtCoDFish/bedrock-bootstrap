@@ -266,7 +266,7 @@ e3 0e 00 e8  # beq x0, x0, .READ_UART
 # check function definition mode
 
 13 74 2a 00  # andi x08, x20, 0x2
-63 10 04 02  # bne x08, x00, +0x24
+63 06 04 04  # beq x08, x00, +0x4c
 
 # handle function definition mode
 
@@ -281,22 +281,48 @@ e3 0e 00 e8  # beq x0, x0, .READ_UART
 
 # otherwise, it's a valid function name so we need to set the current function register
 # and then clear bit 2 of the flags register
-# TODO: this needs a loop to store (*x10) * (*x17) into x14
 # also needs to reset "shift" registers, etc: x19, x07, x06, x05
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
+37 07 00 80  # lui x14, 0x80000
+63 00 05 02  # beq x10, x00, +0x20
+33 07 17 01  # add x14, x14, x17
+13 05 f5 ff  # addi x10, x10, -1
+e3 0a 00 fe  # beq x00, x00, -0x10
 
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
+93 02 00 00  # mv x05, x0 == addi x05, x00, 0x0
+13 03 00 00  # mv x06, x0 == addi x06, x00, 0x0
+93 03 40 00  # addi x07, x00, 0x4
+93 09 00 00  # addi x19, x0, 0x00
 
-13 00 00 00  # nop
 13 04 20 00  # mv x08, 0x2
 13 44 f4 ff  # not x08, x08 == xori x08, x08, -1
 33 7a 8a 00  # and x20, x20, x08
 
 # 0x264: jump back after handling function definition mode
 e3 06 00 e4  # beq x0, x0, .READ_UART
+
+# check for "x" mode, where we'll create and write a jump instruction
+13 74 4a 00  # andi x08, x20, 0x4
+63 06 04 04  # beq x08, x00, +0xxx
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# 0x2b0: jump back after handling "x" mode
+13 00 00 00  # beq x00, x00, .READ_UART
