@@ -101,7 +101,6 @@ e3 06 00 fc  # beq x00, x00, .READ_UART (-0x34)
 
 # f0: If we're here, we're not in any kind of flag mode
 # We need to check if we got 0x23 (#) and if so, enter comment mode
-
 13 04 30 02  # addi x08, x00, 0x23
 63 1a 85 00  # bne x10 x08 0x14
 
@@ -134,24 +133,19 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 # the range 0x61 ('a') to 0x66 ('f'). If it is, we subtract 0x57 to get the raw value
 # in the range 0xA - 0xF
 
+# 0x134
+
 13 65 05 02  # ori  x10, x10, 0x20
 13 04 10 06  # addi x08, x00, 0x61
 63 48 85 08  # blt  x10, x08, .PANIC +0x90
 13 04 70 06  # addi x08, x00, 0x67
-63 46 a4 00  # blt  x08, x10, +0xC (check for `j`)
+63 46 a4 00  # blt  x08, x10, +0xC (check for special chars)
 13 05 95 fa  # addi x10, x10, -0x57
 63 02 00 02  # beq x0, x0, +.ADDRAW +0x24
 
-# Check if we got a "j" - if so, jump to the starting point where we began writing
-# instructions we received, which is stored in x21
-
-13 04 a0 06  # addi x08, 00, 0x6A
-63 1c 85 06  # bne x10, x08, .PANIC + 0x78
-
-# If we're here, we need to jump to the location in x21
-# but first, we need to write an infinite loop instruction to the location stored in x14
-# so that we don't jump to x21, execute a few instructions and then hit an invalid
-# 0000_0000 instruction and trap
+# Check if we got a "j" or "x" and handle them if needed
+13 00 00 00  # nop
+63 00 00 16  # beq x00, x00, .HANDLE_SPECIAL (0x2b4)
 
 13 05 30 06  # addi x10, x00, 0x63
 23 20 a7 00  # sw x10, 0(x14)
@@ -326,3 +320,30 @@ e3 06 00 e4  # beq x0, x0, .READ_UART
 
 # 0x2b0: jump back after handling "x" mode
 13 00 00 00  # beq x00, x00, .READ_UART
+
+# 0x2b4: .HANDLE_SPECIAL
+# if we got a "j", jump to the starting point where we began writing
+# instructions we received, which is stored in x21
+13 04 a0 06  # addi x08, 00, 0x6A ("j")
+13 00 00 00  # bne x08, x10, +0x20
+# If we're here, we need to jump to the location in x21
+# but first, we need to write an infinite loop instruction to the location stored in x14
+# so that we don't jump to x21, execute a few instructions and then hit an invalid
+# 0000_0000 instruction and trap
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# check for "x" and if found, enter "insert jump" mode
+# TODO: this
+# ori x20, x20, 0x4
