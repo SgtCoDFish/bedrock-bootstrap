@@ -2,7 +2,7 @@
 
 It's not a great deal of fun to have to calculate offsets for jumps by hand, and even ignoring the lack of fun it's error prone and makes our programs brittle; if we add extra instructions in between the start and end of a jump, we might need to recalculate offsets.
 
-Being able to label sections of code - and then later jump to those labels and have the assembler calculate the offset for us - is a staple of assembly languge, and adopting it for our code will make it much easier to write larger programs. To do this, we'll add the ability to define functions, each with a single ASCII letter as a label.
+Being able to label sections of code - and then later jump to those labels and have the assembler calculate the offset for us - is a staple of assembly language, and adopting it for our code will make it much easier to write larger programs. To do this, we'll add the ability to define functions, each with a single ASCII letter as a label.
 
 We'll start by adopting a convention: that registers will be used as in the RISC-V ABI with regards to their being preserved across calls. There's no compelling reason to deviate from that ABI.
 
@@ -22,7 +22,7 @@ This allows BB0 code to run as-is in BB1. This property of preserving the abilit
 
 ## Which to Use?
 
-There's not really a correct choice here - both approaches would work and have different advantages. In practise, the differences in testability between the different approaches are minimal, since we'd use an automated testbed in `substratum`. The tradeoff then is between the approach which has a neat sense of purity - "code first" - and the "functions first" code which more closely matches the type of programs that we are likely to write in future bootstrap stages.
+There's not really a correct choice here - both approaches would work and have different advantages. In practise, the differences in testability between the different approaches are minimal, since we'd use an automated test-bed in `substratum`. The trade-off then is between the approach which has a neat sense of purity - "code first" - and the "functions first" code which more closely matches the type of programs that we are likely to write in future bootstrap stages.
 
 On balance, we choose to go with "functions first". Working pragmatically, the only purpose of any given bootstrap step (except the last one!) is to enable the next step in the process. Being able to write programs in any given step is a neat distraction, but practically there's little point writing in BB0 when we can do a full bootstrap and use assembly or a high-level language. As such, preserving backwards compatibility - while cool - isn't hugely useful, and it's better to prefer a more easy-to-read approach which minimises implicit assumptions.
 
