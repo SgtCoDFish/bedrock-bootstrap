@@ -71,7 +71,7 @@ The types are summarised here, with more detail available [in this doc](https://
 - `.riscv.attributes` is a special RISC-V section which contains details about the specific RISC-V architecture the object was compiled for - `rv32i` in this case. It's not at all well-documented and so we avoid adding it for now. Since we're writing a single ELF as output, the information contained within this section is not particularly useful.
 - `.symtab` is the [symbol table](https://docs.oracle.com/cd/E23824_01/html/819-0690/chapter6-79797.html#scrolltoc), which is needed to perform relocations on symbolic definitions and references.
 - `.strtab` is a table containing null-terminated strings relating to symbol table entries.
-- `.shstrtab` is a table also containting null-terminated strings which are the names of section headers
+- `.shstrtab` is a table also containing null-terminated strings which are the names of section headers
 
 Three of these sections are vital (aside from NULL which is required):
 

@@ -14,7 +14,7 @@ So we know that after the first bootloader, control will pass to 0x20400000 imme
 0x20400000:    0x00000000
 ```
 
-What's at `0x2040_0000`? Absolutely nothing! `0x00000000` is an illegal instruction, which causes the process to trap and thereby sets the PC to `0x00000000`... which in RISC-V always contains `0x0` by definition and so causes an infinite loop! We'll get our code running later, once we've figured out how to get to this point on actual hardware. For now we can summarise the QEMU boot process:
+What's at `0x2040_0000`? Absolutely nothing! `0x00000000` is an illegal instruction, which causes the process to trap and thereby sets the PC to `0x00000000` which in RISC-V always contains `0x0` by definition and so causes an infinite loop! We'll get our code running later, once we've figured out how to get to this point on actual hardware. For now we can summarise the QEMU boot process:
 
 - Start at `0x0001_0000`
 - Jump to  `0x2040_0000`
@@ -60,7 +60,7 @@ We've established that on both platforms, our code needs to live at `0x2040_0000
 
 ## Notes
 
-[1] (Note also that that datasheet is actually old, but the description of the boot process is in some ways easier to follow. More "up to date" details are available [here](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf)).
+[1] (Note also that that datasheet is actually old, but the description of the boot process is in some ways easier to follow. More up to date details are available [here](https://sifive.cdn.prismic.io/sifive%2F4d063bf8-3ae6-4db6-9843-ee9076ebadf7_fe310-g000.pdf)).
 
 [2] From the same datasheet's boot description:
 > `fence 0,0` is encoded as `0x0000000F`, and the instruction may be modified by burning additional bits to transform it into a `JAL` instruction (opcode `0x6F`) to execute arbitrary code rather than jumping directly to the beginning of the SPI-Flash.

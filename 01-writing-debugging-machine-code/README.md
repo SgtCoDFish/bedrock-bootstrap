@@ -9,7 +9,7 @@ If we want to write in pure machine code, we'll need to be able to write raw byt
 
 ## Using `echo` to Write Machine Code
 
-We might need better tooling in the future, but for now we can just use `echo` to write our code.
+`echo` is a super simple, widely available program but actually works fine to get the idea of what we're trying to achieve here.
 
 We must remember to write the bytes as little-endian; remember that gdb shows us 32-bit instructions in hex, whereas we're writing raw bytes. We also need to pass `-n` so that echo doesn't append a newline (which would show up as `0x0a`). You can run the commands yourself or run `make BUILD/bootloader1`:
 
@@ -23,9 +23,9 @@ $ od -Ax -tx1 BUILD/bootloader1
 
 Now we've written the instructions into a file, we can use `riscv32-unknown-elf-objdump` to help us work out what they are, as long as we give the disassembler a few tips:
 
-- `-D` (not `-d` which looks similar) dissassembles "all" in the file, meaning every instruction
-- `-b binary` indicates we're dealing with a raw binary file (as oppossed to, say, an ELF)
-- `-m riscv:rv32` hints that we're dealing with RISC-V 32-bit instructions, since there's no context in a binary file which might allow objdump to work out the architecture
+- `-D` (not `-d`) disassembles "all" in the file, meaning every instruction
+- `-b binary` indicates we're dealing with a raw binary file (versus say, an ELF)
+- `-m riscv:rv32` hints that we're dealing with RISC-V 32-bit instructions, since there's no context in a raw binary file which might allow objdump to infer the architecture
 
 ```bash
 $ $RISCV_PREFIX/bin/riscv32-unknown-elf-objdump -D -b binary -m riscv:rv32 BUILD/bootloader1

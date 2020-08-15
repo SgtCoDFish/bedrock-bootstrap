@@ -11,13 +11,13 @@ References:
 
 ## Hand Assembling
 
-We're not going to list how to hand assemble every instruction, as it get boring quickly and it's not hard to reason about how it works - which is why people normally use assemblers for this kind of task!
+We're not going to list how to hand assemble every instruction, as it gets boring quickly and it's not hard to reason about how it works. There's a reason people use assemblers!
 
 There are a couple of examples at [1] to help with the basic concepts, and there's a scratchpad of the "working out" in [HAND_ASSEMBLY_SCRATCHPAD.md](../guides/HAND_ASSEMBLY_SCRATCHPAD.md) with fuller working for many types of instructions.
 
 ## Running `uart.hex`
 
-`uart.hex` is the end result of our UART example; it does nothing except output a single ASCII "5". We need to "compile" `BUILD/uart.elf` by adding an ELF header with the size of the program customised. Removing the comments and reverse-hexdumping the file.
+`uart.hex` is the end result of our UART example; it does nothing except output a single ASCII "5". We need to "compile" `BUILD/uart.elf` by adding an ELF header with the size of the program customised, removing the comments and reverse-hexdumping the file.
 
 We can run on QEMU using the following slightly modified command:
 
@@ -39,7 +39,7 @@ Use `Ctrl+A` followed by `k` to quit the screen session, and then the `quit` com
 
 The hex file itself is commented heavily, to show both the reasoning behind each section and the individual assembly instructions which the machine code segments represent. These comments are stripped by `sed` in the Makefile.
 
-(NB: This uart initialisation process was mostly reverse-engineered from existing code. If you know of a good guide which contains the details please do raise a PR!)
+(NB: This UART initialisation process was mostly reverse-engineered from existing code. If you know of a good guide which contains the details please do raise a PR!)
 
 The program initialises the UART by:
 

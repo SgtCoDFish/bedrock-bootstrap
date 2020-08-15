@@ -1,6 +1,6 @@
 # `xxd -r` Over UART
 
-Our aim is to (eventually!) bootstrap a simple compiler for a higher-level language. A sensible place to start is the "compiler" we use to convert `.hex` files to binaries - `xxd -r -p`, which will let us self-host the "0th" stage of our bootstrapping process.
+Our aim for now is to bootstrap a simple compiler for a higher-level language. A sensible place to start is the "compiler" we use to convert `.hex` files to binaries - `xxd -r -p`, which will let us self-host the "0th" stage of our bootstrapping process.
 
 We'll accept a stream of ASCII hex chars over UART and then convert them into binary, storing them in RAM as we go. For example, given the UART input `13 00 00 00` (a no-op instruction) we'll end up writing `0x13000000` at `0x80001000` in memory. Given further input of `12 34 56 78` we'll write `0x12345678` at `0x80001004`, and so on.
 
@@ -24,7 +24,7 @@ We can use substratum to help us write machine code quicker. This comes in handy
 
 It's fine to write some instructions into a file, but eventually you're going to want to run them and, inevitably, debug them when things go wrong. Writing in machine code is error prone, after all!
 
-You'll want 3 terminal windows; one with riscv-qemu, started something like this:
+You'll want 3 terminal windows; one with riscv-qemu:
 
 ```bash
 $ qemu-system-riscv32 -nographic -serial pty -s -S -M sifive_e -kernel BUILD/uart-rxxd.elf
@@ -32,7 +32,7 @@ $ qemu-system-riscv32 -nographic -serial pty -s -S -M sifive_e -kernel BUILD/uar
 char device redirected to /dev/ttys005 (label serial0)
 ```
 
-Note the output about the serial port, which will likely differ depending on your OS and could change between runs.
+(Note the output about the serial port; this port will likely differ depending on your OS and your machine, and could change between runs)
 
 Second, you'll need to connect to that serial port using GNU screen for sending input over the serial device:
 
@@ -41,7 +41,7 @@ $ screen /dev/ttys005 115200 # note the same serial port as above!
 # no output expected, but will be used later
 ```
 
-Finally, you'll want to connect to qemu using gdb:
+Finally, you'll want to connect to QEMU using gdb:
 
 ```bash
 $ riscv32-unknown-elf-gdb -q -ex "set architecture riscv:rv32" -ex "target remote :1234"
@@ -51,7 +51,7 @@ determining executable automatically.  Try using the "file" command.
 0x00001000 in ?? ()
 ```
 
-The gdb warning is just telling us that there's no debugging information for the target. It would take a non-trivial amount of work to add that to our ELF headers and it might not even work properly if we did add it, so we'll have to take a more manual, analytical approach.
+The gdb warning is just telling us that there's no debugging information for the target. It would take a non-trivial amount of work to add that to our ELF headers so we'll have to take a more manual, analytical approach.
 
 ### Navigating in GDB
 
