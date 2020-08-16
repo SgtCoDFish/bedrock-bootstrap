@@ -39,7 +39,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
-		err = state.GdbConn.AdvancePC(0x204000cc, 200)
+		err = state.GdbConn.AdvancePC(0x204000cc, 1000)
 		if err != nil {
 			return err
 		}
@@ -56,7 +56,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 
 		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
 
-		err = state.GdbConn.AdvancePC(0x204000b0, 200)
+		err = state.GdbConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
 			return err
 		}
@@ -121,7 +121,7 @@ func ProcessUARTRxxdComment(state *State) error {
 	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
-		err = state.GdbConn.AdvancePC(0x204000cc, 200)
+		err = state.GdbConn.AdvancePC(0x204000cc, 1000)
 		if err != nil {
 			return err
 		}
@@ -138,7 +138,7 @@ func ProcessUARTRxxdComment(state *State) error {
 
 		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
 
-		err = state.GdbConn.AdvancePC(0x204000b0, 200)
+		err = state.GdbConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
 			return err
 		}
@@ -203,7 +203,7 @@ func ProcessUARTRxxdFull(state *State) error {
 
 	for i := 0; i < len(msg); i++ {
 		// advance to 2040_00CC which is just after UART has been read from
-		err = state.GdbConn.AdvancePC(0x204000cc, 200)
+		err = state.GdbConn.AdvancePC(0x204000cc, 1000)
 		if err != nil {
 			return err
 		}
@@ -226,7 +226,7 @@ func ProcessUARTRxxdFull(state *State) error {
 		}
 
 		// advance to 2040_00B0 which is the start of reading from UART
-		err = state.GdbConn.AdvancePC(0x204000b0, 200)
+		err = state.GdbConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
 			return err
 		}
@@ -304,7 +304,7 @@ func ProcessUARTRxxdFull(state *State) error {
 // checkInitialization advances execution until UART input is read and asserts that the registers
 // were initialized as expected.
 func checkInitialization(state *State) error {
-	err := state.GdbConn.AdvancePC(0x204000b0, 100)
+	err := state.GdbConn.AdvancePC(0x204000b0, 1000)
 	if err != nil {
 		return err
 	}
