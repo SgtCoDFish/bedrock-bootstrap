@@ -41,16 +41,16 @@ b7 37 01 10  # lui a5, 0x10013
 # a0 / x10: current received byte from UART
 # a1 / x11: tmp scratch area for reading from UART
 # a2 / x12: 0x8000_0000 (used for reading/writing UART)
-# a4 / x14: RAM write pointer, starts at 0x8000_1000
+# a4 / x14: RAM write pointer, starts at 0x8000_0000
 # a5 / x15: UART0_TXDATA = 0x10013000 (write UART)
 # a6 / x16: UART0_RXDATA = 0x10013004 (receive UART)
 # a7 / x17: 0xa (used for comparing in comment mode)
 # s2 / x18: 0x20 (used for comparing x06)
 # s3 / x19: current little endian byte
 # s4 / x20: flags, where nonzero means we're in comment mode
-# s5 / x21: the location - 0x8000_1000 - to which we jump when
-#            we're done accepting input same as the initial
-#            value of x14
+# s5 / x21: the location to which we jump when we're done
+#            accepting input. same as the initial value of
+#            x14
 
 93 02 00 00  # mv x05, x0 == addi x05, x00, 0x0
 13 03 00 00  # mv x06, x0 == addi x06, x00, 0x0
@@ -60,14 +60,14 @@ b7 37 01 10  # lui a5, 0x10013
 13 05 00 00  # mv x10, x0 == addi x10, x00, 0x0
 93 05 00 00  # mv x11, x0, 0x00 == addi x11, x00, 0x0
 37 06 00 80  # lui x12, 0x80000
-37 17 00 80  # lui x14, 0x80001
+37 07 00 80  # lui x14, 0x80000
 b7 37 01 10  # lui x15, 0x10013
 13 88 47 00  # addi x16, x15, 0x4
 93 08 a0 00  # addi x17, x00, 0xa
 13 09 00 02  # addi x18, x00, 0x20
 93 09 00 00  # addi x19, x0, 0x00
 13 0a 00 00  # addi x20, x0, 0x00
-b7 1a 00 80  # lui x21, 0x80001
+93 0a 07 00  # mv x21, x14 == addi x21, x14, 0x0
 
 # b0: .READ_UART
 # Read a byte from UART

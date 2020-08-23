@@ -295,7 +295,7 @@ var instructionMap = map[string]Instruction{
 		Type: RType,
 		Opcodes: Opcodes{
 			Opcode: 0x33,
-			Funct3: 0x07,
+			Funct3: 0x00,
 			Funct7: 0x00,
 		},
 	},
@@ -429,6 +429,23 @@ var instructionMap = map[string]Instruction{
 		Opcodes: Opcodes{
 			Opcode: 0x63,
 			Funct3: 0x04,
+		},
+	},
+	"xor": {
+		Name: "xor",
+		Type: BType,
+		Opcodes: Opcodes{
+			Opcode: 0x33,
+			Funct3: 0x4,
+			Funct7: 0x00,
+		},
+	},
+	"xori": {
+		Name: "xori",
+		Type: IType,
+		Opcodes: Opcodes{
+			Opcode: 0x13,
+			Funct3: 0x4,
 		},
 	},
 }

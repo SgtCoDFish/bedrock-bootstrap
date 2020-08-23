@@ -8,6 +8,10 @@ import (
 	"github.com/sgtcodfish/substratum"
 )
 
+const (
+	memoryStart = 0x80000000
+)
+
 // ProcessUARTRxxdBasic verifies the execution of the given GDB target and checks that it handles input as expected
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "basic" test has only basic UART input, whose presence is checked in memory after running the whole program
@@ -35,7 +39,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
-		err = state.GdbConn.AdvancePC(0x204000cc, 200)
+		err = state.GdbConn.AdvancePC(0x204000cc, 1000)
 		if err != nil {
 			return err
 		}
@@ -52,7 +56,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 
 		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
 
-		err = state.GdbConn.AdvancePC(0x204000b0, 200)
+		err = state.GdbConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
 			return err
 		}
@@ -65,7 +69,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 
 	frame.Dump(state.Logger)
 
-	for i := uint32(0x80000FFC); i < 0x8000100C; i += 4 {
+	for i := uint32(memoryStart); i < memoryStart+0x10; i += 4 {
 		word, err := state.GdbConn.ReadMemoryWord(i)
 		if err != nil {
 			return err
@@ -75,7 +79,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 
 		// we only want to write our single word at the initial memory location
 		// and we don't want to touch any of the surrounding memory
-		if i == 0x80001000 {
+		if i == memoryStart {
 			if word != "13000000" {
 				return fmt.Errorf("wanted memory at 0x%8.8X == 0x13000000 but got %s", i, word)
 			}
@@ -117,7 +121,7 @@ func ProcessUARTRxxdComment(state *State) error {
 	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
-		err = state.GdbConn.AdvancePC(0x204000cc, 200)
+		err = state.GdbConn.AdvancePC(0x204000cc, 1000)
 		if err != nil {
 			return err
 		}
@@ -134,7 +138,7 @@ func ProcessUARTRxxdComment(state *State) error {
 
 		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
 
-		err = state.GdbConn.AdvancePC(0x204000b0, 200)
+		err = state.GdbConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
 			return err
 		}
@@ -147,7 +151,7 @@ func ProcessUARTRxxdComment(state *State) error {
 
 	frame.Dump(state.Logger)
 
-	for i := uint32(0x80000FFC); i < 0x8000100C; i += 4 {
+	for i := uint32(memoryStart); i < memoryStart+0x10; i += 4 {
 		word, err := state.GdbConn.ReadMemoryWord(i)
 		if err != nil {
 			return err
@@ -157,7 +161,7 @@ func ProcessUARTRxxdComment(state *State) error {
 
 		// we only want to write our single word at the initial memory location
 		// and we don't want to touch any of the surrounding memory
-		if i == 0x80001000 {
+		if i == memoryStart {
 			if word != "13000000" {
 				return fmt.Errorf("wanted memory at 0x%8.8X == 0x13000000 but got %s", i, word)
 			}
@@ -199,7 +203,7 @@ func ProcessUARTRxxdFull(state *State) error {
 
 	for i := 0; i < len(msg); i++ {
 		// advance to 2040_00CC which is just after UART has been read from
-		err = state.GdbConn.AdvancePC(0x204000cc, 200)
+		err = state.GdbConn.AdvancePC(0x204000cc, 1000)
 		if err != nil {
 			return err
 		}
@@ -222,7 +226,7 @@ func ProcessUARTRxxdFull(state *State) error {
 		}
 
 		// advance to 2040_00B0 which is the start of reading from UART
-		err = state.GdbConn.AdvancePC(0x204000b0, 200)
+		err = state.GdbConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
 			return err
 		}
@@ -240,7 +244,7 @@ func ProcessUARTRxxdFull(state *State) error {
 
 	frame.Dump(state.Logger)
 
-	for i := uint32(0x80000FFC); i < 0x80001010; i += 4 {
+	for i := uint32(memoryStart); i < memoryStart+0x10; i += 4 {
 		word, err := state.GdbConn.ReadMemoryWord(i)
 		if err != nil {
 			return err
@@ -250,19 +254,19 @@ func ProcessUARTRxxdFull(state *State) error {
 
 		// we only want to write our single word at the initial memory location
 		// and we don't want to touch any of the surrounding memory
-		if i == 0x80001000 {
+		if i == memoryStart+0x00 {
 			if word != "13000000" {
 				return fmt.Errorf("wanted memory at 0x%8.8X == 0x13000000 but got %s", i, word)
 			}
-		} else if i == 0x80001004 {
+		} else if i == memoryStart+0x04 {
 			if word != "13000000" {
 				return fmt.Errorf("wanted memory at 0x%8.8X == 0x13000000 but got %s", i, word)
 			}
-		} else if i == 0x80001008 {
+		} else if i == memoryStart+0x08 {
 			if word != "130f3012" {
 				return fmt.Errorf("wanted memory at 0x%8.8X == 0x130f3012 but got %s", i, word)
 			}
-		} else if i == 0x8000100C {
+		} else if i == memoryStart+0x0C {
 			if word != "63000000" {
 				return fmt.Errorf("wanted memory at 0x%8.8X == 0x63000000 but got %s", i, word)
 			}
@@ -273,7 +277,7 @@ func ProcessUARTRxxdFull(state *State) error {
 		}
 	}
 
-	err = state.GdbConn.WalkPC(0x8000100C, 50)
+	err = state.GdbConn.WalkPC(memoryStart+0xC, 50)
 	if err != nil {
 		return err
 	}
@@ -300,7 +304,7 @@ func ProcessUARTRxxdFull(state *State) error {
 // checkInitialization advances execution until UART input is read and asserts that the registers
 // were initialized as expected.
 func checkInitialization(state *State) error {
-	err := state.GdbConn.AdvancePC(0x204000b0, 100)
+	err := state.GdbConn.AdvancePC(0x204000b0, 1000)
 	if err != nil {
 		return err
 	}
@@ -315,12 +319,12 @@ func checkInitialization(state *State) error {
 	expectedInitialFrame := substratum.GDBRegisterFrame{
 		T2: 0x4,
 		A2: 0x80000000,
-		A4: 0x80001000,
+		A4: memoryStart,
 		A5: 0x10013000,
 		A6: 0x10013004,
 		A7: 0xa,
 		S2: 0x20,
-		S5: 0x80001000,
+		S5: memoryStart,
 		PC: 0x204000b0,
 	}
 

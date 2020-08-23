@@ -1,0 +1,377 @@
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# Initialise UART: 22 instructions, 88 bytes
+b7 27 01 10  # lui a5,0x10012
+93 87 c7 03  # addi a5, a5, 0x3c
+03 a5 07 00  # lw a0, 0(a5)
+93 05 30 00  # addi a1, x0, 0x3
+93 95 05 01  # slli a1, a1, 0x10
+b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
+33 f5 a5 00  # and a0, a1, a0
+23 a0 a7 00  # sw a0, 0(a5)
+93 87 87 ff  # addi a5, a5, -0x8
+03 a5 07 00  # lw a0, 0(a5)
+b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
+33 65 b5 00  # or a0, a0, a1
+b7 37 01 10  # lui a5, 0x10013
+93 87 87 01  # addi a5, a5, 0x18
+13 05 a0 08  # addi a0, x0, 0x8a
+23 a0 a7 00  # sw a0, 0(a5)
+93 87 07 ff  # addi a5, a5, -0x10
+13 05 10 00  # addi a0, x0, 0x1
+23 a0 a7 00  # sw a0, 0(a5)
+93 87 47 00  # addi a5, a5, 0x4
+13 05 10 00  # addi a0, x0, 0x1
+23 a0 a7 00  # sw a0, 0(a5)
+
+13 00 00 00 # padding
+
+# Register allocation:
+# t0 / x05: current word
+# t1 / x06: shift for placement in word
+# t2 / x07: byte shift, starts at 4
+# s0 / x08: scratch register used for comparison values
+# s1 / x09: scratch register used for comparison values
+# a0 / x10: current received byte from UART
+# a1 / x11: tmp scratch area for reading from UART
+# a2 / x12: 0x8000_0000 (used for reading/writing UART)
+# a3 / x13: 0x8000_0ea0 (location of function "m" in memory)
+# a4 / x14: RAM write pointer, starts at the value in x13 but is
+#           changed whenever a new function is defined
+# a5 / x15: UART0_TXDATA = 0x10013000 (write UART)
+# a6 / x16: UART0_RXDATA = 0x10013004 (receive UART)
+# a7 / x17: max size in bytes of each function, set to 312 (0x138)
+#           this gives us room for 13 functions each with a maximum
+#           of 78 instructions. The main function is "m", and can have
+#           an extra 40 bytes / 10 instructions at the end if we're to
+#           fit into 4096 (0x1000) bytes of RAM
+# s2 / x18: 0x20 (used for comparing x06)
+# s3 / x19: current little endian byte
+# s4 / x20: flags, where nonzero means we're in comment mode
+
+93 02 00 00  # mv x05, x0 == addi x05, x00, 0x0
+13 03 00 00  # mv x06, x0 == addi x06, x00, 0x0
+93 03 40 00  # addi x07, x00, 0x4
+13 04 00 00  # mv x08, x0 == addi x08, x00, 0x0
+93 04 00 00  # mv x09, x0 == addi x09, x00, 0x0
+13 05 00 00  # mv x10, x0 == addi x10, x00, 0x0
+93 05 00 00  # mv x11, x0, 0x00 == addi x11, x00, 0x0
+37 06 00 80  # lui x12, 0x80000
+b7 16 00 80  # lui x13, 0x80001
+93 86 06 ea  # addi x13, x13, -0x160
+13 87 06 00  # mv x14, x13
+b7 37 01 10  # lui x15, 0x10013
+13 88 47 00  # addi x16, x15, 0x4
+93 08 80 13  # mv x17, 0x138 (decimal 312)
+13 09 00 02  # addi x18, x00, 0x20
+93 09 00 00  # addi x19, x0, 0x00
+13 0a 00 00  # addi x20, x0, 0x00
+
+# b0: .READ_UART
+# Read a byte from UART
+03 25 08 00  # lw x10, 0(x16)
+b3 75 c5 00  # and x11, x10, x12
+e3 9c 05 fe  # bnez x10, -8 == bne x10, x0, -8
+13 75 f5 0f  # andi x10, x10, 0xFF
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# If the flags register is zero, we continue as normal, otherwise
+# we need to check which flags are enabled and handle them as appropriate
+63 04 0a 00  # beq x20, x00, 0x8
+
+# d0: If the flags register is nonzero we need to check which flag is enabled
+63 08 00 10  # beq x00, x00, .HANDLE_FLAGS
+13 00 00 00  # nop
+
+# Check for "." (0x2E) to start function definition mode
+13 04 e0 02  # addi x08, x00, 0x2e
+63 18 85 00  # bne x10 x08 0x10
+
+# If we got a ".", set bit 2 of flags and jump back to READ_UART
+13 6a 2a 00  # ori x20, x20, 0x2
+e3 06 00 fc  # beq x00, x00, .READ_UART (-0x34)
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# f0: If we're here, we're not in any kind of flag mode
+# We need to check if we got 0x23 (#) and if so, enter comment mode
+13 04 30 02  # addi x08, x00, 0x23
+63 1a 85 00  # bne x10 x08 0x14
+
+# We got a #, so enter comment mode
+13 6a 1a 00  # ori x20, x20, 0x1
+e3 0a 00 fa  # beq x00, x00, .READ_UART (-0x4C)
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# 108: If we didn't get 0x23, then we can ignore anything below 0x30 ('0')
+13 04 00 03  # addi x08, x00, 0x30
+63 58 85 00  # bge x10, x08, +0x10
+13 00 00 00  # nop
+13 00 00 00  # nop
+e3 0c 00 f8  # beq x00, x00, .READ_UART
+
+# The value is >= 0x30, so it could be a hex char
+# If the value is less than 0x3a, we just subtract 0x30 and that's the value
+13 04 a0 03  # addi x08, x00, 0x3a
+63 5a 85 00  # bge x10, x08, +0x14
+
+# We got a value in the range 0x30 - 0x39 inclusive. Subtract 0x30 and we have our raw value
+13 05 05 fd  # addi x10, x10, -0x30
+13 00 00 00  # nop
+13 00 00 00  # nop
+63 00 00 04  # beq x0, x0, +.ADDRAW +0x40
+
+# Otherwise, we got a value >= 0x3A, so it could be a lower or uppercase letter.
+# We OR the x10 register with 0x20 to force lowercase, and then check that the value is in
+# the range 0x61 ('a') to 0x66 ('f'). If it is, we subtract 0x57 to get the raw value
+# in the range 0xA - 0xF
+
+# 0x134
+
+13 65 05 02  # ori  x10, x10, 0x20
+13 04 10 06  # addi x08, x00, 0x61
+63 48 85 08  # blt  x10, x08, .PANIC +0x90
+13 04 70 06  # addi x08, x00, 0x67
+63 46 a4 00  # blt  x08, x10, +0xC (check for special chars)
+13 05 95 fa  # addi x10, x10, -0x57
+63 02 00 02  # beq x0, x0, +.ADDRAW +0x24
+
+# Check if we got a "j" or "x" and handle them if needed in .HANDLE_SPECIAL
+13 00 00 00  # nop
+63 00 00 16  # beq x00, x00, .HANDLE_SPECIAL (0x2b4)
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# 170: ADDRAW: we got a value to be added to our "running word" which will be written
+# when it's complete.
+# We shift left by some multiple of 4 bits and OR the resulting value with the
+# running value in x05. If we shifted left by K, we reset the shift amount and write
+# x5 to the RAM at x14 and increment x14 by 4.
+# After all steps, we jump back and read another byte from UART.
+
+# There's some nuance to handling little endian incoming ASCII,
+# since the shifts aren't linear. To explain that, consider:
+# We get the input "4a 8b 01 3c" which should translate as 0x3c018b4a
+# The shifts are:
+# 4 << 04 , a << 00
+# 8 << 12 , b << 08
+# 0 << 20 , 1 << 16
+# 3 << 24 , c << 28
+# So we have to build bytes (which we store in x19) by storing a shift
+# in x07, which switches between 4 and 0, starting at 4.
+# We get a nibble from uart, shift it by the number of places in x07
+# and then OR it with x19.
+# If x07 == 4, we set x07 to 0 and read another value from UART
+# If x07 == 0, we:
+# - add 4 to x07
+# - shift x19 left by x06 places
+# - x05 |= x19
+# - x19 = 0
+# - add 8 to x06
+# - if x06 == 32:
+# -- set x06 to 0
+# -- write the byte in x05 to the address in x14
+# -- x05 = 0
+# -- add 4 to x14
+# - finally, read another value from UART
+
+33 15 75 00  # sll x10, x10, x07
+b3 e9 a9 00  # or x19, x19, x10
+63 8a 03 00  # beq x07, x00, +0x14
+93 03 00 00  # addi x07, x00, 0x00
+e3 08 00 f2  # beq x00, x00, READ_UART -0xb0
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# 18c: ADDBYTE
+93 03 40 00  # addi x07, x00, 0x4
+b3 99 69 00  # sll x19, x19, x06
+b3 e2 32 01  # or x05, x05, x19
+93 09 00 00  # addi x19, x00, 0x00
+13 03 83 00  # addi x06, x06, 0x8
+
+63 08 23 01  # beq x06, x18, 0x10
+e3 06 00 f0  # beq x00, x00, READ_UART -0xf0
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# 1b0: WRITEWORD
+
+23 20 57 00  # sw x05, 0(x14)
+13 07 47 00  # addi x14, x14, 0x4
+93 02 00 00  # addi x05, x00, 0x0
+13 03 00 00  # addi x06, x00, 0x0
+13 00 00 00  # nop
+13 00 00 00  # nop
+e3 04 00 ee  # beq x00, x00, READ_UART -0x118
+
+# 1cc: PANIC
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+63 00 00 00  # beq x00, x00, 0 # hang
+
+# 1e0: HANDLE_FLAGS
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# 1 is comment mode
+# 2 is function definition mode; expect 1 ASCII char from a-m which should be
+# lowercased, and then turned into an integer from 0-12. The value is then multiplied
+# by the value in x17 to give the location at which the function is written
+
+# check for comment mode
+
+13 74 1a 00  # andi x08, x20, 0x1
+63 02 04 02  # beq x08, x00, +0x24
+
+# handle comment mode
+
+# if the byte we read is not 0xa (\n) just go back to read more
+13 04 a0 00  # mv x08, 0xa
+63 1c 85 00  # bne x10, x08, +0x18
+
+# otherwise, if we got 0xa we need to clear bit 1 and then go back
+13 04 10 00  # mv x08, 0x1
+13 44 f4 ff  # not x08, x08 == xori x08, x08, -1
+33 7a 8a 00  # and x20, x20, x08
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# 0x214: jump back after handling comment node
+e3 0e 00 e8  # beq x0, x0, .READ_UART
+
+# check function definition mode
+
+13 74 2a 00  # andi x08, x20, 0x2
+63 06 04 04  # beq x08, x00, +0x4c
+
+# handle function definition mode
+
+# force the function name to lowercase, and then convert it into a number from 0-13 inclusive
+13 65 05 02  # ori  x10, x10, 0x20
+13 05 f5 f9  # addi x10, x10, -0x61
+
+# if x10 is lower than 0 or higher than 13 (0xD) just skip and continue to read the next char
+63 4e 05 02  # blt x10, x00, +0x3C
+13 04 d0 00  # addi x08, x00, 0xd == li x08, 0xd
+63 5a 85 02  # bge x10, x08, +0x34
+
+# otherwise, it's a valid function name so we need to set the current function register
+# and then clear bit 2 of the flags register
+# also needs to reset "shift" registers, etc: x19, x07, x06, x05
+37 07 00 80  # lui x14, 0x80000
+
+# subtract from x10 until it's 0, adding the "function size" to x14 each time
+63 08 05 00  # beq x10, x00, +0x10
+33 07 17 01  # add x14, x14, x17
+13 05 f5 ff  # addi x10, x10, -1
+e3 0a 00 fe  # beq x00, x00, -0x10
+
+93 02 00 00  # mv x05, x0 == addi x05, x00, 0x0
+13 03 00 00  # mv x06, x0 == addi x06, x00, 0x0
+93 03 40 00  # addi x07, x00, 0x4
+93 09 00 00  # addi x19, x0, 0x00
+
+13 04 20 00  # li x08, 0x2  == addi x08 x00 0x2
+13 44 f4 ff  # not x08, x08 == xori x08, x08, -1
+33 7a 8a 00  # and x20, x20, x08
+
+# 0x264: jump back after handling function definition mode
+e3 06 00 e4  # beq x0, x0, .READ_UART
+
+# 0x268: check for "x" mode, where we'll create and write a jump instruction
+13 74 4a 00  # andi x08, x20, 0x4
+63 02 04 04  # beq x08, x00, +0x44
+
+# we're in "x" mode, so we need to assemble a jump instruction to the named function
+# which is stored in x10
+
+# force the function name to lowercase, and then convert it into a number from 0-13 inclusive
+13 65 05 02  # ori  x10, x10, 0x20
+13 05 f5 f9  # addi x10, x10, -0x61
+
+# if x10 is lower than 0 or higher than 13 (0xD) just skip and continue to read the next char
+63 4c 05 02  # blt x10, x00, +0x38
+13 04 d0 00  # addi x08, x00, 0xd == li x08, 0xd
+63 48 85 02  # bge x10, x08, +0x34
+
+# we can't use branch instructions to make the calls, so we need to write instructions which:
+# - load the correct address into x08 (this could take multiple instructions)
+# - jump to x08 (jr x08)
+# in other words, we need to write the following instructions; as such, we'll copy them across
+# so we jump over them first
+63 0e 00 00  # beq x00, x00, +0x1c
+
+# as above, these aren't actually executed; they're for copying
+37 04 00 80  # lui x08, 0x80000
+63 08 05 00  # beq x10, x00, +0x10
+33 04 14 01  # add x08, x08, x17
+13 05 f5 ff  # addi x10, x10, -1
+e3 0a 00 fe  # beq x00, x00, -0x10
+67 00 04 00  # jr x08
+
+# we need to:
+# write a li x10, *x10 instruction (i.e. an instruction which loads into x10 the current value of x10)
+# load address of lui instruction above into x08
+# while x08 <= address of jr instruction above:
+# - load data from x08 into x09
+# - write data from x09 into x14
+# - increase x14 by 4
+
+# TODO: write `li x10, *x10` instruction and loop to copy above instructions
+# TODO: gonna need more space here
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# 0x2b0: jump back after handling "x" mode
+e3 00 00 e0  # beq x00, x00, .READ_UART
+
+# 0x2b4: .HANDLE_SPECIAL
+# if we got a "j", jump to the starting point where we began writing
+# instructions we received, which is stored in x21
+13 04 a0 06  # addi x08, x00, 0x6A ("j")
+63 10 a4 02  # bne x08, x10, +0x20
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+67 80 06 00  # jalr x0, x13, 0x00
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# check for "x" and if found, enter "insert jump" mode
+13 04 80 07  # addi x08, x00, 0x78 ("x")
+63 10 a4 02  # bne x08, x10, +0x20
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 6a 4a 00  # ori x20, x20, 0x4
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+e3 0a 00 da  # beq x00, x00, READ_UART
