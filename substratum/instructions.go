@@ -400,6 +400,14 @@ var instructionMap = map[string]Instruction{
 			Funct3: 0x02,
 		},
 	},
+	"lw": {
+		Name: "lw",
+		Type: IType,
+		Opcodes: Opcodes{
+			Opcode: 0x03,
+			Funct3: 0x02,
+		},
+	},
 	"jal": {
 		Name: "jal",
 		Type: JType,

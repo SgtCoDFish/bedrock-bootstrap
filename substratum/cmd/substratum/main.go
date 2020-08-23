@@ -13,9 +13,17 @@ const ASMCommand = "asm"
 // AutoTestCMD is the command which runs automated, GDB-backed tests of RISC-V baremetal programs
 const AutoTestCMD = "autotest"
 
+// ASMFileCommand is the command which assembles a file, line by line
+const ASMFileCommand = "asm-file"
+
 func main() {
 	logger := log.New(os.Stdout, "", 0)
+
 	asmCmd := flag.NewFlagSet(ASMCommand, flag.ExitOnError)
+
+	asmFileCMD := flag.NewFlagSet(ASMFileCommand, flag.ExitOnError)
+	asmFileCMD.String("input", "-", "The file to read")
+	asmFileCMD.String("output", "-", "The file to write")
 
 	autoTestCMD := flag.NewFlagSet(AutoTestCMD, flag.ExitOnError)
 	autoTestCMD.String("gdb", "", "The path to the GDB executable to use")
@@ -41,6 +49,17 @@ func main() {
 		err = processASM(asmCmd, logger)
 		if err != nil {
 			logger.Fatalf("failed to process 'asm' command: %s", err.Error())
+		}
+
+	case ASMFileCommand:
+		err := asmFileCMD.Parse(os.Args[2:])
+		if err != nil {
+			logger.Fatalf("failed to parse '%s' command: %s", ASMFileCommand, err.Error())
+		}
+
+		err = processASMFile(asmFileCMD, logger)
+		if err != nil {
+			logger.Fatalf("failed to process '%s' command: %s", ASMFileCommand, err.Error())
 		}
 
 	case AutoTestCMD:
