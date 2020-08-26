@@ -24,6 +24,7 @@ func main() {
 	asmFileCMD := flag.NewFlagSet(ASMFileCommand, flag.ExitOnError)
 	asmFileCMD.String("input", "-", "The file to read")
 	asmFileCMD.String("output", "-", "The file to write")
+	asmFileCMD.String("output-format", "bin", "The format in which to write output - 'bin' for binary, 'hex' for ASCII hex")
 
 	autoTestCMD := flag.NewFlagSet(AutoTestCMD, flag.ExitOnError)
 	autoTestCMD.String("gdb", "", "The path to the GDB executable to use")

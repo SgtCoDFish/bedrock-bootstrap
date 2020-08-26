@@ -42,6 +42,13 @@ func processASMFile(flags *flag.FlagSet, logger *log.Logger) error {
 		return err
 	}
 
+	outputFormatFlag := flags.Lookup("output-format")
+	outputFormat := strings.ToLower(outputFormatFlag.Value.String())
+
+	if outputFormat != "hex" && outputFormat != "bin" {
+		return fmt.Errorf("invalid value for 'output-format'; valid values are 'hex' and 'bin'")
+	}
+
 	inputReader := bufio.NewReader(inputFile)
 
 	done := false
@@ -87,7 +94,11 @@ func processASMFile(flags *flag.FlagSet, logger *log.Logger) error {
 			return fmt.Errorf("failed to assemble '%s': %w", line, err)
 		}
 
-		_, _ = outputFile.Write(assembled)
+		if outputFormat == "bin" {
+			_, _ = outputFile.Write(assembled)
+		} else {
+			_, _ = outputFile.WriteString(fmt.Sprintf("%02x %02x %02x %02x  # %s\n", assembled[0], assembled[1], assembled[2], assembled[3], line))
+		}
 	}
 
 	return nil
