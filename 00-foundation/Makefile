@@ -18,7 +18,7 @@ BUILD/nothing.o: nothing.c
 
 nothing.elf: BUILD/nothing.o BUILD/start.o
 	@mkdir -p BUILD
-	$(RISCV_PREFIX)ld $^ -Tlinker.ld -o $@
+	$(RISCV_PREFIX)ld $^ -Tlinker.ld --architecture=rv32i -m elf32lriscv -o $@
 
 nothing.bin: nothing.elf
 	@mkdir -p BUILD

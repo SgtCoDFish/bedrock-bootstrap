@@ -52,11 +52,11 @@ $ od -Ax -tx1 nothing.bin
 000018
 ```
 
-Note that the raw binary dump (`nothing.bin`) is very small, and that the bytes match up with the disassembly in `nothing.dump`. For example, we see that the first instruction, at address `0x80000000` has the hex machine-code representation `00b00513` and that this matches the first 4 bytes of `nothing.bin` if you account for the disassembly showing big-endian and the hexdump showing raw bytes, which are little-endian.
+Note that the raw binary dump (`nothing.bin`) is very small, and that the bytes match up with the disassembly in `nothing.dump`. For example, we see that the first instruction, at address `0x80000000` has the hex machine-code representation `00b00513` and that this matches the first 4 bytes of `nothing.bin` if you account for the disassembly showing full 32-bit integers and the hexdump showing raw bytes, which are little-endian.
 
 The dump also has assembly on the right to make it easier to read, so we can see that the sole command in `main` is `li a0,11` which loads the value `11` into the register named `a0` (which is designated by the RISC-V [Calling Convention](https://riscv.org/wp-content/uploads/2015/01/riscv-calling.pdf) as being for return values).
 
-Of course, the compiled output isn't much use to us right now. We want to run it - on QEMU or on hardware - to make sure it actually runs.
+Of course, the compiled output isn't much use to us right now - we want to actually run it!
 
 ## Running in QEMU
 
