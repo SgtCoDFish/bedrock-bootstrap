@@ -14,7 +14,7 @@ BUILD/start.o: start.s
 
 ret1234.elf: BUILD/start.o
 	@mkdir -p BUILD
-	$(RISCV_PREFIX)ld $^ -Tlinker.ld -o $@
+	$(RISCV_PREFIX)ld $^ -Tlinker.ld --architecture=rv32i -m elf32lriscv -o $@
 
 ret1234.bin: ret1234.elf
 	@mkdir -p BUILD
