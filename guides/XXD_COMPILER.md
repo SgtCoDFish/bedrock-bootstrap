@@ -1,6 +1,6 @@
 # "Compiling" with `xxd`
 
-xxd is a hexdump tool, useful for seeing the raw bytes which make up a program:
+`xxd` is a hexdump tool, useful for seeing the raw bytes which make up a program:
 
 ```bash
 $ echo -n "0123" | xxd -p

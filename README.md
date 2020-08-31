@@ -65,7 +65,7 @@ Frankly, it'll be fun. By implementing a whole system - or at least, the softwar
 
 ### Longer Motivation
 
-On most modern systems, the bootstrapping process is hidden from users by virtue of the fact that they install an OS from some other medium (e.g. a USB stick) which was compiled on someone _else's_ computer. That means that if you're installing Windows, you're trusting a lot of people at Microsoft. If you install Linux, you're trusting whoever provides your distro of choice which is, again, a group of people. You're also trusting whoever wrote the compiler that was used, and anyone who wrote any of the software which is installed, such as Notepad on Windows or Vim on a Linux box... and in turn, whatever compiler was used to compile those binaries, and the computer which was used to compile them, and so on.
+On most modern systems, the bootstrapping process is hidden from users by virtue of the fact that they install an OS from some other medium (e.g. a USB stick) which was compiled on someone _else's_ computer. That means that if you're installing Windows, you're trusting a lot of people at Microsoft. If you install Linux, you're trusting whoever provides your distro of choice which is, again, a group of people. You're also trusting whoever wrote the compiler that was used, and anyone who wrote any of the software which is installed, such as Notepad on Windows or Vim on a Linux box; in turn you trust whatever compiler was used to compile those binaries, and the computer which was used to compile them, and so on.
 
 On Windows, "trust" is the end of the road - you don't get to see most of the code that's running and check it.
 

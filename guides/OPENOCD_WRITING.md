@@ -1,11 +1,11 @@
 # Using OpenOCD
 
-OpenOCD (Open On-Chip Debugger) is a tool which allows us to debug and update a device which is connected to a computer. In the case of the HiFive, we can connect it to a machine via a microUSB to USB cable
+OpenOCD (Open On-Chip Debugger) is a tool which allows us to debug and update a device which is connected to a computer. In the case of the HiFive1, we can connect it to a machine via a micro-USB to USB cable
 and then use GDB to write new images to the on-device flash memory, which can be booted from later.
 
 ## Running OpenOCD Without `sudo`
 
-We need to add our user to the relevant group and whitelist the specific device vendor and product IDs for the HiFive.
+We need to add our user to the relevant group and allowlist the specific device vendor and product IDs for the HiFive1.
 
 Add the following to `/etc/udev/99-openocd-riscv.rules`:
 
@@ -34,7 +34,7 @@ This should be sufficient although you might need to log out and log back in fir
 
 To write an ELF file using OpenOCD you'll need a device definition file, which is provided by SiFive in the [freedom-e-sdk repository](https://github.com/sifive/freedom-e-sdk/blob/cebbb7cb6c7b16767b4ba04e7f231a784be9697a/bsp/sifive-hifive1/openocd.cfg).
 
-To upload an ELF file, use the following command. Note that if you've not whitelisted your user to use OpenOCD, you'll need to call OpenOCD with `sudo`.
+To upload an ELF file, use the following command. Note that if you've not allowlisted your user to use OpenOCD, you'll need to call OpenOCD with `sudo`.
 
 ```bash
 ${OPENOCD} -f openocd.cfg \

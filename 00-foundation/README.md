@@ -52,7 +52,7 @@ $ od -Ax -tx1 nothing.bin
 000018
 ```
 
-Note that the raw binary dump (`nothing.bin`) is very small, and that the bytes match up with the disassembly in `nothing.dump`. For example, we see that the first instruction, at address `0x80000000` has the hex machine-code representation `00b00513` and that this matches the first 4 bytes of `nothing.bin` if you account for the disassembly showing full 32-bit integers and the hexdump showing raw bytes, which are little-endian.
+Note that the raw binary dump (`nothing.bin`) is very small, and that the bytes match up with the disassembly in `nothing.dump`. For example, we see that the first instruction, at address `0x80000000` has the hex machine-code representation `00b00513` and that this matches the first 4 bytes of `nothing.bin` if you account for the disassembly showing full 32-bit integers and the hex dump showing raw bytes, which are little-endian.
 
 The dump also has assembly on the right to make it easier to read, so we can see that the sole command in `main` is `li a0,11` which loads the value `11` into the register named `a0` (which is designated by the RISC-V [Calling Convention](https://riscv.org/wp-content/uploads/2015/01/riscv-calling.pdf) as being for return values).
 
@@ -66,7 +66,7 @@ We pass a few arguments to the following command which look initially confusing:
 
 - `-s` starts a GDB debugger on port `1234` which lets us dump memory
 - `-S` pauses the CPU before running anything, giving us time to debug
-- `-machine sifive_e` tells QEMU we're running a sifive-e machine (which the HiFive 1 is!)
+- `-machine sifive_e` tells QEMU we're running a `sifive-e` machine (which the HiFive1 is!)
 - `-nographic` disables graphics - we're not going to need them.
 
 Finally we point at our "kernel" - which is our ELF file - and kick off QEMU. If you encounter any issues using QEMU from a package manager, it's very easy to build your own.
@@ -91,4 +91,4 @@ pc 0x1000     0x1000
 
 So we see our program is loaded correctly, and `info register pc` shows us that the board has defaulted `pc` to `0x1000`, and at that address there's actually an instruction already there which we didn't write!
 
-We _could_ cheat and look up in the HiFive manual for clues as to what that instruction does, but this is actually a great opportunity to write some raw machine code and disassemble it, which we'll try in the next section.
+We _could_ cheat and look up in the HiFive1 manual for clues as to what that instruction does, but this is actually a great opportunity to write some raw machine code and disassemble it, which we'll try in the next section.

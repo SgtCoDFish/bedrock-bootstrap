@@ -1,6 +1,6 @@
 # "Double Tap Dontboot" and 0x20000000 Dump
 
-The directory has the `double_tap_dontboot.c` bootloader provided by Sifive alongside a dump of the `double_tap_dontboot.c` bootloader which is distributed on the HiFive1 at address `0x2000_0000`.
+The directory has the `double_tap_dontboot.c` bootloader provided by SiFive alongside a dump of the `double_tap_dontboot.c` bootloader which is distributed on the HiFive1 at address `0x2000_0000`.
 
 The necessary includes are provided, although are unlikely to be sufficient to recreate the full bootloader without a linker script.
 

@@ -64,3 +64,8 @@ docker-build-env: VERSION.txt Dockerfile
 docker-ci: docker-build-env
 	mkdir -p bin BUILD
 	docker run --rm -v "$$PWD:/work" substratum-build:$(VERSION) make ci
+
+
+.PHONY: install
+install:
+	sudo cp bin/$(NAME) /usr/bin/$(NAME)

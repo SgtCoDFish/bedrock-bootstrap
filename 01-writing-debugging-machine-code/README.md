@@ -11,7 +11,7 @@ If we want to write in pure machine code, we'll need to be able to write raw byt
 
 `echo` is a super simple, widely available program but actually works fine to get the idea of what we're trying to achieve here.
 
-We must remember to write the bytes as little-endian; remember that gdb shows us 32-bit instructions in hex, whereas we're writing raw bytes. We also need to pass `-n` so that echo doesn't append a newline (which would show up as `0x0a`). You can run the commands yourself or run `make BUILD/bootloader1`:
+We must remember to write the bytes as little-endian; remember that GDB shows us 32-bit instructions in hex, whereas we're writing raw bytes. We also need to pass `-n` so that echo doesn't append a newline (which would show up as `0x0a`). You can run the commands yourself or run `make BUILD/bootloader1`:
 
 ```bash
 $ mkdir -p BUILD
@@ -42,7 +42,7 @@ And the first bootloader is revealed!
 
 `lui t0,0x20400` loads the unsigned value `0x20400000` into `t0` which is a "temporary" register. You'll note that the immediate value in the instruction, `0x20400` doesn't _exactly_ match the value that ends up in `t0`. To clear that up, the [manual](https://content.riscv.org/wp-content/uploads/2016/06/riscv-spec-v2.1.pdf) says:
 
-> LUI (load upper immediate) is used to build 32-bit constants ... LUI places the immediate value in the top 20 bits of the destination register, filling in the lowest 12 bits with zeros.
+> `LUI` (load upper immediate) is used to build 32-bit constants ... `LUI` places the immediate value in the top 20 bits of the destination register, filling in the lowest 12 bits with zeros.
 
 Since one hex "value" is 4 bits, that means the bottom 12 bits of the loaded value are `000`, which explains the difference.
 

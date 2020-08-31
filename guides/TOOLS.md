@@ -4,7 +4,7 @@ While we do want to minimise the amount of tooling we use so that we can minimis
 
 ## Building QEMU
 
-If your system has QEMU >= 3.1, then in theory RISC-V support was upstreamed and you can probably install a RISC-V-supporting QEMU from your system package manager. If you run into problems using the version from your package manage, it's very easy to build QEMU from source and use that.
+If your system has QEMU >= 3.1 RISC-V support is likely to be included and you can probably install a RISC-V-supporting QEMU from your system package manager. If you run into problems using the version from your package manage, it's very easy to build QEMU from source and use that.
 
 Clone it yourself and build:
 
@@ -18,7 +18,7 @@ make -j4
 
 ## The GNU Toolchain
 
-You can use a prebuilt toolchain from [SiFive](https://www.sifive.com/boards/) (search for "GCC Toolchain") or build your own. You'll need one in either case; the compilers won't be much use, but some of the other tools will be.
+You can use a pre-built toolchain from [SiFive](https://www.sifive.com/boards/) (search for "GCC Toolchain") or build your own. You'll need one in either case; the compilers won't be much use, but some of the other tools will be.
 
 If you're building from source, you can see in the freedom-e-sdk HiFive1 [BSP](https://github.com/sifive/freedom-e-sdk/blob/30c143eb5445f47edb351ba54c84ff8285dc27a9/bsp/sifive-hifive1/settings.mk) that we need to target a different arch and ABI, since the toolchain defaults to 64 bit.
 
@@ -36,15 +36,15 @@ mkdir build && cd build
 make -j4  # might need to be done as root depending on where you're installing
 ```
 
-Note that we're using the arch `rv32ima` which means the base RISC-V 32-bit instruction set (`i`) plus extensions for `m`ultiplication and `a`tomic operations. You'll often see a `c` used in other toolchains; its omission is a conscious decision to simplify our efforts to write bare-metal machine code.
+Note that we're using the arch `rv32ima` which means the base RISC-V 32-bit instruction set (`i`) plus extensions for multiplication and atomic operations. You'll often see a `c` used in other toolchains; its omission is a conscious decision to simplify our efforts to write bare-metal machine code.
 
 In any case, we can (and will) explicitly specify the arch later when building which will allow us to avoid using extensions even if the toolchain is built with support for various extensions.[1]
 
-The executables will be in the `bin` dir.
+The executables will be in the `bin` directory.
 
 ## OpenOCD
 
-OpenOCD is also available from SiFive as a prebuilt binary: [search "OpenOCD"](https://www.sifive.com/boards).
+OpenOCD is also available from SiFive as a pre-built binary: [search "OpenOCD"](https://www.sifive.com/boards).
 
 At the time of writing, RISC-V wasn't supported by any versions of OpenOCD which were installable from package managers like apt or homebrew. There is a [patched version](https://github.com/riscv/riscv-openocd) which is easy to build, however:
 

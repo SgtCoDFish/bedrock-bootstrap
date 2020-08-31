@@ -33,7 +33,7 @@ func main() {
 	autoTestCMD.String("test-name", "", "The name of the test to run")
 
 	if len(os.Args) < 2 {
-		log.Fatalf("missing required argument: command (one of '%s')", strings.Join([]string{ASMCommand, AutoTestCMD}, ", "))
+		log.Fatalf("missing required argument: command (one of '%s')", strings.Join([]string{ASMCommand, ASMFileCommand, AutoTestCMD}, ", "))
 	}
 
 	switch strings.ToLower(os.Args[1]) {

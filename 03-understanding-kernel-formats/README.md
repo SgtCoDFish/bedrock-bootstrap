@@ -7,7 +7,7 @@ Now we understand the boot process and how control passes to our programs, we ne
 - Understand what format we need to use to get code running on both platforms
 - Know which parts of an ELF file are important for our purposes and which are not needed.
 
-## ret1234
+## `ret1234`
 
 In this directory we have a simple assembly language program which loads the value `0x01234` into the upper part of `x1`. The code is placed (via the linker script, `linker.ld`) into memory address `0x2040_0000` so it can be booted on both QEMU and the HiFive1.
 
@@ -21,7 +21,7 @@ So what binary file format - ELF or raw binary - do we actually need? We'll need
 
 ### QEMU
 
-So far we've used an ELF file to provide the kernel for QEMU, and in fact that's the only choice we have as evidenced by the riscv-qemu source code for [load\_kernel](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/riscv/sifive_e.c#L77-L88)[1].
+So far we've used an ELF file to provide the kernel for QEMU, and in fact that's the only choice we have as evidenced by the `riscv-qemu` source code for [load\_kernel](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/riscv/sifive_e.c#L77-L88)[1].
 
 That means that to run under QEMU, we always have to provide an [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) file[2].
 
@@ -39,7 +39,7 @@ The following is a brief overview of the different sections. More in-depth analy
 
 ### ELF Header
 
-The first 52 bytes of ret1234.elf, when dumped, show the ELF file header. This mostly doesn't change between different RV32I ELF files in our case, since we'll be aiming for a very simple file with very few program headers and section headers.
+The first 52 bytes of `ret1234.elf`, when dumped, show the ELF file header. This mostly doesn't change between different RV32I ELF files in our case, since we'll be aiming for a very simple file with very few program headers and section headers.
 
 ### Program Header
 
@@ -95,10 +95,10 @@ We've seen what an ELF file looks like, and we know that we need an ELF file for
 
 ## Notes
 
-[1] We see a call to `load_elf` which ultimately ends up [load\_elf\_ram\_sym](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/core/loader.c#L461) - the ELF parsing logic might be useful to us later so it's noted here, but in any case it's neat to drill down into these things.
+[1] We see a call to `load_elf` which ultimately ends up at [`load\_elf\_ram\_sym`](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/core/loader.c#L461) - the ELF parsing logic might be useful to us later so it's noted here, but in any case it's neat to drill down into these things.
 
-[2] The alternative to generating ELF files for both platforms is to patch QEMU's HiFive-compatible device to support raw binary files, perhaps with a specified offset.
+[2] The alternative to generating ELF files for both platforms is to patch QEMU's HiFive1-compatible device to support raw binary files, perhaps with a specified offset.
 
-We could for example patch the `load_kernel` function to parse `-kernel "0x20400000:ret1234.bin"` as "place ret1234.bin at `0x2040_0000`". It's a judgement call, but it feels like patching QEMU is further away from what we're trying to do than just banging out an ELF header, which is what we'll be doing later.
+We could for example patch the `load_kernel` function to parse `-kernel "0x20400000:ret1234.bin"` as "place `ret1234.bin` at `0x2040_0000`". It's a judgement call, but it feels like patching QEMU is further away from what we're trying to do than just banging out an ELF header, which is what we'll be doing later.
 
 At the end of the day, one of the tasks involves writing C and the other involves writing hex!
