@@ -4,7 +4,7 @@ addi x0, x0, 0x0
 addi x0, x0, 0x0
 
 # Initialise UART
-lui a5,0x10012
+lui a5, 0x10012
 addi a5, a5, 0x3c
 lw a0, 0(a5)
 addi a1, x0, 0x3

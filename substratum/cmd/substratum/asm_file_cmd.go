@@ -64,12 +64,21 @@ func processASMFile(flags *flag.FlagSet, logger *log.Logger) error {
 			}
 
 			done = true
+			continue
 		}
 
 		line = strings.ToLower(strings.TrimSpace(line))
 
+		commentSplit := strings.Split(line, "#")
+
+		if len(commentSplit) > 1 {
+			line = strings.TrimSpace(commentSplit[0])
+		} else if strings.HasPrefix(line, "#") {
+			continue
+		}
+
 		if len(line) == 0 {
-			break
+			continue
 		}
 
 		parts := strings.Split(line, " ")
@@ -81,15 +90,33 @@ func processASMFile(flags *flag.FlagSet, logger *log.Logger) error {
 
 		if len(parts) == 1 {
 			return fmt.Errorf("missing trailing args for '%s'", line)
-		} else if len(parts[1:]) != insn.ArgumentCount() {
-			return fmt.Errorf("invalid number of arguments for '%s'", insn.Name)
 		}
 
-		for i, s := range parts[1:] {
-			parts[i+1] = strings.TrimRight(s, ",\n")
+		rest := parts[1:]
+
+		for i, s := range rest {
+			rest[i] = strings.TrimRight(s, ",\n")
 		}
 
-		assembled, err := insn.AssembleRaw(parts[1:])
+		if len(rest) != insn.ArgumentCount() {
+			if (insn.Type == substratum.IType || insn.Type == substratum.SType) && len(rest) == 2 {
+				// handle instructions of the format "lw xXX, imm(xXX)"
+				offset := strings.TrimRight(rest[1], ")") // of the format imm(xXX
+				offsetParts := strings.Split(offset, "(")
+
+				if len(offsetParts) != 2 {
+					return fmt.Errorf("malformed instruction: %s", line)
+				}
+
+				rest[1] = offsetParts[1]            // the register in the parentheses
+				rest = append(rest, offsetParts[0]) // the immediate value
+
+			} else {
+				return fmt.Errorf("invalid number of arguments for '%s'", insn.Name)
+			}
+		}
+
+		assembled, err := insn.AssembleRaw(rest)
 		if err != nil {
 			return fmt.Errorf("failed to assemble '%s': %w", line, err)
 		}
