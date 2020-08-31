@@ -18,3 +18,7 @@ dump: BUILD/uart-functions.bin
 BUILD/uart-functions.elf: elfheader.hex uart-functions.hex
 	@mkdir -p BUILD
 	cat $^ | sed "s/#.*$$//g" | xxd -r -p > $@
+
+BUILD/uart-functions.o: uart-functions.asm
+	@mkdir -p BUILD
+	$(RISCV_PREFIX)as -march=rv32i $< -o $@
