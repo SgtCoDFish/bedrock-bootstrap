@@ -12,8 +12,16 @@ Backing up original firmware:
 sudo dfu-util -d 28e9:0189 -U firmware_backup
 ```
 
+## JTAG
+
+Using the [Sipeed USB-JTAG](https://www.seeedstudio.com/Sipeed-USB-JTAG-TTL-RISC-V-Debugger-p-2910.html) you can pause and debug the Longan Nano.
+
+Upstream openocd doesn't seem to work, but there's one in platformio: `~/.platformio/packages/tool-openocd-gd32v/bin/openocd`
+
+Config is provided in [openocd](./openocd); both files are needed. The config is taken from [this repo](https://github.com/riscv-rust/longan-nano).
+
 ## Links
 
 - Original firmware [dump](./firmware_backup)
 - Overall details in a good article: [susa.net](https://www.susa.net/wordpress/2019/10/longan-nano-gd32vf103/)
-- Patched [dfu-utils](https://github.com/riscv-mcu/gd32-dfu-utils)
+- Patched [dfu-utils](https://github.com/riscv-mcu/gd32-dfu-utils) (possible to use the one in platformio)
