@@ -24,6 +24,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 	}
 
 	msg := []byte("13000000")
+
 	err = state.SendSerial(msg)
 	if err != nil {
 		return err
@@ -106,6 +107,7 @@ func ProcessUARTRxxdComment(state *State) error {
 	}
 
 	msg := []byte("# comment\n13000000")
+
 	err = state.SendSerial(msg)
 	if err != nil {
 		return err
@@ -187,6 +189,7 @@ func ProcessUARTRxxdFull(state *State) error {
 	}
 
 	msg := []byte("13000000 # nop dummy command\n13 00 00 00 # endless screaming\n\n    13 0f 30 12 # addi x30 x00 0x123 #\nJ")
+
 	err = state.SendSerial(msg)
 	if err != nil {
 		return err
@@ -222,6 +225,7 @@ func ProcessUARTRxxdFull(state *State) error {
 
 		if strings.ToLower(string(msg[i])) == "j" {
 			fmt.Println("found a J in input")
+
 			break
 		}
 
@@ -333,5 +337,6 @@ func checkInitialization(state *State) error {
 	}
 
 	state.Logger.Printf("registers initialised as expected")
+
 	return nil
 }

@@ -110,7 +110,6 @@ func processASMFile(flags *flag.FlagSet, logger *log.Logger) error {
 
 				rest[1] = offsetParts[1]            // the register in the parentheses
 				rest = append(rest, offsetParts[0]) // the immediate value
-
 			} else {
 				return fmt.Errorf("invalid number of arguments for '%s'", insn.Name)
 			}

@@ -19,7 +19,7 @@ func processASM(flags *flag.FlagSet, logger *log.Logger) error {
 	}
 
 	if err = CheckTailArgs(rawArgs[1:], instruction.ArgumentCount()); err != nil {
-		return fmt.Errorf("invalid argument list or count for '%s': %v", instructionName, err)
+		return fmt.Errorf("invalid argument list or count for '%s': %w", instructionName, err)
 	}
 
 	args := make([]string, len(rawArgs[1:]))

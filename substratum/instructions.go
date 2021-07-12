@@ -108,8 +108,7 @@ func (i Instruction) ArgumentCount() int {
 // Assemble returns an assembled version of the given Instruction using the provided
 // Args, as a little endian byte slice.
 func (i Instruction) Assemble(args Args) ([]byte, error) {
-	err := i.verifyArgs(args)
-	if err != nil {
+	if err := i.verifyArgs(args); err != nil {
 		return nil, err
 	}
 
@@ -134,6 +133,7 @@ func (i Instruction) Assemble(args Args) ([]byte, error) {
 // AssembleRaw takes raw arguments, parses them and returns an assembled instruction
 func (i Instruction) AssembleRaw(rawArgs []string) ([]byte, error) {
 	var args Args
+
 	var err error
 
 	switch i.Type {

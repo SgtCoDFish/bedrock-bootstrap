@@ -126,6 +126,7 @@ func GetRegisterValue(name string) (uint8, error) {
 		name = strings.TrimLeft(name, "x")
 
 		a, err := strconv.Atoi(name)
+
 		return uint8(a), err
 	}
 

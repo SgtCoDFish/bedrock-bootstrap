@@ -3,6 +3,8 @@ package substratum
 import "testing"
 
 func TestGetABINameForNumberRegister_Success(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]string{
 		"x0":  "zero",
 		"x1":  "ra",
@@ -12,6 +14,7 @@ func TestGetABINameForNumberRegister_Success(t *testing.T) {
 
 	for k, v := range tests {
 		result, err := GetABINameForNumberRegister(k)
+
 		if err != nil {
 			t.Errorf("got an error trying to get an ABI name: %v", err)
 			continue
@@ -25,6 +28,8 @@ func TestGetABINameForNumberRegister_Success(t *testing.T) {
 }
 
 func TestGetABINameForNumberRegister_Failure(t *testing.T) {
+	t.Parallel()
+
 	tests := []string{"a", "x32", "x-1", "x0x0"}
 	for _, test := range tests {
 		_, err := GetABINameForNumberRegister(test)
@@ -36,6 +41,8 @@ func TestGetABINameForNumberRegister_Failure(t *testing.T) {
 }
 
 func TestGetNumberRegisterForABIName_Success(t *testing.T) {
+	t.Parallel()
+
 	tests := map[string]string{
 		"zero": "x0",
 		"fp":   "x8",
@@ -60,6 +67,8 @@ func TestGetNumberRegisterForABIName_Success(t *testing.T) {
 }
 
 func TestGetNumberRegisterForABIName_Failure(t *testing.T) {
+	t.Parallel()
+
 	tests := []string{"a", "0", "pf", "zer0"}
 	for _, test := range tests {
 		_, err := GetABINameForNumberRegister(test)

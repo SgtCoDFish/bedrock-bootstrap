@@ -95,6 +95,7 @@ func NewGdbConnection(gdbPath string, remoteTarget string) (*GdbConnection, erro
 	}
 
 	var registerNamesResponse gdbRegisterNamesResponse
+
 	err = mapstructure.Decode(resp, &registerNamesResponse)
 	if err != nil {
 		return nil, err
@@ -152,7 +153,7 @@ func NewGdbConnection(gdbPath string, remoteTarget string) (*GdbConnection, erro
 	return &gdbConn, nil
 }
 
-// GDBRegisterFrame holds the typed values of every regular RISC-V rv32 integer register along with the PC
+// GDBRegisterFrame holds the typed values of every regular RISC-V rv32 integer register along with the PC.
 type GDBRegisterFrame struct {
 	Zero uint32 `json:"zero" mapstructure:"zero"`
 	Ra   uint32 `json:"ra"  mapstructure:"ra"`
@@ -189,19 +190,21 @@ type GDBRegisterFrame struct {
 	PC   uint32 `json:"pc"  mapstructure:"pc"`
 }
 
-// AsMap returns the given register frame as a map of register names to register values
-// In some cases - such as iterating over all registers - a map is much easier to use
+// AsMap returns the given register frame as a map of register names to register values.
+// In some cases - such as iterating over all registers - a map is much easier to use.
 func (f GDBRegisterFrame) AsMap() map[string]uint32 {
 	asMap := make(map[string]uint32)
 	jsonEnc, _ := json.Marshal(f)
 
 	_ = json.Unmarshal(jsonEnc, &asMap)
+
 	return asMap
 }
 
-// Dump uses the given logger to write prettified contents of every register except `zero`
+// Dump uses the given logger to write prettified contents of every register except `zero`.
 func (f GDBRegisterFrame) Dump(logger *log.Logger) {
 	asMap := f.AsMap()
+
 	regList := append(GetRegisterList(), "pc")
 
 	for _, regName := range regList {
@@ -232,6 +235,7 @@ func (s *GdbConnection) FetchRegister(name string) (uint32, error) {
 	}
 
 	var valuesResponse gdbRegisterValuesResponse
+
 	err = mapstructure.Decode(resp, &valuesResponse)
 	if err != nil {
 		return 0, err
@@ -271,6 +275,7 @@ func (s *GdbConnection) FetchRegisterFrame() (GDBRegisterFrame, error) {
 	}
 
 	var valuesResponse gdbRegisterValuesResponse
+
 	err = mapstructure.Decode(resp, &valuesResponse)
 	if err != nil {
 		return registerFrame, err
@@ -344,6 +349,7 @@ func (s *GdbConnection) WalkPC(targetPC uint32, maxSteps int) error {
 
 		if pcReg == targetPC {
 			fmt.Println("PC matches target value, stopping walk")
+
 			return nil
 		}
 
@@ -362,6 +368,7 @@ func (s *GdbConnection) WalkPC(targetPC uint32, maxSteps int) error {
 // command in GDB.
 func (s *GdbConnection) StepOnce() error {
 	_, err := s.Conn.CheckedSend("exec-step-instruction")
+
 	return err
 }
 
@@ -375,6 +382,7 @@ func (s *GdbConnection) ReadMemoryWord(addr uint32) (string, error) {
 	}
 
 	var memoryDumpResponse gdbMemoryDumpResponse
+
 	err = mapstructure.Decode(result, &memoryDumpResponse)
 	if err != nil {
 		return "", err

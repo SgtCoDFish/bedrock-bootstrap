@@ -19,6 +19,8 @@ func makeTestLogger() (*log.Logger, *bytes.Buffer) {
 }
 
 func TestBTypes(t *testing.T) {
+	t.Parallel()
+
 	var cases = []testCase{
 		{
 			args: []string{"bne", "a0", "x0", "-8"},

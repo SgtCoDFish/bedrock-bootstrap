@@ -6,8 +6,6 @@ VERSION := $(shell cat VERSION.txt)
 GO = go
 GOLIST := $(shell $(GO) list -mod=vendor ./... | grep -v vendor)
 GOLINT = golint
-GOSTATICCHECK = staticcheck
-GOLANGCILINT = golangci-lint
 
 .PHONY: ci
 ci: clean test fmt lint staticcheck golangci-lint verify-vendor bin/$(NAME)
@@ -27,20 +25,15 @@ fmt:
 	@echo "+ $@"
 	@if [[ ! -z "$(shell gofmt -l -s . | grep -v vendor | tee /dev/stderr)" ]]; then exit 1; fi
 
-.PHONY: staticcheck
-staticcheck:
-	@echo "+ $@"
-	@if [[ ! -z "$(shell $(GOSTATICCHECK) $(GOLIST) | tee /dev/stderr)" ]]; then exit 1; fi
-
 .PHONY: lint
 lint:
 	@echo "+ $@"
 	@if [[ ! -z '$(shell $(GOLINT) ./... | grep -v vendor | tee /dev/stderr)' ]]; then exit 1; fi
 
 .PHONY: golangci-lint
-golangci-lint:
+golangci-lint: devel/bin/golangci-lint
 	@echo "+ $@"
-	@if [[ ! -z '$(shell $(GOLANGCILINT) run | tee /dev/stderr)' ]]; then exit 1; fi
+	$< run --modules-download-mode vendor
 
 .PHONY: verify-vendor
 verify-vendor:
@@ -65,7 +58,11 @@ docker-ci: docker-build-env
 	mkdir -p bin BUILD
 	docker run --rm -v "$$PWD:/work" substratum-build:$(VERSION) make ci
 
-
 .PHONY: install
 install:
 	sudo cp bin/$(NAME) /usr/bin/$(NAME)
+
+devel/bin/golangci-lint:
+	@mkdir -p devel/bin
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./devel/bin v1.41.1
+

@@ -114,7 +114,6 @@ func parseRTypeArgs(args []string) (Args, error) {
 		Rs1: rs1,
 		Rs2: rs2,
 	}, nil
-
 }
 
 func parseSTypeArgs(args []string) (Args, error) {

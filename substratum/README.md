@@ -7,10 +7,3 @@ Substratum is explicitly NOT an assembler. It won't calculate offsets for jumps 
 all it can do is take an instruction such as `addi a0 x0 0x01` and return the corresponding hex machine code `13 05 10 00`.
 
 Build with `make build`, run the CI process with `make ci` (requires staticcheck in the `$PATH`).
-
-Run with e.g.:
-
-```bash
-$ substratum bne a0 x0 -0x8
-E3 1C 05 FE
-```
