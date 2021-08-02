@@ -15,17 +15,19 @@ Without the [tools](../guides/TOOLS.md) you'll struggle to do much at all.
 
 ## Compiling Our Toolchain Test
 
-We can test our toolchain using the files in this repo.
+**NOTE**: The linker-script used for these examples is intentionally "weird". Running `nothing.elf` on hardware won't work. The idea here is to use QEMU to check that our toolchain is doing what we expect; actually running stuff on hardware comes later.
 
-**NOTE**: The linker-script used for these examples intentionally places code into a "weird" location in memory. Running `nothing.elf` on a HiFive1 might give strange results which you might not expect. The idea here is to use QEMU to check that our toolchain is doing what we expect; actually running stuff comes later.
+We can test our toolchain using the files in this repo. As long as you've set `$RISCV_PREFIX` correctly and you've got a riscv compiler installed, you should be good to go.
 
 Building the binaries is simple; you can check the underlying `Makefile` for details of the specific commands.
 
 ```bash
-make RISCV_PREFIX=/path/to/riscv all
+make all
 ```
 
-Several files will be dumped into this directory and intermediate files are placed in `BUILD/`. The end-product files are also committed into Git to make it possible to test QEMU without having the full GNU toolchain.
+Several files will be dumped into this directory and intermediate files are placed in `BUILD/`.
+
+For this example only, the artifacts are also committed into Git to make it possible to test QEMU without having the full toolchain set up and working.
 
 The most interesting files from our perspective are `nothing.bin` and `nothing.dump`:
 
@@ -47,12 +49,19 @@ Disassembly of section .text:
 80000014:   0000006f           j 80000014 <_start+0xc>
 
 $ od -Ax -tx1 nothing.bin
+# dumps nothing.bin in ASCII hex, one byte at a time
 000000 13 05 b0 00 67 80 00 00 37 41 00 80 ef f0 5f ff
 000010 73 00 10 00 6f 00 00 00
 000018
+
+$ od -Ax -tx4 nothing.bin
+# dumps nothing.bin in ASCII hex, four bytes at a time
+000000 00b00513 00008067 80004137 ff5ff0ef
+000010 00100073 0000006f
+000018
 ```
 
-Note that the raw binary dump (`nothing.bin`) is very small, and that the bytes match up with the disassembly in `nothing.dump`. For example, we see that the first instruction, at address `0x80000000` has the hex machine-code representation `00b00513` and that this matches the first 4 bytes of `nothing.bin` if you account for the disassembly showing full 32-bit integers and the hex dump showing raw bytes, which are little-endian.
+Note that the raw binary dump (`nothing.bin`) is very small, and that the bytes match up with the disassembly in `nothing.dump`. For example, we see that the first instruction, at address `0x80000000` has the hex machine-code representation `00b00513` and that this matches the first 4 bytes of `nothing.bin` in the hex dumps using `od`.
 
 The dump also has assembly on the right to make it easier to read, so we can see that the sole command in `main` is `li a0,11` which loads the value `11` into the register named `a0` (which is designated by the RISC-V [Calling Convention](https://riscv.org/wp-content/uploads/2015/01/riscv-calling.pdf) as being for return values).
 
@@ -60,21 +69,21 @@ Of course, the compiled output isn't much use to us right now - we want to actua
 
 ## Running in QEMU
 
-First, note that when running QEMU headless, you exit by pressing Ctrl+A, releasing and then pressing `x` (use Ctrl+A and then `h` for help on other such commands).
+First, we should note how to exit QEMU when running headless, which is done by pressing Ctrl+A, releasing and then pressing `x` (use Ctrl+A and then `h` for help on other such commands).
 
-We pass a few arguments to the following command which look initially confusing:
+We can run qemu using `make qemu` but first we'll take a look at some of the arguments we pass to QEMU:
 
-- `-s` starts a GDB debugger on port `1234` which lets us dump memory
-- `-S` pauses the CPU before running anything, giving us time to debug
+- `-gdb tcp::1234` starts a GDB debugger on port `1234` which lets us dump memory
+- `-S` pauses the CPU before running anything, giving us time to attach using GDB
 - `-machine sifive_e` tells QEMU we're running a `sifive-e` machine (which the HiFive1 is!)
 - `-nographic` disables graphics - we're not going to need them.
 
 Finally we point at our "kernel" - which is our ELF file - and kick off QEMU. If you encounter any issues using QEMU from a package manager, it's very easy to build your own.
 
 ```bash
-$ qemu-system-riscv32 -machine sifive_e -nographic -s -S -kernel nothing.elf
+$ make riscv
 # Open a separate terminal
-$ $RISCV_PREFIX/bin/riscv32-unknown-elf-gdb
+$ "$RISCV_PREFIX"gdb
 (gdb) target remote localhost:1234
 (gdb) x 0x80000000
 0x80000000:    0x00b00513

@@ -1,5 +1,4 @@
 SHELL = /bin/bash
-RISCV_PREFIX ?= riscv32-unknown-elf-
 
 .PHONY: all
 all: clean nothing.bin nothing.elf nothing.dump
@@ -14,11 +13,11 @@ BUILD/start.o: start.s
 
 BUILD/nothing.o: nothing.c
 	@mkdir -p BUILD
-	$(RISCV_PREFIX)gcc -fPIC -O2 -g0 -static -fvisibility=hidden -nostdlib -nostartfiles -march=rv32i -mabi=ilp32 $< -o $@
+	$(RISCV_PREFIX)gcc -fPIC -O2 -g0 -static -fvisibility=hidden -nostdlib -nostartfiles -march=rv32i -mabi=ilp32 -c $< -o $@
 
 nothing.elf: BUILD/nothing.o BUILD/start.o
 	@mkdir -p BUILD
-	$(RISCV_PREFIX)ld $^ -Tlinker.ld --architecture=rv32i -m elf32lriscv -o $@
+	$(RISCV_PREFIX)ld $^ -Tlinker.ld -m elf32lriscv -o $@
 
 nothing.bin: nothing.elf
 	@mkdir -p BUILD
@@ -26,3 +25,7 @@ nothing.bin: nothing.elf
 
 nothing.dump: nothing.elf
 	$(RISCV_PREFIX)objdump -d $< > $@
+
+.PHONY: qemu
+qemu:
+	qemu-system-riscv32 -machine sifive_e -nographic -gdb tcp::1234 -S -kernel nothing.elf
