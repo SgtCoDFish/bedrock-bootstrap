@@ -1,6 +1,8 @@
 SHELL := /bin/bash
 
 NAME=substratum
+SS_ASM_NAME=ss-asm
+
 VERSION := $(shell cat VERSION.txt)
 
 GO = go
@@ -41,11 +43,16 @@ verify-vendor:
 	@$(GO) mod verify > /dev/null
 
 .PHONY: build
-build: bin/$(NAME)
+build: bin/$(NAME) bin/$(SS_ASM_NAME)
 
-bin/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard autotest/*.go) $(wildcard autotest/uart_rxxd/*.go)
+bin:
 	@mkdir -p bin
+
+bin/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard cmd/ss-asm/*.go) $(wildcard autotest/*.go) $(wildcard autotest/uart_rxxd/*.go) | bin
 	$(GO) build -mod=vendor -o $@ cmd/$(NAME)/*.go
+
+bin/$(SS_ASM_NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard cmd/ss-asm/*.go) $(wildcard cmd/ss-asm/main/*.go) | bin
+	$(GO) build -mod=vendor -o $@ cmd/$(SS_ASM_NAME)/main/*.go
 
 .PHONY: docker-build-env
 docker-build-env: VERSION.txt Dockerfile
