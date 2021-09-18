@@ -22,8 +22,8 @@ func main() {
 	asmCmd := flag.NewFlagSet(ASMCommand, flag.ExitOnError)
 
 	asmFileCMD := flag.NewFlagSet(ASMFileCommand, flag.ExitOnError)
-	asmFileCMD.String("input", "-", "The file to read")
-	asmFileCMD.String("output", "-", "The file to write")
+	asmFileCMD.String("input", "-", "File to read, defaults to stdin")
+	asmFileCMD.String("output", "-", "File to write, defaults to stdout")
 	asmFileCMD.String("output-format", "bin", "The format in which to write output - 'bin' for binary, 'hex' for ASCII hex")
 
 	autoTestCMD := flag.NewFlagSet(AutoTestCMD, flag.ExitOnError)

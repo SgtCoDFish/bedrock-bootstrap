@@ -41,8 +41,7 @@ func NewState(logger *log.Logger, gdbConn *substratum.GdbConnection, serialOptio
 	}, nil
 }
 
-// SendSerial takes the given byte slice of data and attempts to write it to the serial port whose options are given in
-// State.SerialOptions.
+// SendSerial attempts to write the given data to the serial port corresponding to this State.
 func (s *State) SendSerial(data []byte) error {
 	bytesRemaining := len(data)
 	for i := 0; i < maxSerialWrites; i++ {
