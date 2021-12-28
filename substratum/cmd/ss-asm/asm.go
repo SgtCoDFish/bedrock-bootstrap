@@ -1,4 +1,4 @@
-package ssasm
+package asm
 
 import (
 	"bufio"
@@ -27,8 +27,8 @@ var outputFormatterMap map[string]outputFormatter = map[string]outputFormatter{
 	"bin": formatBin,
 }
 
-// ASMCmdInvocation holds state for a given invocation of the ss-asm command
-type ASMCmdInvocation struct {
+// Invocation holds state for a given invocation of the ss-asm command
+type Invocation struct {
 	Input  *bufio.Reader
 	Output io.WriteCloser
 
@@ -38,7 +38,7 @@ type ASMCmdInvocation struct {
 }
 
 // Close closes both input and output
-func (a *ASMCmdInvocation) Close() error {
+func (a *Invocation) Close() error {
 	inputErr := a.underlyingInput.Close()
 	outputErr := a.Output.Close()
 
@@ -53,10 +53,10 @@ func (a *ASMCmdInvocation) Close() error {
 	return nil
 }
 
-// InvokeASMCmd parses and runs an invocation of ss-asm, where name is the name
+// Invoke parses and runs an invocation of ss-asm, where name is the name
 // of the binary being run and flags are a slice of command-line flags to be parsed
-func InvokeASMCmd(ctx context.Context, name string, flags []string) error {
-	invocation, err := ParseASMCmdInvocation(name, flags)
+func Invoke(ctx context.Context, name string, flags []string) error {
+	invocation, err := ParseInvocation(name, flags)
 	if err != nil {
 		return err
 	}
@@ -64,9 +64,9 @@ func InvokeASMCmd(ctx context.Context, name string, flags []string) error {
 	return invocation.Run(ctx)
 }
 
-// ParseASMCmdInvocation builds an invocation for a run of the the ss-asm command, where name is the name
+// ParseInvocation builds an invocation for a run of the the ss-asm command, where name is the name
 // of the binary being run and flags are a slice of command-line flags to be parsed
-func ParseASMCmdInvocation(name string, flags []string) (*ASMCmdInvocation, error) {
+func ParseInvocation(name string, flags []string) (*Invocation, error) {
 	asmCMD := flag.NewFlagSet(name, flag.ExitOnError)
 
 	inputFilename := asmCMD.String("input", "-", "File to read, defaults to stdin")
@@ -96,7 +96,7 @@ func ParseASMCmdInvocation(name string, flags []string) (*ASMCmdInvocation, erro
 		return nil, fmt.Errorf("invalid value for 'output-format'; valid values are 'hex' and 'bin'")
 	}
 
-	return &ASMCmdInvocation{
+	return &Invocation{
 		Input:           inputReader,
 		Output:          outputFile,
 		OutputFormatter: formatterFunc,
@@ -106,7 +106,7 @@ func ParseASMCmdInvocation(name string, flags []string) (*ASMCmdInvocation, erro
 }
 
 // Run executes ss-asm for the configured invocation
-func (a *ASMCmdInvocation) Run(ctx context.Context) error {
+func (a *Invocation) Run(ctx context.Context) error {
 	defer func() {
 		err := a.Close()
 		if err != nil {

@@ -40,7 +40,7 @@ func main() {
 
 	switch subcommandName {
 	case ASMCommand:
-		err := ssasm.InvokeASMCmd(ctx, fullCommandName, os.Args[2:])
+		err := ssasm.Invoke(ctx, fullCommandName, os.Args[2:])
 		if err != nil {
 			logger.Fatalf("failed to run '%s' command: %s", ASMCommand, err)
 		}

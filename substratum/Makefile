@@ -10,7 +10,7 @@ GOLIST := $(shell $(GO) list -mod=vendor ./... | grep -v vendor)
 GOLINT = golint
 
 .PHONY: ci
-ci: clean test fmt lint golangci-lint verify-vendor bin/$(NAME)
+ci: clean test fmt lint golangci-lint verify-vendor build
 
 .PHONY: clean
 clean:
@@ -51,7 +51,7 @@ bin:
 bin/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard cmd/ss-asm/*.go) $(wildcard autotest/*.go) $(wildcard autotest/uart_rxxd/*.go) | bin
 	$(GO) build -mod=vendor -o $@ cmd/$(NAME)/*.go
 
-bin/$(SS_ASM_NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard cmd/ss-asm/*.go) $(wildcard cmd/ss-asm/main/*.go) | bin
+bin/$(SS_ASM_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_ASM_NAME)/*.go) $(wildcard cmd/$(SS_ASM_NAME)/main/*.go) | bin
 	$(GO) build -mod=vendor -o $@ cmd/$(SS_ASM_NAME)/main/*.go
 
 .PHONY: docker-build-env

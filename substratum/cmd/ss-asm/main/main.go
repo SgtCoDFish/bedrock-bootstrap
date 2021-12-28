@@ -11,9 +11,9 @@ import (
 func main() {
 	ctx := context.Background()
 
-	err := ssasm.InvokeASMCmd(ctx, os.Args[0], os.Args[1:])
+	err := ssasm.Invoke(ctx, os.Args[0], os.Args[1:])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to parse flags / setup: %v", err)
+		fmt.Fprintf(os.Stderr, "failed to parse flags / setup: %v\n", err)
 		os.Exit(1)
 	}
 }
