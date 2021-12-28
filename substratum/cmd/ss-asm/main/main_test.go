@@ -47,17 +47,18 @@ func TestSsASM(t *testing.T) {
 
 		outBuf := &closerBuffer{}
 
-		state, err := ssasm.ParseASMFlags("ss-asm-test", c.args)
+		state, err := ssasm.ParseASMCmdInvocation("ss-asm-test", c.args)
 		if err != nil {
 			t.Errorf("failed to set up test with args '(%v)': %v", c.args, err)
 			continue
 		}
+
 		state.Input = bufio.NewReader(strings.NewReader(c.input))
 		state.Output = outBuf
 
-		err = ssasm.ProcessASM(ctx, state)
+		err = state.Run(ctx)
 		if err != nil {
-			t.Errorf("got an error response from process(%v): %v", c.args, err)
+			t.Errorf("got an error response from running ss-asm(%v): %v", c.args, err)
 			continue
 		}
 

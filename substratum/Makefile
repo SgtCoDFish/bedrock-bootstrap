@@ -10,7 +10,7 @@ GOLIST := $(shell $(GO) list -mod=vendor ./... | grep -v vendor)
 GOLINT = golint
 
 .PHONY: ci
-ci: clean test fmt lint staticcheck golangci-lint verify-vendor bin/$(NAME)
+ci: clean test fmt lint golangci-lint verify-vendor bin/$(NAME)
 
 .PHONY: clean
 clean:
