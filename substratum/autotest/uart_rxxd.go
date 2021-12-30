@@ -1,6 +1,7 @@
 package autotest
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -15,7 +16,7 @@ const (
 // ProcessUARTRxxdBasic verifies the execution of the given GDB target and checks that it handles input as expected
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "basic" test has only basic UART input, whose presence is checked in memory after running the whole program
-func ProcessUARTRxxdBasic(state *State) error {
+func ProcessUARTRxxdBasic(_ context.Context, state *State) error {
 	_ = state.GDBConn.StepOnce()
 
 	err := checkInitialization(state)
@@ -98,7 +99,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "comment" test has only basic UART input, whose presence is checked in memory after running the whole program, but
 // crucially also includes a leading comment which should be ignored
-func ProcessUARTRxxdComment(state *State) error {
+func ProcessUARTRxxdComment(_ context.Context, state *State) error {
 	_ = state.GDBConn.StepOnce()
 
 	err := checkInitialization(state)
@@ -180,7 +181,7 @@ func ProcessUARTRxxdComment(state *State) error {
 // ProcessUARTRxxdFull verifies the execution of the given GDB target and checks that it handles input as expected
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "full" test includes comments, invalid characters and multiple lines of text in the UART input
-func ProcessUARTRxxdFull(state *State) error {
+func ProcessUARTRxxdFull(_ context.Context, state *State) error {
 	_ = state.GDBConn.StepOnce()
 
 	err := checkInitialization(state)

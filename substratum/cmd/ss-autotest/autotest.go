@@ -14,7 +14,7 @@ import (
 	"github.com/sgtcodfish/substratum/autotest"
 )
 
-var testMap = map[string]func(state *autotest.State) error{
+var testMap = map[string]autotest.TestFunc{
 	"uart-rxxd-basic":   autotest.ProcessUARTRxxdBasic,
 	"uart-rxxd-comment": autotest.ProcessUARTRxxdComment,
 	"uart-rxxd-full":    autotest.ProcessUARTRxxdFull,

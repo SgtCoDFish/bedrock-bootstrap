@@ -1,16 +1,21 @@
 package autotest
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"strings"
 
 	"github.com/jacobsa/go-serial/serial"
+
 	"github.com/sgtcodfish/substratum"
 )
 
 const maxSerialWrites = 100
+
+// TestFunc is a utility type for referring to any function which implements a substratum autotest
+type TestFunc func(ctx context.Context, state *State) error
 
 // State holds state which is required to run tests. Must be initialised prior to use.
 type State struct {
