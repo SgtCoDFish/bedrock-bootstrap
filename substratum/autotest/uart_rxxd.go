@@ -16,7 +16,7 @@ const (
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "basic" test has only basic UART input, whose presence is checked in memory after running the whole program
 func ProcessUARTRxxdBasic(state *State) error {
-	_ = state.GdbConn.StepOnce()
+	_ = state.GDBConn.StepOnce()
 
 	err := checkInitialization(state)
 	if err != nil {
@@ -32,7 +32,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 
 	initialMemoryLoc := uint32(0x20400000)
 
-	word, err := state.GdbConn.ReadMemoryWord(initialMemoryLoc)
+	word, err := state.GDBConn.ReadMemoryWord(initialMemoryLoc)
 	if err != nil {
 		return err
 	}
@@ -40,12 +40,12 @@ func ProcessUARTRxxdBasic(state *State) error {
 	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
-		err = state.GdbConn.AdvancePC(0x204000cc, 1000)
+		err = state.GDBConn.AdvancePC(0x204000cc, 1000)
 		if err != nil {
 			return err
 		}
 
-		a0, err := state.GdbConn.FetchRegister("a0")
+		a0, err := state.GDBConn.FetchRegister("a0")
 		if err != nil {
 			return err
 		}
@@ -57,13 +57,13 @@ func ProcessUARTRxxdBasic(state *State) error {
 
 		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
 
-		err = state.GdbConn.AdvancePC(0x204000b0, 1000)
+		err = state.GDBConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
 			return err
 		}
 	}
 
-	frame, err := state.GdbConn.FetchRegisterFrame()
+	frame, err := state.GDBConn.FetchRegisterFrame()
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 	frame.Dump(state.Logger)
 
 	for i := uint32(memoryStart); i < memoryStart+0x10; i += 4 {
-		word, err := state.GdbConn.ReadMemoryWord(i)
+		word, err := state.GDBConn.ReadMemoryWord(i)
 		if err != nil {
 			return err
 		}
@@ -99,7 +99,7 @@ func ProcessUARTRxxdBasic(state *State) error {
 // The "comment" test has only basic UART input, whose presence is checked in memory after running the whole program, but
 // crucially also includes a leading comment which should be ignored
 func ProcessUARTRxxdComment(state *State) error {
-	_ = state.GdbConn.StepOnce()
+	_ = state.GDBConn.StepOnce()
 
 	err := checkInitialization(state)
 	if err != nil {
@@ -115,7 +115,7 @@ func ProcessUARTRxxdComment(state *State) error {
 
 	initialMemoryLoc := uint32(0x20400000)
 
-	word, err := state.GdbConn.ReadMemoryWord(initialMemoryLoc)
+	word, err := state.GDBConn.ReadMemoryWord(initialMemoryLoc)
 	if err != nil {
 		return err
 	}
@@ -123,12 +123,12 @@ func ProcessUARTRxxdComment(state *State) error {
 	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
-		err = state.GdbConn.AdvancePC(0x204000cc, 1000)
+		err = state.GDBConn.AdvancePC(0x204000cc, 1000)
 		if err != nil {
 			return err
 		}
 
-		a0, err := state.GdbConn.FetchRegister("a0")
+		a0, err := state.GDBConn.FetchRegister("a0")
 		if err != nil {
 			return err
 		}
@@ -140,13 +140,13 @@ func ProcessUARTRxxdComment(state *State) error {
 
 		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
 
-		err = state.GdbConn.AdvancePC(0x204000b0, 1000)
+		err = state.GDBConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
 			return err
 		}
 	}
 
-	frame, err := state.GdbConn.FetchRegisterFrame()
+	frame, err := state.GDBConn.FetchRegisterFrame()
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func ProcessUARTRxxdComment(state *State) error {
 	frame.Dump(state.Logger)
 
 	for i := uint32(memoryStart); i < memoryStart+0x10; i += 4 {
-		word, err := state.GdbConn.ReadMemoryWord(i)
+		word, err := state.GDBConn.ReadMemoryWord(i)
 		if err != nil {
 			return err
 		}
@@ -181,7 +181,7 @@ func ProcessUARTRxxdComment(state *State) error {
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "full" test includes comments, invalid characters and multiple lines of text in the UART input
 func ProcessUARTRxxdFull(state *State) error {
-	_ = state.GdbConn.StepOnce()
+	_ = state.GDBConn.StepOnce()
 
 	err := checkInitialization(state)
 	if err != nil {
@@ -197,7 +197,7 @@ func ProcessUARTRxxdFull(state *State) error {
 
 	initialMemoryLoc := uint32(0x20400000)
 
-	word, err := state.GdbConn.ReadMemoryWord(initialMemoryLoc)
+	word, err := state.GDBConn.ReadMemoryWord(initialMemoryLoc)
 	if err != nil {
 		return err
 	}
@@ -206,12 +206,12 @@ func ProcessUARTRxxdFull(state *State) error {
 
 	for i := 0; i < len(msg); i++ {
 		// advance to 2040_00CC which is just after UART has been read from
-		err = state.GdbConn.AdvancePC(0x204000cc, 1000)
+		err = state.GDBConn.AdvancePC(0x204000cc, 1000)
 		if err != nil {
 			return err
 		}
 
-		a0, err := state.GdbConn.FetchRegister("a0")
+		a0, err := state.GDBConn.FetchRegister("a0")
 		if err != nil {
 			return err
 		}
@@ -230,18 +230,18 @@ func ProcessUARTRxxdFull(state *State) error {
 		}
 
 		// advance to 2040_00B0 which is the start of reading from UART
-		err = state.GdbConn.AdvancePC(0x204000b0, 1000)
+		err = state.GDBConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = state.GdbConn.WalkPC(0x20400160, 50)
+	err = state.GDBConn.WalkPC(0x20400160, 50)
 	if err != nil {
 		return err
 	}
 
-	frame, err := state.GdbConn.FetchRegisterFrame()
+	frame, err := state.GDBConn.FetchRegisterFrame()
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ func ProcessUARTRxxdFull(state *State) error {
 	frame.Dump(state.Logger)
 
 	for i := uint32(memoryStart); i < memoryStart+0x10; i += 4 {
-		word, err := state.GdbConn.ReadMemoryWord(i)
+		word, err := state.GDBConn.ReadMemoryWord(i)
 		if err != nil {
 			return err
 		}
@@ -281,17 +281,17 @@ func ProcessUARTRxxdFull(state *State) error {
 		}
 	}
 
-	err = state.GdbConn.WalkPC(memoryStart+0xC, 50)
+	err = state.GDBConn.WalkPC(memoryStart+0xC, 50)
 	if err != nil {
 		return err
 	}
 
-	err = state.GdbConn.StepOnce()
+	err = state.GDBConn.StepOnce()
 	if err != nil {
 		return err
 	}
 
-	frame, err = state.GdbConn.FetchRegisterFrame()
+	frame, err = state.GDBConn.FetchRegisterFrame()
 	if err != nil {
 		return err
 	}
@@ -308,12 +308,12 @@ func ProcessUARTRxxdFull(state *State) error {
 // checkInitialization advances execution until UART input is read and asserts that the registers
 // were initialized as expected.
 func checkInitialization(state *State) error {
-	err := state.GdbConn.AdvancePC(0x204000b0, 1000)
+	err := state.GDBConn.AdvancePC(0x204000b0, 1000)
 	if err != nil {
 		return err
 	}
 
-	frame, err := state.GdbConn.FetchRegisterFrame()
+	frame, err := state.GDBConn.FetchRegisterFrame()
 	if err != nil {
 		return err
 	}

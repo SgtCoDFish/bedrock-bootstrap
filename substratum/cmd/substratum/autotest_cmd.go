@@ -49,7 +49,7 @@ func processAutotest(flags *flag.FlagSet, logger *log.Logger) error {
 	gdbPath := os.Getenv("RISCV_PREFIX") + "gdb"
 	remoteTarget := ":1234"
 
-	conn, err := substratum.NewGdbConnection(gdbPath, remoteTarget)
+	conn, err := substratum.NewGDBConnection(gdbPath, remoteTarget)
 	if err != nil {
 		return err
 	}

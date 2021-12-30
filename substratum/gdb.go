@@ -13,9 +13,9 @@ import (
 	"github.com/cyrus-and/gdb"
 )
 
-// GdbConnection wraps a gdb connection. By wrapping the connection we can add additional features, like maintaining
+// GDBConnection wraps a gdb connection. By wrapping the connection we can add additional features, like maintaining
 // a per-connection map of registers to GDB-internal register numbers which must be used to fetch their values.
-type GdbConnection struct {
+type GDBConnection struct {
 	// Conn is the underlying connection to GDB which can be used manually to make requests
 	Conn *gdb.Gdb
 
@@ -76,9 +76,9 @@ type gdbMemoryDumpMemory struct {
 	Offset   string `json:"offset" mapstructure:"offset"`
 }
 
-// NewGdbConnection creates a GdbConnection with given parameters, and initialises that connection
+// NewGDBConnection creates a GDBConnection with given parameters, and initialises that connection
 // to use the RISC-V rv32 architecture.
-func NewGdbConnection(gdbPath string, remoteTarget string) (*GdbConnection, error) {
+func NewGDBConnection(gdbPath string, remoteTarget string) (*GDBConnection, error) {
 	conn, err := gdb.NewCmd([]string{gdbPath, "--nx", "--quiet", "--interpreter=mi2", "-ex", "set architecture riscv:rv32"}, nil)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func NewGdbConnection(gdbPath string, remoteTarget string) (*GdbConnection, erro
 
 	regList := append(GetRegisterList(), "pc")
 
-	gdbConn := GdbConnection{
+	gdbConn := GDBConnection{
 		Conn: conn,
 
 		registerToGDBNumber:      make(map[string]int),
@@ -223,7 +223,7 @@ func (f GDBRegisterFrame) Dump(logger *log.Logger) {
 
 // FetchRegister makes a GDB call equivalent to `i r n` or `info registers n` to get the value of "n", which can be
 // any RISC-V rv32i integer register including the PC.
-func (s *GdbConnection) FetchRegister(name string) (uint32, error) {
+func (s *GDBConnection) FetchRegister(name string) (uint32, error) {
 	gdbRegNumber, ok := s.registerToGDBNumber[strings.ToLower(name)]
 	if !ok {
 		return 0, fmt.Errorf("couldn't find internal GDB register number for '%s'", name)
@@ -261,12 +261,12 @@ func (s *GdbConnection) FetchRegister(name string) (uint32, error) {
 }
 
 // FetchPC is a convenience function to return the current value of the PC.
-func (s *GdbConnection) FetchPC() (uint32, error) {
+func (s *GDBConnection) FetchPC() (uint32, error) {
 	return s.FetchRegister("pc")
 }
 
 // FetchRegisterFrame returns, if possible, a snapshot of the state of all current registers as a GDBRegisterFrame
-func (s *GdbConnection) FetchRegisterFrame() (GDBRegisterFrame, error) {
+func (s *GDBConnection) FetchRegisterFrame() (GDBRegisterFrame, error) {
 	var registerFrame GDBRegisterFrame
 
 	resp, err := s.Conn.CheckedSend(fmt.Sprintf("data-list-register-values x %s", s.allRegNumbers))
@@ -312,7 +312,7 @@ func (s *GdbConnection) FetchRegisterFrame() (GDBRegisterFrame, error) {
 
 // AdvancePC uses the "step-instruction" GDB command until the program counter equals targetPC
 // or until maxSteps instructions have been executed. maxSteps provides a guard against infinite loops
-func (s *GdbConnection) AdvancePC(targetPC uint32, maxSteps int) error {
+func (s *GDBConnection) AdvancePC(targetPC uint32, maxSteps int) error {
 	for i := 0; i < maxSteps; i++ {
 		pcReg, err := s.FetchPC()
 		if err != nil {
@@ -336,7 +336,7 @@ func (s *GdbConnection) AdvancePC(targetPC uint32, maxSteps int) error {
 // or until maxSteps instructions have been executed. maxSteps provides a guard against infinite loops.
 // In contrast with AdvancePC, WalkPC will sleep briefly inbetween steps and will print the value of the PC
 // after each step. This makes the function uesful for following control flow.
-func (s *GdbConnection) WalkPC(targetPC uint32, maxSteps int) error {
+func (s *GDBConnection) WalkPC(targetPC uint32, maxSteps int) error {
 	fmt.Printf("walking until PC is %8.8X or until %d steps hvae been made\n", targetPC, maxSteps)
 
 	for i := 0; i < maxSteps; i++ {
@@ -366,14 +366,14 @@ func (s *GdbConnection) WalkPC(targetPC uint32, maxSteps int) error {
 
 // StepOnce is a helper function for stepping exactly one instruction. This is equivalent to sending a single `si`
 // command in GDB.
-func (s *GdbConnection) StepOnce() error {
+func (s *GDBConnection) StepOnce() error {
 	_, err := s.Conn.CheckedSend("exec-step-instruction")
 
 	return err
 }
 
 // ReadMemoryWord dumps the word in memory at the given address and returns it if possible.
-func (s *GdbConnection) ReadMemoryWord(addr uint32) (string, error) {
+func (s *GDBConnection) ReadMemoryWord(addr uint32) (string, error) {
 	addrStr := fmt.Sprintf("0x%8.8x", addr)
 
 	result, err := s.Conn.CheckedSend("data-read-memory-bytes", addrStr, "4")

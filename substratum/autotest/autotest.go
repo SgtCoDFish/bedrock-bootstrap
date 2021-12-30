@@ -11,13 +11,13 @@ import (
 
 const maxSerialWrites = 100
 
-// State holds state which is required to run tests. Usually the state must be filled in prior to use.
+// State holds state which is required to run tests. Must be initialised prior to use.
 type State struct {
 	// Logger is the default logger to use for output during tests
 	Logger *log.Logger
 
-	// GdbConn holds the connection to GDB, which will be manipulated throughout the test
-	GdbConn *substratum.GdbConnection
+	// GDBConn holds the connection to GDB, which will be manipulated throughout the test
+	GDBConn *substratum.GDBConnection
 
 	// SerialConn holds a persistent open connection over UART
 	SerialConn io.ReadWriteCloser
@@ -27,7 +27,7 @@ type State struct {
 }
 
 // NewState returns a new State with the given options, and opens (and holds open) a serial connecton based on serialOptions
-func NewState(logger *log.Logger, gdbConn *substratum.GdbConnection, serialOptions serial.OpenOptions) (*State, error) {
+func NewState(logger *log.Logger, gdbConn *substratum.GDBConnection, serialOptions serial.OpenOptions) (*State, error) {
 	serialConn, err := serial.Open(serialOptions)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func NewState(logger *log.Logger, gdbConn *substratum.GdbConnection, serialOptio
 
 	return &State{
 		Logger:        logger,
-		GdbConn:       gdbConn,
+		GDBConn:       gdbConn,
 		SerialConn:    serialConn,
 		SerialOptions: serialOptions,
 	}, nil
