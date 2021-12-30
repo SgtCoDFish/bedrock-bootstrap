@@ -5,13 +5,25 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
+	"os"
 	"strings"
+
+	"github.com/jacobsa/go-serial/serial"
+	"github.com/sgtcodfish/substratum"
+	"github.com/sgtcodfish/substratum/autotest"
 )
+
+var testMap = map[string]func(state *autotest.State) error{
+	"uart-rxxd-basic":   autotest.ProcessUARTRxxdBasic,
+	"uart-rxxd-comment": autotest.ProcessUARTRxxdComment,
+	"uart-rxxd-full":    autotest.ProcessUARTRxxdFull,
+}
 
 // Invocation holds state for a given invocation of the ss-autotest command
 type Invocation struct {
 	gdbPath      string
-	qemuPath     string
+	gdbPort      string
 	serialDevice string
 	testName     string
 }
@@ -21,17 +33,15 @@ type Invocation struct {
 func ParseInvocation(name string, flags []string) (*Invocation, error) {
 	autoTestCmd := flag.NewFlagSet(name, flag.ExitOnError)
 
-	autoTestCmd.String("gdb", "", "The path to the GDB executable to use")
-	autoTestCmd.String("qemu", "", "The path to the QEMU executable to use")
-	autoTestCmd.String("serial", "", "The serial device to use for communication")
-	autoTestCmd.String("test-name", "", "The name of the test to run")
+	gdbPathFlag := autoTestCmd.String("gdb", "", "Path to the GDB executable to use. Defaults to ${RISCV_PREFIX}gdb")
+	serialDeviceFlag := autoTestCmd.String("serial", "", "Device to use for serial communication with the running test")
+	autoTestCmd.String("test-name", "", "Name of the test to run")
 
 	if err := autoTestCmd.Parse(flags); err != nil {
 		return nil, fmt.Errorf("failed to parse flags: %w", err)
 	}
 
-	serialDevice := autoTestCmd.Lookup("serial")
-	if serialDevice == nil {
+	if len(*serialDeviceFlag) == 0 {
 		return nil, errors.New("missing required flag: serial")
 	}
 
@@ -42,25 +52,25 @@ func ParseInvocation(name string, flags []string) (*Invocation, error) {
 
 	testName := strings.ToLower(testNameFlag.Value.String())
 
-	validTestNames := map[string]bool{
-		"uart-rxxd-basic":   true,
-		"uart-rxxd-comment": true,
-		"uart-rxxd-full":    true,
+	gdbPath := *gdbPathFlag
+
+	if len(gdbPath) == 0 {
+		gdbPath = os.Getenv("RISCV_PREFIX") + "gdb"
 	}
 
-	allTests := make([]string, 0, len(validTestNames))
-	for k := range validTestNames {
+	allTests := make([]string, 0, len(testMap))
+	for k := range testMap {
 		allTests = append(allTests, k)
 	}
 
-	if _, ok := validTestNames[testName]; !ok {
+	if _, ok := testMap[testName]; !ok {
 		return nil, fmt.Errorf("invalid test name %q; must be one of %s", testName, strings.Join(allTests, " | "))
 	}
 
 	return &Invocation{
-		gdbPath:      "TBC",
-		qemuPath:     "TBC",
-		serialDevice: "TBC",
+		gdbPath:      gdbPath,
+		gdbPort:      ":1234",
+		serialDevice: *serialDeviceFlag,
 		testName:     testName,
 	}, nil
 }
@@ -78,5 +88,49 @@ func Invoke(ctx context.Context, name string, flags []string) error {
 
 // Run executes ss-autotest for the configured invocation
 func (a *Invocation) Run(ctx context.Context) error {
-	return fmt.Errorf("NYI")
+	logger := log.New(os.Stdout, "", 0)
+
+	logger.Printf("processing autotest for '%s'", a.testName)
+
+	logger.Printf("attempting to connect to GDB on port %s", a.gdbPort)
+
+	gdbConn, err := substratum.NewGDBConnection(a.gdbPath, a.gdbPort)
+	if err != nil {
+		return err
+	}
+
+	serialOptions := serial.OpenOptions{
+		PortName:        a.serialDevice,
+		BaudRate:        115200,
+		DataBits:        8,
+		StopBits:        1,
+		ParityMode:      serial.PARITY_NONE,
+		MinimumReadSize: 1,
+	}
+
+	testFn, ok := testMap[a.testName]
+	if !ok {
+		panic("invalid test name when running autotest invocation")
+	}
+
+	logger.Printf("starting GDB")
+
+	testState, err := autotest.NewState(logger, gdbConn, serialOptions)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		err := testState.Close()
+		if err != nil {
+			logger.Printf("failed to close: %s", err.Error())
+		}
+	}()
+
+	err = testFn(testState)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -3,6 +3,7 @@ package substratum
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"strconv"
 	"strings"
@@ -39,6 +40,8 @@ type GDBConnection struct {
 	// to cache the string and avoid recreating it for every register dump
 	allRegNumbers string
 }
+
+var _ io.Closer = (*GDBConnection)(nil)
 
 type gdbRegisterNamesResponse struct {
 	Payload gdbRegisterNamesResponsePayload `json:"payload" mapstructure:"payload"`
@@ -153,72 +156,14 @@ func NewGDBConnection(gdbPath string, remoteTarget string) (*GDBConnection, erro
 	return &gdbConn, nil
 }
 
-// GDBRegisterFrame holds the typed values of every regular RISC-V rv32 integer register along with the PC.
-type GDBRegisterFrame struct {
-	Zero uint32 `json:"zero" mapstructure:"zero"`
-	Ra   uint32 `json:"ra"  mapstructure:"ra"`
-	Sp   uint32 `json:"sp"  mapstructure:"sp"`
-	Gp   uint32 `json:"gp"  mapstructure:"gp"`
-	Tp   uint32 `json:"tp"  mapstructure:"tp"`
-	T0   uint32 `json:"t0"  mapstructure:"t0"`
-	T1   uint32 `json:"t1"  mapstructure:"t1"`
-	T2   uint32 `json:"t2"  mapstructure:"t2"`
-	Fp   uint32 `json:"fp"  mapstructure:"fp"`
-	S1   uint32 `json:"s1"  mapstructure:"s1"`
-	A0   uint32 `json:"a0"  mapstructure:"a0"`
-	A1   uint32 `json:"a1"  mapstructure:"a1"`
-	A2   uint32 `json:"a2"  mapstructure:"a2"`
-	A3   uint32 `json:"a3"  mapstructure:"a3"`
-	A4   uint32 `json:"a4"  mapstructure:"a4"`
-	A5   uint32 `json:"a5"  mapstructure:"a5"`
-	A6   uint32 `json:"a6"  mapstructure:"a6"`
-	A7   uint32 `json:"a7"  mapstructure:"a7"`
-	S2   uint32 `json:"s2"  mapstructure:"s2"`
-	S3   uint32 `json:"s3"  mapstructure:"s3"`
-	S4   uint32 `json:"s4"  mapstructure:"s4"`
-	S5   uint32 `json:"s5"  mapstructure:"s5"`
-	S6   uint32 `json:"s6"  mapstructure:"s6"`
-	S7   uint32 `json:"s7"  mapstructure:"s7"`
-	S8   uint32 `json:"s8"  mapstructure:"s8"`
-	S9   uint32 `json:"s9"  mapstructure:"s9"`
-	S10  uint32 `json:"s10" mapstructure:"s10"`
-	S11  uint32 `json:"s11" mapstructure:"s11"`
-	T3   uint32 `json:"t3"  mapstructure:"t3"`
-	T4   uint32 `json:"t4"  mapstructure:"t4"`
-	T5   uint32 `json:"t5"  mapstructure:"t5"`
-	T6   uint32 `json:"t6"  mapstructure:"t6"`
-	PC   uint32 `json:"pc"  mapstructure:"pc"`
-}
-
-// AsMap returns the given register frame as a map of register names to register values.
-// In some cases - such as iterating over all registers - a map is much easier to use.
-func (f GDBRegisterFrame) AsMap() map[string]uint32 {
-	asMap := make(map[string]uint32)
-	jsonEnc, _ := json.Marshal(f)
-
-	_ = json.Unmarshal(jsonEnc, &asMap)
-
-	return asMap
-}
-
-// Dump uses the given logger to write prettified contents of every register except `zero`.
-func (f GDBRegisterFrame) Dump(logger *log.Logger) {
-	asMap := f.AsMap()
-
-	regList := append(GetRegisterList(), "pc")
-
-	for _, regName := range regList {
-		if regName == "zero" {
-			continue
-		}
-
-		value := asMap[regName]
-		if value == 0 {
-			logger.Printf("%4.4s:          0", regName)
-		} else {
-			logger.Printf("%4.4s: 0x%8.8x", regName, asMap[regName])
-		}
+// Close terminates the open GDB connection, gracefully if possible
+func (s *GDBConnection) Close() error {
+	err := s.Conn.Exit()
+	if err != nil {
+		return err
 	}
+
+	return nil
 }
 
 // FetchRegister makes a GDB call equivalent to `i r n` or `info registers n` to get the value of "n", which can be
@@ -389,4 +334,72 @@ func (s *GDBConnection) ReadMemoryWord(addr uint32) (string, error) {
 	}
 
 	return memoryDumpResponse.Payload.Memory[0].Contents[0:8], nil
+}
+
+// GDBRegisterFrame holds the typed values of every regular RISC-V rv32 integer register along with the PC.
+type GDBRegisterFrame struct {
+	Zero uint32 `json:"zero" mapstructure:"zero"`
+	Ra   uint32 `json:"ra"  mapstructure:"ra"`
+	Sp   uint32 `json:"sp"  mapstructure:"sp"`
+	Gp   uint32 `json:"gp"  mapstructure:"gp"`
+	Tp   uint32 `json:"tp"  mapstructure:"tp"`
+	T0   uint32 `json:"t0"  mapstructure:"t0"`
+	T1   uint32 `json:"t1"  mapstructure:"t1"`
+	T2   uint32 `json:"t2"  mapstructure:"t2"`
+	Fp   uint32 `json:"fp"  mapstructure:"fp"`
+	S1   uint32 `json:"s1"  mapstructure:"s1"`
+	A0   uint32 `json:"a0"  mapstructure:"a0"`
+	A1   uint32 `json:"a1"  mapstructure:"a1"`
+	A2   uint32 `json:"a2"  mapstructure:"a2"`
+	A3   uint32 `json:"a3"  mapstructure:"a3"`
+	A4   uint32 `json:"a4"  mapstructure:"a4"`
+	A5   uint32 `json:"a5"  mapstructure:"a5"`
+	A6   uint32 `json:"a6"  mapstructure:"a6"`
+	A7   uint32 `json:"a7"  mapstructure:"a7"`
+	S2   uint32 `json:"s2"  mapstructure:"s2"`
+	S3   uint32 `json:"s3"  mapstructure:"s3"`
+	S4   uint32 `json:"s4"  mapstructure:"s4"`
+	S5   uint32 `json:"s5"  mapstructure:"s5"`
+	S6   uint32 `json:"s6"  mapstructure:"s6"`
+	S7   uint32 `json:"s7"  mapstructure:"s7"`
+	S8   uint32 `json:"s8"  mapstructure:"s8"`
+	S9   uint32 `json:"s9"  mapstructure:"s9"`
+	S10  uint32 `json:"s10" mapstructure:"s10"`
+	S11  uint32 `json:"s11" mapstructure:"s11"`
+	T3   uint32 `json:"t3"  mapstructure:"t3"`
+	T4   uint32 `json:"t4"  mapstructure:"t4"`
+	T5   uint32 `json:"t5"  mapstructure:"t5"`
+	T6   uint32 `json:"t6"  mapstructure:"t6"`
+	PC   uint32 `json:"pc"  mapstructure:"pc"`
+}
+
+// AsMap returns the given register frame as a map of register names to register values.
+// In some cases - such as iterating over all registers - a map is much easier to use.
+func (f GDBRegisterFrame) AsMap() map[string]uint32 {
+	asMap := make(map[string]uint32)
+	jsonEnc, _ := json.Marshal(f)
+
+	_ = json.Unmarshal(jsonEnc, &asMap)
+
+	return asMap
+}
+
+// Dump uses the given logger to write prettified contents of every register except `zero`.
+func (f GDBRegisterFrame) Dump(logger *log.Logger) {
+	asMap := f.AsMap()
+
+	regList := append(GetRegisterList(), "pc")
+
+	for _, regName := range regList {
+		if regName == "zero" {
+			continue
+		}
+
+		value := asMap[regName]
+		if value == 0 {
+			logger.Printf("%4.4s:          0", regName)
+		} else {
+			logger.Printf("%4.4s: 0x%8.8x", regName, asMap[regName])
+		}
+	}
 }
