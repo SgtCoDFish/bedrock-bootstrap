@@ -127,7 +127,7 @@ func (a *Invocation) Run(ctx context.Context) error {
 		}
 	}()
 
-	err = testFn(testState)
+	err = testFn(ctx, testState)
 	if err != nil {
 		return err
 	}
