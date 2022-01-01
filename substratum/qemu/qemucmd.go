@@ -24,12 +24,6 @@ type QEMU struct {
 	pty *PTY
 }
 
-func (q *QEMU) stdoutReader() {
-	for q.stdoutScanner.Scan() {
-		q.stdout.Write(q.stdoutScanner.Bytes())
-	}
-}
-
 // NewQEMU initialises a new QEMU command and allocates a ptty for serial communications
 // but doesn't start QEMU itself
 func NewQEMU(ctx context.Context, kernelPath string) (*QEMU, error) {
@@ -72,6 +66,17 @@ func NewQEMU(ctx context.Context, kernelPath string) (*QEMU, error) {
 	go qemu.stdoutReader()
 
 	return qemu, nil
+}
+
+// SerialDevice returns the name of the file for the subordinate console
+func (q *QEMU) SerialDevice() string {
+	return q.pty.SubFilename
+}
+
+func (q *QEMU) stdoutReader() {
+	for q.stdoutScanner.Scan() {
+		q.stdout.Write(q.stdoutScanner.Bytes())
+	}
 }
 
 // Start is analogous to exec.Cmd.Start; begins the command begins reading stdout

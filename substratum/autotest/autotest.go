@@ -10,6 +10,7 @@ import (
 	"github.com/jacobsa/go-serial/serial"
 
 	"github.com/sgtcodfish/substratum"
+	"github.com/sgtcodfish/substratum/qemu"
 )
 
 const maxSerialWrites = 100
@@ -25,6 +26,9 @@ type State struct {
 	// GDBConn holds the connection to GDB, which will be manipulated throughout the test
 	GDBConn *substratum.GDBConnection
 
+	// QEMU holds connection details for manipulating QEMU
+	QEMU *qemu.QEMU
+
 	// SerialConn holds a persistent open connection over UART
 	serialConn io.ReadWriteCloser
 }
@@ -32,7 +36,21 @@ type State struct {
 var _ io.Closer = (*State)(nil)
 
 // NewState returns a new State with the given options, and opens (and holds open) a serial connecton based on serialOptions
-func NewState(logger *log.Logger, gdbConn *substratum.GDBConnection, serialOptions serial.OpenOptions) (*State, error) {
+func NewState(ctx context.Context, logger *log.Logger, gdbConn *substratum.GDBConnection, kernelPath string) (*State, error) {
+	qemu, err := qemu.NewQEMU(ctx, kernelPath)
+	if err != nil {
+		return nil, err
+	}
+
+	serialOptions := serial.OpenOptions{
+		PortName:        qemu.SerialDevice(),
+		BaudRate:        115200,
+		DataBits:        8,
+		StopBits:        1,
+		ParityMode:      serial.PARITY_NONE,
+		MinimumReadSize: 1,
+	}
+
 	serialConn, err := serial.Open(serialOptions)
 	if err != nil {
 		return nil, err
@@ -41,6 +59,7 @@ func NewState(logger *log.Logger, gdbConn *substratum.GDBConnection, serialOptio
 	return &State{
 		Logger:     logger,
 		GDBConn:    gdbConn,
+		QEMU:       qemu,
 		serialConn: serialConn,
 	}, nil
 }
@@ -57,6 +76,11 @@ func (s *State) Close() error {
 	err = s.GDBConn.Close()
 	if err != nil {
 		closeErrors = append(closeErrors, fmt.Sprintf("failed to terminate GDB and close connection cleanly: %s", err.Error()))
+	}
+
+	err = s.QEMU.Close()
+	if err != nil {
+		closeErrors = append(closeErrors, fmt.Sprintf("failed to terminate QEMU: %s", err.Error()))
 	}
 
 	if len(closeErrors) > 0 {

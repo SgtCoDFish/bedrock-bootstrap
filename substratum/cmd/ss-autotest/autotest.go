@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jacobsa/go-serial/serial"
 	"github.com/sgtcodfish/substratum"
 	"github.com/sgtcodfish/substratum/autotest"
 )
@@ -99,15 +98,6 @@ func (a *Invocation) Run(ctx context.Context) error {
 		return err
 	}
 
-	serialOptions := serial.OpenOptions{
-		PortName:        a.serialDevice,
-		BaudRate:        115200,
-		DataBits:        8,
-		StopBits:        1,
-		ParityMode:      serial.PARITY_NONE,
-		MinimumReadSize: 1,
-	}
-
 	testFn, ok := testMap[a.testName]
 	if !ok {
 		panic("invalid test name when running autotest invocation")
@@ -115,7 +105,7 @@ func (a *Invocation) Run(ctx context.Context) error {
 
 	logger.Printf("starting GDB")
 
-	testState, err := autotest.NewState(logger, gdbConn, serialOptions)
+	testState, err := autotest.NewState(ctx, logger, gdbConn, "abc")
 	if err != nil {
 		return err
 	}
