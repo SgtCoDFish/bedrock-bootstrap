@@ -19,7 +19,7 @@ type QEMU struct {
 	stdout        bytes.Buffer
 	stdoutScanner *bufio.Scanner
 
-	stdin *io.PipeWriter
+	stdin *io.WriteCloser
 
 	pty *PTY
 }
@@ -48,18 +48,23 @@ func NewQEMU(ctx context.Context, kernelPath string) (*QEMU, error) {
 		kernelPath,
 	}
 
-	qemuStdoutReader, qemuStdoutWriter := io.Pipe()
-	qemuStdinReader, qemuStdinWriter := io.Pipe()
-
 	cmd := exec.CommandContext(ctx, binaryPath, qemuArgs...)
-	cmd.Stdout = qemuStdoutWriter
-	cmd.Stdin = qemuStdinReader
+
+	stdinPipe, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
 
 	qemu := &QEMU{
 		cmd:           cmd,
 		kernelPath:    kernelPath,
-		stdoutScanner: bufio.NewScanner(qemuStdoutReader),
-		stdin:         qemuStdinWriter,
+		stdoutScanner: bufio.NewScanner(stdoutPipe),
+		stdin:         &stdinPipe,
 		pty:           pty,
 	}
 
