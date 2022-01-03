@@ -36,14 +36,24 @@ type State struct {
 var _ io.Closer = (*State)(nil)
 
 // NewState returns a new State with the given options, and opens (and holds open) a serial connecton based on serialOptions
-func NewState(ctx context.Context, logger *log.Logger, gdbConn *substratum.GDBConnection, kernelPath string) (*State, error) {
-	qemu, err := qemu.NewQEMU(ctx, kernelPath)
+func NewState(ctx context.Context, logger *log.Logger, qemuPath string, gdbPath string, gdbPort string, kernelPath string) (*State, error) {
+	logger.Printf("creating new QEMU instance and PTY")
+
+	qemu, err := qemu.NewQEMU(ctx, logger, qemuPath, kernelPath)
 	if err != nil {
 		return nil, err
 	}
 
+	err = qemu.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	serialDevice := qemu.SerialDevice()
+	logger.Printf("communicating with QEMU over serial device %q", serialDevice)
+
 	serialOptions := serial.OpenOptions{
-		PortName:        qemu.SerialDevice(),
+		PortName:        serialDevice,
 		BaudRate:        115200,
 		DataBits:        8,
 		StopBits:        1,
@@ -53,8 +63,20 @@ func NewState(ctx context.Context, logger *log.Logger, gdbConn *substratum.GDBCo
 
 	serialConn, err := serial.Open(serialOptions)
 	if err != nil {
+		_ = qemu.Close()
 		return nil, err
 	}
+
+	logger.Printf("attempting to connect to GDB using %q on port %s", gdbPath, gdbPort)
+
+	gdbConn, err := substratum.NewGDBConnection(gdbPath, gdbPort)
+	if err != nil {
+		_ = qemu.Close()
+		_ = serialConn.Close()
+		return nil, err
+	}
+
+	logger.Printf("initialised state")
 
 	return &State{
 		Logger:     logger,
@@ -62,6 +84,16 @@ func NewState(ctx context.Context, logger *log.Logger, gdbConn *substratum.GDBCo
 		QEMU:       qemu,
 		serialConn: serialConn,
 	}, nil
+}
+
+// Run invokes the given test function using this state
+func (s *State) Run(ctx context.Context, testFunc TestFunc) error {
+	err := testFunc(ctx, s)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Close terminates any open connections held by the State, gracefully if possible

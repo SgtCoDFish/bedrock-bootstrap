@@ -2,11 +2,12 @@ package qemu
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os/exec"
+	"strings"
 )
 
 // QEMU wraps an exec.Cmd for running QEMU, establishing a new pseudo-tty for serial
@@ -16,23 +17,23 @@ type QEMU struct {
 
 	kernelPath string
 
-	stdout        bytes.Buffer
+	logger        *log.Logger
 	stdoutScanner *bufio.Scanner
 
-	stdin *io.WriteCloser
+	stdin io.WriteCloser
 
 	pty *PTY
 }
 
 // NewQEMU initialises a new QEMU command and allocates a ptty for serial communications
 // but doesn't start QEMU itself
-func NewQEMU(ctx context.Context, kernelPath string) (*QEMU, error) {
+func NewQEMU(ctx context.Context, tmplLogger *log.Logger, qemuPath string, kernelPath string) (*QEMU, error) {
+	logger := log.New(tmplLogger.Writer(), tmplLogger.Prefix()+"qemu: ", tmplLogger.Flags())
+
 	pty, err := NewPTY()
 	if err != nil {
 		return nil, err
 	}
-
-	binaryPath := "/usr/bin/qemu-system-riscv32"
 
 	qemuArgs := []string{
 		"-nographic",
@@ -48,7 +49,7 @@ func NewQEMU(ctx context.Context, kernelPath string) (*QEMU, error) {
 		kernelPath,
 	}
 
-	cmd := exec.CommandContext(ctx, binaryPath, qemuArgs...)
+	cmd := exec.CommandContext(ctx, qemuPath, qemuArgs...)
 
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
@@ -63,12 +64,11 @@ func NewQEMU(ctx context.Context, kernelPath string) (*QEMU, error) {
 	qemu := &QEMU{
 		cmd:           cmd,
 		kernelPath:    kernelPath,
+		logger:        logger,
 		stdoutScanner: bufio.NewScanner(stdoutPipe),
-		stdin:         &stdinPipe,
+		stdin:         stdinPipe,
 		pty:           pty,
 	}
-
-	go qemu.stdoutReader()
 
 	return qemu, nil
 }
@@ -80,16 +80,44 @@ func (q *QEMU) SerialDevice() string {
 
 func (q *QEMU) stdoutReader() {
 	for q.stdoutScanner.Scan() {
-		q.stdout.Write(q.stdoutScanner.Bytes())
+		q.logger.Println(q.stdoutScanner.Text())
 	}
 }
 
 // Start is analogous to exec.Cmd.Start; begins the command begins reading stdout
 func (q *QEMU) Start() error {
-	return fmt.Errorf("NYI")
+	err := q.cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	go q.stdoutReader()
+
+	return nil
 }
 
 // Close attempts to shut down QEMU, first gracefully and then by force if required.
 func (q *QEMU) Close() error {
-	return fmt.Errorf("NYI")
+	var errs []string
+
+	_, err := q.stdin.Write([]byte("\nquit\n"))
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+
+	err = q.stdin.Close()
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+
+	err = q.cmd.Wait()
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to close QEMU instance: %s", strings.Join(errs, " | "))
+	}
+
+	return nil
 }

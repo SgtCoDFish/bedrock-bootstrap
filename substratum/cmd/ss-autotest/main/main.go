@@ -13,7 +13,7 @@ func main() {
 
 	err := ssautotest.Invoke(ctx, os.Args[0], os.Args[1:])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to parse flags / setup: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error: %s\n", err.Error())
 		os.Exit(1)
 	}
 }

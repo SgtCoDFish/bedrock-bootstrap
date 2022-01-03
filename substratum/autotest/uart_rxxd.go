@@ -38,7 +38,7 @@ func ProcessUARTRxxdBasic(_ context.Context, state *State) error {
 		return err
 	}
 
-	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
+	state.Logger.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
 		err = state.GDBConn.AdvancePC(0x204000cc, 1000)
@@ -77,7 +77,7 @@ func ProcessUARTRxxdBasic(_ context.Context, state *State) error {
 			return err
 		}
 
-		fmt.Printf("word at 0x%8.8X: %s\n", i, word)
+		state.Logger.Printf("word at 0x%8.8X: %s\n", i, word)
 
 		// we only want to write our single word at the initial memory location
 		// and we don't want to touch any of the surrounding memory
@@ -121,7 +121,7 @@ func ProcessUARTRxxdComment(_ context.Context, state *State) error {
 		return err
 	}
 
-	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
+	state.Logger.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
 		err = state.GDBConn.AdvancePC(0x204000cc, 1000)
@@ -160,7 +160,7 @@ func ProcessUARTRxxdComment(_ context.Context, state *State) error {
 			return err
 		}
 
-		fmt.Printf("word at 0x%8.8X: %s\n", i, word)
+		state.Logger.Printf("word at 0x%8.8X: %s\n", i, word)
 
 		// we only want to write our single word at the initial memory location
 		// and we don't want to touch any of the surrounding memory
@@ -203,7 +203,7 @@ func ProcessUARTRxxdFull(_ context.Context, state *State) error {
 		return err
 	}
 
-	fmt.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
+	state.Logger.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
 
 	for i := 0; i < len(msg); i++ {
 		// advance to 2040_00CC which is just after UART has been read from
@@ -255,7 +255,7 @@ func ProcessUARTRxxdFull(_ context.Context, state *State) error {
 			return err
 		}
 
-		fmt.Printf("word at 0x%8.8X: %s\n", i, word)
+		state.Logger.Printf("word at 0x%8.8X: %s\n", i, word)
 
 		// we only want to write our single word at the initial memory location
 		// and we don't want to touch any of the surrounding memory

@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sgtcodfish/substratum"
 	"github.com/sgtcodfish/substratum/autotest"
 )
 
@@ -21,10 +20,13 @@ var testMap = map[string]autotest.TestFunc{
 
 // Invocation holds state for a given invocation of the ss-autotest command
 type Invocation struct {
-	gdbPath      string
-	gdbPort      string
-	serialDevice string
-	testName     string
+	gdbPath string
+	gdbPort string
+
+	qemuPath string
+
+	testName   string
+	kernelFile string
 }
 
 // ParseInvocation builds an invocation for a run of the the ss-autotest command, where name is the name
@@ -32,16 +34,15 @@ type Invocation struct {
 func ParseInvocation(name string, flags []string) (*Invocation, error) {
 	autoTestCmd := flag.NewFlagSet(name, flag.ExitOnError)
 
+	allTestNames := getAllTestNames()
+
 	gdbPathFlag := autoTestCmd.String("gdb", "", "Path to the GDB executable to use. Defaults to ${RISCV_PREFIX}gdb")
-	serialDeviceFlag := autoTestCmd.String("serial", "", "Device to use for serial communication with the running test")
-	autoTestCmd.String("test-name", "", "Name of the test to run")
+	qemuPathFlag := autoTestCmd.String("qemu", "/usr/bin/qemu-system-riscv32", "Path to the QEMU executable to run.")
+	autoTestCmd.String("kernel-file", "", "ELF file containing the kernel to run using QEMU")
+	autoTestCmd.String("test-name", "", "Name of the test to run. Must be one of: "+allTestNames)
 
 	if err := autoTestCmd.Parse(flags); err != nil {
 		return nil, fmt.Errorf("failed to parse flags: %w", err)
-	}
-
-	if len(*serialDeviceFlag) == 0 {
-		return nil, errors.New("missing required flag: serial")
 	}
 
 	testNameFlag := autoTestCmd.Lookup("test-name")
@@ -51,26 +52,31 @@ func ParseInvocation(name string, flags []string) (*Invocation, error) {
 
 	testName := strings.ToLower(testNameFlag.Value.String())
 
+	kernelFileFlag := autoTestCmd.Lookup("kernel-file")
+	if kernelFileFlag == nil {
+		return nil, errors.New("missing required flag: kernel-file")
+	}
+
+	if err := checkKernel(kernelFileFlag.Value.String()); err != nil {
+		return nil, err
+	}
+
 	gdbPath := *gdbPathFlag
 
 	if len(gdbPath) == 0 {
 		gdbPath = os.Getenv("RISCV_PREFIX") + "gdb"
 	}
 
-	allTests := make([]string, 0, len(testMap))
-	for k := range testMap {
-		allTests = append(allTests, k)
-	}
-
 	if _, ok := testMap[testName]; !ok {
-		return nil, fmt.Errorf("invalid test name %q; must be one of %s", testName, strings.Join(allTests, " | "))
+		return nil, fmt.Errorf("invalid test name %q; must be one of: %s", testName, allTestNames)
 	}
 
 	return &Invocation{
-		gdbPath:      gdbPath,
-		gdbPort:      ":1234",
-		serialDevice: *serialDeviceFlag,
-		testName:     testName,
+		gdbPath:    gdbPath,
+		gdbPort:    ":1234",
+		qemuPath:   *qemuPathFlag,
+		testName:   testName,
+		kernelFile: kernelFileFlag.Value.String(),
 	}, nil
 }
 
@@ -87,16 +93,9 @@ func Invoke(ctx context.Context, name string, flags []string) error {
 
 // Run executes ss-autotest for the configured invocation
 func (a *Invocation) Run(ctx context.Context) error {
-	logger := log.New(os.Stdout, "", 0)
+	logger := log.New(os.Stdout, "test: ", 0)
 
 	logger.Printf("processing autotest for '%s'", a.testName)
-
-	logger.Printf("attempting to connect to GDB on port %s", a.gdbPort)
-
-	gdbConn, err := substratum.NewGDBConnection(a.gdbPath, a.gdbPort)
-	if err != nil {
-		return err
-	}
 
 	testFn, ok := testMap[a.testName]
 	if !ok {
@@ -105,7 +104,7 @@ func (a *Invocation) Run(ctx context.Context) error {
 
 	logger.Printf("starting GDB")
 
-	testState, err := autotest.NewState(ctx, logger, gdbConn, "abc")
+	testState, err := autotest.NewState(ctx, logger, a.qemuPath, a.gdbPath, a.gdbPort, a.kernelFile)
 	if err != nil {
 		return err
 	}
@@ -117,7 +116,26 @@ func (a *Invocation) Run(ctx context.Context) error {
 		}
 	}()
 
-	err = testFn(ctx, testState)
+	err = testState.Run(ctx, testFn)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getAllTestNames() string {
+	allTests := make([]string, 0, len(testMap))
+
+	for k := range testMap {
+		allTests = append(allTests, k)
+	}
+
+	return strings.Join(allTests, " | ")
+}
+
+func checkKernel(path string) error {
+	_, err := os.Stat(path)
 	if err != nil {
 		return err
 	}
