@@ -46,6 +46,8 @@ func ProcessUARTRxxdBasic(_ context.Context, state *State) error {
 			return err
 		}
 
+		state.VerboseLogger.Printf("advanced PC to 0x204000cc")
+
 		a0, err := state.GDBConn.FetchRegister("a0")
 		if err != nil {
 			return err
@@ -309,7 +311,11 @@ func ProcessUARTRxxdFull(_ context.Context, state *State) error {
 // checkInitialization advances execution until UART input is read and asserts that the registers
 // were initialized as expected.
 func checkInitialization(state *State) error {
-	err := state.GDBConn.AdvancePC(0x204000b0, 1000)
+	target := uint32(0x204000b0)
+
+	state.VerboseLogger.Printf("advancing PC to 0x%8.8X", target)
+
+	err := state.GDBConn.AdvancePC(target, 1000)
 	if err != nil {
 		return err
 	}

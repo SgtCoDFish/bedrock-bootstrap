@@ -23,6 +23,9 @@ type State struct {
 	// Logger is the default logger to use for output during tests
 	Logger *log.Logger
 
+	// VerboseLogger is the logger for verbose output which might get noisy if enabled generally
+	VerboseLogger *log.Logger
+
 	// GDBConn holds the connection to GDB, which will be manipulated throughout the test
 	GDBConn *substratum.GDBConnection
 
@@ -79,10 +82,11 @@ func NewState(ctx context.Context, logger *log.Logger, qemuPath string, gdbPath 
 	logger.Printf("initialised state")
 
 	return &State{
-		Logger:     logger,
-		GDBConn:    gdbConn,
-		QEMU:       qemu,
-		serialConn: serialConn,
+		Logger:        logger,
+		VerboseLogger: log.New(io.Discard, "", 0),
+		GDBConn:       gdbConn,
+		QEMU:          qemu,
+		serialConn:    serialConn,
 	}, nil
 }
 

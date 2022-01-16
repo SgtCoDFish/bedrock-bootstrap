@@ -93,7 +93,7 @@ func Invoke(ctx context.Context, name string, flags []string) error {
 
 // Run executes ss-autotest for the configured invocation
 func (a *Invocation) Run(ctx context.Context) error {
-	logger := log.New(os.Stdout, "test: ", 0)
+	logger := log.New(os.Stdout, "info: ", 0)
 
 	logger.Printf("processing autotest for '%s'", a.testName)
 
@@ -108,6 +108,8 @@ func (a *Invocation) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	testState.VerboseLogger = log.New(os.Stdout, "verbose: ", 0)
 
 	defer func() {
 		err := testState.Close()
