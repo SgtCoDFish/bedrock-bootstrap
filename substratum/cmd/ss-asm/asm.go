@@ -29,25 +29,27 @@ var outputFormatterMap map[string]outputFormatter = map[string]outputFormatter{
 
 // Invocation holds state for a given invocation of the ss-asm command
 type Invocation struct {
-	Input  *bufio.Reader
+	Input  io.ReadCloser
 	Output io.WriteCloser
 
 	OutputFormatter outputFormatter
-
-	underlyingInput io.Closer
 }
 
 // Close closes both input and output
 func (a *Invocation) Close() error {
-	inputErr := a.underlyingInput.Close()
+	inputErr := a.Input.Close()
 	outputErr := a.Output.Close()
 
-	if inputErr != nil && outputErr == nil {
-		return inputErr
-	} else if inputErr == nil && outputErr == nil {
-		return outputErr
-	} else if inputErr != nil && outputErr != nil {
+	if inputErr != nil && outputErr != nil {
 		return fmt.Errorf(`failed to close input ("%v") and output ("%v")`, inputErr, outputErr)
+	}
+
+	if inputErr != nil {
+		return inputErr
+	}
+
+	if outputErr != nil {
+		return outputErr
 	}
 
 	return nil
@@ -82,8 +84,6 @@ func ParseInvocation(name string, flags []string) (*Invocation, error) {
 		return nil, err
 	}
 
-	inputReader := bufio.NewReader(inputFile)
-
 	outputFile, err := openFlag(outputFilename, os.Stdout)
 	if err != nil {
 		return nil, err
@@ -97,11 +97,9 @@ func ParseInvocation(name string, flags []string) (*Invocation, error) {
 	}
 
 	return &Invocation{
-		Input:           inputReader,
+		Input:           inputFile,
 		Output:          outputFile,
 		OutputFormatter: formatterFunc,
-
-		underlyingInput: inputFile,
 	}, nil
 }
 
@@ -114,13 +112,15 @@ func (a *Invocation) Run(ctx context.Context) error {
 		}
 	}()
 
+	inputReader := bufio.NewReader(a.Input)
+
 	done := false
 	for {
 		if done {
 			break
 		}
 
-		line, err := a.Input.ReadString(byte(0xa))
+		line, err := inputReader.ReadString(byte(0xa))
 		if err != nil {
 			if err != io.EOF {
 				return err

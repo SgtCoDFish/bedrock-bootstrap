@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 
@@ -29,18 +29,16 @@ type testCase struct {
 func TestSsASM(t *testing.T) {
 	var cases = map[string]testCase{
 		"hex output": {
-			input:          "bne a0 x0 -8\n",
+			input:          "addi x0 x0 0\n",
 			args:           []string{"-input", "-", "-output", "-"},
 			outputFormat:   "hex",
-			expectedOutput: []byte("fe 05 1c e3 # bne a0 x0 -8\n"),
-			// 0xFE051CE3
+			expectedOutput: []byte("13 00 00 00  # addi x0 x0 0\n"),
 		},
 		"bin output": {
-			input:          "bne a0 x0 -8\n",
+			input:          "addi x0 x0 0\n",
 			args:           []string{"-input", "-", "-output", "-"},
 			outputFormat:   "bin",
-			expectedOutput: []byte{byte(0xE3), byte(0x1C), byte(0x05), byte(0xFE)},
-			// 0xFE051CE3
+			expectedOutput: []byte{byte(0x13), byte(0x00), byte(0x00), byte(0x00)},
 		},
 	}
 
@@ -59,7 +57,7 @@ func TestSsASM(t *testing.T) {
 
 			outBuf := &closerBuffer{}
 
-			invocation.Input = bufio.NewReader(strings.NewReader(c.input))
+			invocation.Input = io.NopCloser(strings.NewReader(c.input))
 			invocation.Output = outBuf
 
 			err = invocation.Run(ctx)
