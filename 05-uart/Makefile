@@ -22,3 +22,8 @@ BUILD/uart.elf: elfheader.hex uart.hex
 .PHONY: qemu
 qemu:
 	qemu-system-riscv64 -nographic -serial pty -gdb tcp::1234 -S -machine sifive_e -kernel BUILD/uart.elf
+
+.PHONY: qemu-virt
+qemu-virt:
+	# TODO: this won't work; it jumps to 0x80000000
+	qemu-system-riscv64 -nographic -serial pty -gdb tcp::1234 -S -machine virt -bios none -kernel BUILD/uart.elf
