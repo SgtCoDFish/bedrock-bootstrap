@@ -28,4 +28,4 @@ nothing.dump: nothing.elf
 
 .PHONY: qemu
 qemu:
-	qemu-system-riscv32 -machine sifive_e -nographic -gdb tcp::1234 -S -kernel nothing.elf
+	qemu-system-riscv64 -machine sifive_e -nographic -gdb tcp::1234 -S -kernel nothing.elf

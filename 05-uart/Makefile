@@ -18,3 +18,7 @@ dump: BUILD/uart.bin
 BUILD/uart.elf: elfheader.hex uart.hex
 	@mkdir -p BUILD
 	cat elfheader.hex uart.hex | sed "s/#.*$$//g" | xxd -r -p > $@
+
+.PHONY: qemu
+qemu:
+	qemu-system-riscv64 -nographic -serial pty -gdb tcp::1234 -S -machine sifive_e -kernel BUILD/uart.elf
