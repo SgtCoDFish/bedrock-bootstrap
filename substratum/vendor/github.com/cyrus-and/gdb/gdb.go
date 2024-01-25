@@ -33,6 +33,11 @@ type Gdb struct {
 // callback used to deliver to the client the asynchronous notifications sent by
 // GDB. It returns a pointer to the newly created instance handled or an error.
 func New(onNotification NotificationCallback) (*Gdb, error) {
+	return NewCustom([]string{"gdb"}, onNotification)
+}
+
+// Like New, but allows to specify the GDB executable path and arguments.
+func NewCustom(gdbCmd []string, onNotification NotificationCallback) (*Gdb, error) {
 	// open a new terminal (master and slave) for the target program, they are
 	// both saved so that they are nore garbage collected after this function
 	// ends
@@ -42,8 +47,8 @@ func New(onNotification NotificationCallback) (*Gdb, error) {
 	}
 
 	// create GDB command
-	cmd := []string{"gdb", "--nx", "--quiet", "--interpreter=mi2", "--tty", pts.Name()}
-	gdb, err := NewCmd(cmd, onNotification)
+	gdbCmd = append(gdbCmd, "--nx", "--quiet", "--interpreter=mi2", "--tty", pts.Name())
+	gdb, err := NewCmd(gdbCmd, onNotification)
 
 	if err != nil {
 		ptm.Close()
@@ -57,11 +62,10 @@ func New(onNotification NotificationCallback) (*Gdb, error) {
 	return gdb, nil
 }
 
-// NewCmd creates a new GDB instance like New, but allows explicitely
-// passing the gdb command to run (including all arguments). cmd is a
-// which is passed as-is to exec.Command, so the first element should be
-// the command to run, and the remaining elements should each contain a
-// single argument.
+// NewCmd creates a new GDB instance like New, but allows explicitely passing
+// the gdb command to run (including all arguments). cmd is passed as-is to
+// exec.Command, so the first element should be the command to run, and the
+// remaining elements should each contain a single argument.
 func NewCmd(cmd []string, onNotification NotificationCallback) (*Gdb, error) {
 	gdb := Gdb{onNotification: onNotification}
 
