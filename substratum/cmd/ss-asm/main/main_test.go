@@ -76,8 +76,8 @@ func TestSsASM(t *testing.T) {
 					renderedOutput = fmt.Sprintf("%+v", output)
 					wantedOutput = fmt.Sprintf("%+v", c.expectedOutput)
 				} else if c.outputFormat == "hex" {
-					renderedOutput = fmt.Sprintf("%s", string(output))
-					wantedOutput = fmt.Sprintf("%s", string(c.expectedOutput))
+					renderedOutput = string(output)
+					wantedOutput = string(c.expectedOutput)
 				} else {
 					t.Errorf("test setup error: unknown output format %q", c.outputFormat)
 					renderedOutput = "<unknown>"
