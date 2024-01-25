@@ -30,8 +30,10 @@ b7 37 01 10  # lui a5, 0x10013
 
 
 # UART_REG_TXCTRL = 0x10013008
-# UART_REG_TXCTRL := 0x01 # Should this be 0x03?
+# UART_REG_TXCTRL := 0x01 | 0x03
+# TODO: Should this be set to 0x03 or 0x01?
 93 87 07 ff  # addi a5, a5, -0x10
+# 13 05 30 00  # addi a0, x0, 0x3 ???
 13 05 10 00  # addi a0, x0, 0x1
 23 a0 a7 00  # sw a0, 0(a5)
 
