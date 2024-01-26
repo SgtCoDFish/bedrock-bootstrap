@@ -33,7 +33,7 @@ type State struct {
 	QEMU *qemu.QEMU
 
 	// SerialConn holds a persistent open connection over UART
-	serialConn io.ReadWriteCloser
+	SerialConn io.ReadWriteCloser
 }
 
 var _ io.Closer = (*State)(nil)
@@ -57,7 +57,7 @@ func NewState(ctx context.Context, logger *log.Logger, qemuPath string, gdbPath 
 
 	serialOptions := serial.OpenOptions{
 		PortName:        serialDevice,
-		BaudRate:        115200,
+		BaudRate:        9600,
 		DataBits:        8,
 		StopBits:        1,
 		ParityMode:      serial.PARITY_NONE,
@@ -86,7 +86,7 @@ func NewState(ctx context.Context, logger *log.Logger, qemuPath string, gdbPath 
 		VerboseLogger: log.New(io.Discard, "", 0),
 		GDBConn:       gdbConn,
 		QEMU:          qemu,
-		serialConn:    serialConn,
+		SerialConn:    serialConn,
 	}, nil
 }
 
@@ -104,7 +104,7 @@ func (s *State) Run(ctx context.Context, testFunc TestFunc) error {
 func (s *State) Close() error {
 	var closeErrors []string
 
-	err := s.serialConn.Close()
+	err := s.SerialConn.Close()
 	if err != nil {
 		closeErrors = append(closeErrors, fmt.Sprintf("failed to close serial connection cleanly: %s", err.Error()))
 	}
@@ -126,11 +126,16 @@ func (s *State) Close() error {
 	return nil
 }
 
+// ReadAllSerial attempts to read everything available from the serial connection
+func (s *State) ReadAllSerial() ([]byte, error) {
+	return io.ReadAll(s.SerialConn)
+}
+
 // SendSerial attempts to fully write the given data to the serial port corresponding to this State.
 func (s *State) SendSerial(data []byte) error {
 	bytesRemaining := len(data)
 	for i := 0; i < maxSerialWrites; i++ {
-		bytesWritten, err := s.serialConn.Write(data)
+		bytesWritten, err := s.SerialConn.Write(data)
 		if err != nil {
 			return err
 		}

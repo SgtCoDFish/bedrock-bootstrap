@@ -13,6 +13,7 @@ import (
 )
 
 var testMap = map[string]autotest.TestFunc{
+	"uart-simple-read":  autotest.ProcessUARTSimpleRead,
 	"uart-rxxd-basic":   autotest.ProcessUARTRxxdBasic,
 	"uart-rxxd-comment": autotest.ProcessUARTRxxdComment,
 	"uart-rxxd-full":    autotest.ProcessUARTRxxdFull,
@@ -46,14 +47,14 @@ func ParseInvocation(name string, flags []string) (*Invocation, error) {
 	}
 
 	testNameFlag := autoTestCmd.Lookup("test-name")
-	if testNameFlag == nil {
+	if testNameFlag == nil || testNameFlag.Value.String() == "" {
 		return nil, errors.New("missing required flag: test-name")
 	}
 
 	testName := strings.ToLower(testNameFlag.Value.String())
 
 	kernelFileFlag := autoTestCmd.Lookup("kernel-file")
-	if kernelFileFlag == nil {
+	if kernelFileFlag == nil || kernelFileFlag.Value.String() == "" {
 		return nil, errors.New("missing required flag: kernel-file")
 	}
 
