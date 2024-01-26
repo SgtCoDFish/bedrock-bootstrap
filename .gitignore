@@ -32,5 +32,4 @@
 
 .idea
 
-substratum/bin
-substratum/devel/bin
+substratum/_bin
