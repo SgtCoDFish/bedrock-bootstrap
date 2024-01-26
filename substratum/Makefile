@@ -54,17 +54,6 @@ $(BINDIR)/$(SS_ASM_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_ASM_NAME)/*.go) $
 $(BINDIR)/$(SS_AUTOTEST_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/*.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/main/*.go) | $(BINDIR)
 	$(GO) build -mod=vendor -o $@ cmd/$(SS_AUTOTEST_NAME)/main/*.go
 
-.PHONY: docker-build-env
-docker-build-env: VERSION.txt Dockerfile
-	@if [[ -z '$(shell docker image ls --quiet substratum-build:$(VERSION))' ]]; then \
-		docker build -t substratum-build:$(VERSION) . ;\
-	fi
-
-.PHONY: docker-ci
-docker-ci: docker-build-env
-	mkdir -p bin BUILD
-	docker run --rm -v "$$PWD:/work" substratum-build:$(VERSION) make ci
-
 .PHONY: install
 install:
 	sudo cp $(BINDIR)/$(NAME) /usr/bin/$(NAME)
