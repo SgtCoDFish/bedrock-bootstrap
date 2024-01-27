@@ -82,7 +82,9 @@ type gdbMemoryDumpMemory struct {
 // NewGDBConnection creates a GDBConnection with given parameters, and initialises that connection
 // to use the RISC-V rv32 architecture.
 func NewGDBConnection(gdbPath string, remoteTarget string) (*GDBConnection, error) {
-	conn, err := gdb.NewCmd([]string{gdbPath, "--nx", "--quiet", "--interpreter=mi2", "-ex", "set architecture riscv:rv32"}, nil)
+	conn, err := gdb.NewCmd([]string{gdbPath, "--nx", "--quiet", "--interpreter=mi2", "-ex", "set architecture riscv:rv32"}, func(ntfy map[string]any) {
+		fmt.Printf("got notification: %+v\n", ntfy)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -275,6 +277,23 @@ func (s *GDBConnection) AdvancePC(targetPC uint32, maxSteps int) error {
 	}
 
 	return fmt.Errorf("step count reached maximum of %d when trying to advance PC to 0x%8.8x", maxSteps, targetPC)
+}
+
+func (s *GDBConnection) AdvanceToBreak(breakpoint uint32) error {
+	fmt.Printf("setting breakpoint at %8.8X\n", breakpoint)
+
+	_, err := s.Conn.CheckedSend(fmt.Sprintf("break-insert *%8.8X", breakpoint))
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("continuing")
+	_, err = s.Conn.CheckedSend("exec-continue")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // WalkPC slowly uses the "step-instruction" GDB command until the program counter equals targetPC
