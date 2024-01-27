@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -82,9 +82,13 @@ type gdbMemoryDumpMemory struct {
 // NewGDBConnection creates a GDBConnection with given parameters, and initialises that connection
 // to use the RISC-V rv32 architecture.
 func NewGDBConnection(gdbPath string, remoteTarget string) (*GDBConnection, error) {
-	conn, err := gdb.NewCmd([]string{gdbPath, "--nx", "--quiet", "--interpreter=mi2", "-ex", "set architecture riscv:rv32"}, func(ntfy map[string]any) {
-		fmt.Printf("got notification: %+v\n", ntfy)
-	})
+	notificationFunc := func(_ map[string]any) {}
+
+	//notificationFunc := func(ntfy map[string]any) {
+	//	fmt.Printf("got notification: %+v\n", ntfy)
+	//}
+
+	conn, err := gdb.NewCmd([]string{gdbPath, "--nx", "--quiet", "--interpreter=mi2", "-ex", "set architecture riscv:rv32"}, notificationFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +408,7 @@ func (f GDBRegisterFrame) AsMap() map[string]uint32 {
 }
 
 // Dump uses the given logger to write prettified contents of every register except `zero`.
-func (f GDBRegisterFrame) Dump(logger *log.Logger) {
+func (f GDBRegisterFrame) Dump(logger *slog.Logger) {
 	asMap := f.AsMap()
 
 	regList := append(GetRegisterList(), "pc")
@@ -416,9 +420,9 @@ func (f GDBRegisterFrame) Dump(logger *log.Logger) {
 
 		value := asMap[regName]
 		if value == 0 {
-			logger.Printf("%4.4s:          0", regName)
+			logger.Info(fmt.Sprintf("%4.4s:          0", regName))
 		} else {
-			logger.Printf("%4.4s: 0x%8.8x", regName, asMap[regName])
+			logger.Info(fmt.Sprintf("%4.4s: 0x%8.8x", regName, asMap[regName]))
 		}
 	}
 }

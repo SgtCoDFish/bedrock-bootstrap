@@ -1,15 +1,15 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
 	ssautotest "github.com/sgtcodfish/substratum/cmd/ss-autotest"
+	"github.com/sgtcodfish/substratum/cmd/util"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx := util.Context()
 
 	err := ssautotest.Invoke(ctx, os.Args[0], os.Args[1:])
 	if err != nil {

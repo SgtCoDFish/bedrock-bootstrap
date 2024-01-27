@@ -8,7 +8,7 @@ import (
 
 // ProcessUARTSimpleReadBreak verifies the execution of the given GDB target and checks that it handles input as expected
 // for the "uart" bedrock bare-metal program.
-func ProcessUARTSimpleReadBreak(_ context.Context, state *State) error {
+func ProcessUARTSimpleReadBreak(ctx context.Context, state *State) error {
 	err := state.GDBConn.StepOnce()
 	if err != nil {
 		return err
@@ -21,7 +21,7 @@ func ProcessUARTSimpleReadBreak(_ context.Context, state *State) error {
 		return err
 	}
 
-	state.VerboseLogger.Printf("finished advancing, fetching registers")
+	state.Logger.InfoContext(ctx, "finished advancing, fetching registers")
 
 	frame, err := state.GDBConn.FetchRegisterFrame()
 	if err != nil {
@@ -48,7 +48,7 @@ func ProcessUARTSimpleReadBreak(_ context.Context, state *State) error {
 
 // ProcessUARTSimpleRead verifies the execution of the given GDB target and checks that it handles input as expected
 // for the "uart" bedrock bare-metal program.
-func ProcessUARTSimpleRead(_ context.Context, state *State) error {
+func ProcessUARTSimpleRead(ctx context.Context, state *State) error {
 	err := state.GDBConn.StepOnce()
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func ProcessUARTSimpleRead(_ context.Context, state *State) error {
 
 	start := uint32(0x20400000)
 
-	state.VerboseLogger.Printf("advancing PC to 0x%8.8X", start)
+	state.Logger.InfoContext(ctx, fmt.Sprintf("advancing PC to 0x%8.8X", start))
 
 	err = state.GDBConn.AdvancePC(start, 1000)
 	if err != nil {
@@ -75,7 +75,7 @@ func ProcessUARTSimpleRead(_ context.Context, state *State) error {
 			break
 		}
 
-		state.VerboseLogger.Printf("got PC 0x%8.8X, advancing", frame.PC)
+		state.Logger.InfoContext(ctx, fmt.Sprintf("got PC 0x%8.8X, advancing", frame.PC))
 
 		err = state.GDBConn.StepOnce()
 		if err != nil {

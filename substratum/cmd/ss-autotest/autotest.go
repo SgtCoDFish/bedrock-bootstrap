@@ -5,12 +5,12 @@ import (
 	"debug/elf"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/sgtcodfish/substratum/autotest"
+	"github.com/sgtcodfish/substratum/cmd/util"
 )
 
 const (
@@ -147,28 +147,26 @@ func Invoke(ctx context.Context, name string, flags []string) error {
 
 // Run executes ss-autotest for the configured invocation
 func (a *Invocation) Run(ctx context.Context) error {
-	logger := log.New(os.Stdout, "info: ", 0)
+	logger := util.Logger(ctx)
 
-	logger.Printf("processing autotest for '%s'", a.testName)
+	logger.InfoContext(ctx, "processing autotest", "testName", a.testName, "gdb", a.gdbPath, "qemu", a.qemuPath)
 
 	testFn, ok := testMap[a.testName]
 	if !ok {
 		panic("invalid test name when running autotest invocation")
 	}
 
-	logger.Printf("starting GDB")
-
-	testState, err := autotest.NewState(ctx, logger, a.qemuPath, a.gdbPath, a.gdbPort, a.kernelFile)
+	testState, err := autotest.NewState(ctx, a.qemuPath, a.gdbPath, a.gdbPort, a.kernelFile)
 	if err != nil {
 		return err
 	}
 
-	testState.VerboseLogger = log.New(os.Stdout, "verbose: ", 0)
+	logger.InfoContext(ctx, "initialised autotest successfully")
 
 	defer func() {
 		err := testState.Close()
 		if err != nil {
-			logger.Printf("failed to close: %s", err.Error())
+			logger.ErrorContext(ctx, "failed to shut down test state", "error", err)
 		}
 	}()
 

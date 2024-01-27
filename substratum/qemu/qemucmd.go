@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -27,8 +28,8 @@ type QEMU struct {
 
 // NewQEMU initialises a new QEMU command and allocates a ptty for serial communications
 // but doesn't start QEMU itself
-func NewQEMU(ctx context.Context, tmplLogger *log.Logger, qemuPath string, kernelPath string) (*QEMU, error) {
-	logger := log.New(tmplLogger.Writer(), tmplLogger.Prefix()+"qemu: ", tmplLogger.Flags())
+func NewQEMU(ctx context.Context, qemuPath string, kernelPath string) (*QEMU, error) {
+	logger := log.New(os.Stderr, "qemu: ", 0)
 
 	pty, err := NewPTY()
 	if err != nil {

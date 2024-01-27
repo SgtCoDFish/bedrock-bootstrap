@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/tarm/serial"
 
 	"github.com/sgtcodfish/substratum"
+	"github.com/sgtcodfish/substratum/cmd/util"
 	"github.com/sgtcodfish/substratum/qemu"
 )
 
@@ -22,10 +23,7 @@ type TestFunc func(ctx context.Context, state *State) error
 // State holds state which is required to run tests. Must be initialised prior to use.
 type State struct {
 	// Logger is the default logger to use for output during tests
-	Logger *log.Logger
-
-	// VerboseLogger is the logger for verbose output which might get noisy if enabled generally
-	VerboseLogger *log.Logger
+	Logger *slog.Logger
 
 	// GDBConn holds the connection to GDB, which will be manipulated throughout the test
 	GDBConn *substratum.GDBConnection
@@ -40,10 +38,11 @@ type State struct {
 var _ io.Closer = (*State)(nil)
 
 // NewState returns a new State with the given options, and opens (and holds open) a serial connecton based on serialOptions
-func NewState(ctx context.Context, logger *log.Logger, qemuPath string, gdbPath string, gdbPort string, kernelPath string) (*State, error) {
-	logger.Printf("creating new QEMU instance and PTY")
+func NewState(ctx context.Context, qemuPath string, gdbPath string, gdbPort string, kernelPath string) (*State, error) {
+	logger := util.Logger(ctx)
+	logger.InfoContext(ctx, "creating new QEMU instance and PTY")
 
-	qemu, err := qemu.NewQEMU(ctx, logger, qemuPath, kernelPath)
+	qemu, err := qemu.NewQEMU(ctx, qemuPath, kernelPath)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +53,7 @@ func NewState(ctx context.Context, logger *log.Logger, qemuPath string, gdbPath 
 	}
 
 	serialDevice := qemu.SerialDevice()
-	logger.Printf("communicating with QEMU over serial device %q", serialDevice)
+	logger.InfoContext(ctx, "initialised QEMU", "serialDevice", serialDevice)
 
 	serialOptions := &serial.Config{
 		Name:        serialDevice,
@@ -68,8 +67,6 @@ func NewState(ctx context.Context, logger *log.Logger, qemuPath string, gdbPath 
 		return nil, err
 	}
 
-	logger.Printf("attempting to connect to GDB using %q on port %s", gdbPath, gdbPort)
-
 	gdbConn, err := substratum.NewGDBConnection(gdbPath, gdbPort)
 	if err != nil {
 		_ = qemu.Close()
@@ -77,14 +74,13 @@ func NewState(ctx context.Context, logger *log.Logger, qemuPath string, gdbPath 
 		return nil, err
 	}
 
-	logger.Printf("initialised state")
+	logger.InfoContext(ctx, "connected with GDB", "port", gdbPort)
 
 	return &State{
-		Logger:        logger,
-		VerboseLogger: log.New(io.Discard, "", 0),
-		GDBConn:       gdbConn,
-		QEMU:          qemu,
-		SerialConn:    serialConn,
+		Logger:     logger,
+		GDBConn:    gdbConn,
+		QEMU:       qemu,
+		SerialConn: serialConn,
 	}, nil
 }
 

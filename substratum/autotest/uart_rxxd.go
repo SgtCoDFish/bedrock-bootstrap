@@ -16,7 +16,7 @@ const (
 // ProcessUARTRxxdBasic verifies the execution of the given GDB target and checks that it handles input as expected
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "basic" test has only basic UART input, whose presence is checked in memory after running the whole program
-func ProcessUARTRxxdBasic(_ context.Context, state *State) error {
+func ProcessUARTRxxdBasic(ctx context.Context, state *State) error {
 	_ = state.GDBConn.StepOnce()
 
 	err := checkInitialization(state)
@@ -38,7 +38,7 @@ func ProcessUARTRxxdBasic(_ context.Context, state *State) error {
 		return err
 	}
 
-	state.Logger.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
+	state.Logger.InfoContext(ctx, fmt.Sprintf("word at 0x%8.8X: %s\n", initialMemoryLoc, word))
 
 	for i := 0; i < len(msg); i++ {
 		err = state.GDBConn.AdvancePC(0x204000cc, 1000)
@@ -46,7 +46,7 @@ func ProcessUARTRxxdBasic(_ context.Context, state *State) error {
 			return err
 		}
 
-		state.VerboseLogger.Printf("advanced PC to 0x204000cc")
+		state.Logger.InfoContext(ctx, "advanced PC to 0x204000cc")
 
 		a0, err := state.GDBConn.FetchRegister("a0")
 		if err != nil {
@@ -58,7 +58,7 @@ func ProcessUARTRxxdBasic(_ context.Context, state *State) error {
 			return fmt.Errorf("a0 == 0x%8.8X but expected 0x%8.8X", a0, expected)
 		}
 
-		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
+		state.Logger.InfoContext(ctx, fmt.Sprintf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i]))
 
 		err = state.GDBConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
@@ -79,7 +79,7 @@ func ProcessUARTRxxdBasic(_ context.Context, state *State) error {
 			return err
 		}
 
-		state.Logger.Printf("word at 0x%8.8X: %s\n", i, word)
+		state.Logger.InfoContext(ctx, fmt.Sprintf("word at 0x%8.8X: %s\n", i, word))
 
 		// we only want to write our single word at the initial memory location
 		// and we don't want to touch any of the surrounding memory
@@ -101,7 +101,7 @@ func ProcessUARTRxxdBasic(_ context.Context, state *State) error {
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "comment" test has only basic UART input, whose presence is checked in memory after running the whole program, but
 // crucially also includes a leading comment which should be ignored
-func ProcessUARTRxxdComment(_ context.Context, state *State) error {
+func ProcessUARTRxxdComment(ctx context.Context, state *State) error {
 	_ = state.GDBConn.StepOnce()
 
 	err := checkInitialization(state)
@@ -123,7 +123,7 @@ func ProcessUARTRxxdComment(_ context.Context, state *State) error {
 		return err
 	}
 
-	state.Logger.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
+	state.Logger.InfoContext(ctx, fmt.Sprintf("word at 0x%8.8X: %s\n", initialMemoryLoc, word))
 
 	for i := 0; i < len(msg); i++ {
 		err = state.GDBConn.AdvancePC(0x204000cc, 1000)
@@ -141,7 +141,7 @@ func ProcessUARTRxxdComment(_ context.Context, state *State) error {
 			return fmt.Errorf("a0 == 0x%8.8X but expected 0x%8.8X", a0, expected)
 		}
 
-		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
+		state.Logger.InfoContext(ctx, fmt.Sprintf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i]))
 
 		err = state.GDBConn.AdvancePC(0x204000b0, 1000)
 		if err != nil {
@@ -162,7 +162,7 @@ func ProcessUARTRxxdComment(_ context.Context, state *State) error {
 			return err
 		}
 
-		state.Logger.Printf("word at 0x%8.8X: %s\n", i, word)
+		state.Logger.InfoContext(ctx, fmt.Sprintf("word at 0x%8.8X: %s\n", i, word))
 
 		// we only want to write our single word at the initial memory location
 		// and we don't want to touch any of the surrounding memory
@@ -183,7 +183,7 @@ func ProcessUARTRxxdComment(_ context.Context, state *State) error {
 // ProcessUARTRxxdFull verifies the execution of the given GDB target and checks that it handles input as expected
 // for the "uart-rxxd" bedrock bare-metal program.
 // The "full" test includes comments, invalid characters and multiple lines of text in the UART input
-func ProcessUARTRxxdFull(_ context.Context, state *State) error {
+func ProcessUARTRxxdFull(ctx context.Context, state *State) error {
 	_ = state.GDBConn.StepOnce()
 
 	err := checkInitialization(state)
@@ -205,7 +205,7 @@ func ProcessUARTRxxdFull(_ context.Context, state *State) error {
 		return err
 	}
 
-	state.Logger.Printf("word at 0x%8.8X: %s\n", initialMemoryLoc, word)
+	state.Logger.InfoContext(ctx, fmt.Sprintf("word at 0x%8.8X: %s\n", initialMemoryLoc, word))
 
 	for i := 0; i < len(msg); i++ {
 		// advance to 2040_00CC which is just after UART has been read from
@@ -224,7 +224,7 @@ func ProcessUARTRxxdFull(_ context.Context, state *State) error {
 			return fmt.Errorf("a0 == 0x%8.8X but expected 0x%8.8X", a0, expected)
 		}
 
-		state.Logger.Printf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i])
+		state.Logger.InfoContext(ctx, fmt.Sprintf("a0 was set correctly to 0x%8.8X after a read from UART", msg[i]))
 
 		if strings.ToLower(string(msg[i])) == "j" {
 			fmt.Println("found a J in input")
@@ -257,7 +257,7 @@ func ProcessUARTRxxdFull(_ context.Context, state *State) error {
 			return err
 		}
 
-		state.Logger.Printf("word at 0x%8.8X: %s\n", i, word)
+		state.Logger.InfoContext(ctx, fmt.Sprintf("word at 0x%8.8X: %s\n", i, word))
 
 		// we only want to write our single word at the initial memory location
 		// and we don't want to touch any of the surrounding memory
@@ -313,7 +313,7 @@ func ProcessUARTRxxdFull(_ context.Context, state *State) error {
 func checkInitialization(state *State) error {
 	target := uint32(0x204000b0)
 
-	state.VerboseLogger.Printf("advancing PC to 0x%8.8X", target)
+	state.Logger.Info(fmt.Sprintf("advancing PC to 0x%8.8X", target))
 
 	err := state.GDBConn.AdvancePC(target, 1000)
 	if err != nil {
@@ -324,8 +324,6 @@ func checkInitialization(state *State) error {
 	if err != nil {
 		return err
 	}
-
-	// frame.Dump(gdbConn.Logger)
 
 	expectedInitialFrame := substratum.GDBRegisterFrame{
 		T2: 0x4,
@@ -343,7 +341,7 @@ func checkInitialization(state *State) error {
 		return fmt.Errorf("registers were not initialised correctly.\ngot : %#v\nwant: %#v", frame, expectedInitialFrame)
 	}
 
-	state.Logger.Printf("registers initialised as expected")
+	state.Logger.Info("registers initialised as expected")
 
 	return nil
 }

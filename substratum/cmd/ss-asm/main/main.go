@@ -1,15 +1,15 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
 	ssasm "github.com/sgtcodfish/substratum/cmd/ss-asm"
+	"github.com/sgtcodfish/substratum/cmd/util"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx := util.Context()
 
 	err := ssasm.Invoke(ctx, os.Args[0], os.Args[1:])
 	if err != nil {
