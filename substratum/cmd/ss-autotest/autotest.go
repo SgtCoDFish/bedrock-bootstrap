@@ -2,14 +2,20 @@ package autotest
 
 import (
 	"context"
-	"errors"
+	"debug/elf"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/sgtcodfish/substratum/autotest"
+)
+
+const (
+	testNameFlagName = "test-name"
+	kernelFlagName   = "kernel"
 )
 
 var testMap = map[string]autotest.TestFunc{
@@ -37,35 +43,50 @@ func ParseInvocation(name string, flags []string) (*Invocation, error) {
 
 	allTestNames := getAllTestNames()
 
-	gdbPathFlag := autoTestCmd.String("gdb", "", "Path to the GDB executable to use. Defaults to ${RISCV_PREFIX}gdb")
-	qemuPathFlag := autoTestCmd.String("qemu", "/usr/bin/qemu-system-riscv32", "Path to the QEMU executable to run.")
-	autoTestCmd.String("kernel-file", "", "ELF file containing the kernel to run using QEMU")
-	autoTestCmd.String("test-name", "", "Name of the test to run. Must be one of: "+allTestNames)
+	gdbPathFlag := autoTestCmd.String("gdb", "", "Path to the GDB executable to use. Defaults to an architecture approprite value on $PATH, or else ${RISCV_PREFIX}gdb")
+	qemuPathFlag := autoTestCmd.String("qemu", "", "Path to the QEMU executable to run. Defaults to an architecture appropriate system on $PATH if possible")
+	kernelFlag := autoTestCmd.String(kernelFlagName, "", "ELF file containing the kernel to run using QEMU")
+	testNameFlag := autoTestCmd.String(testNameFlagName, "", "Name of the test to run. Must be one of: "+allTestNames)
 
 	if err := autoTestCmd.Parse(flags); err != nil {
 		return nil, fmt.Errorf("failed to parse flags: %w", err)
 	}
 
-	testNameFlag := autoTestCmd.Lookup("test-name")
-	if testNameFlag == nil || testNameFlag.Value.String() == "" {
-		return nil, errors.New("missing required flag: test-name")
+	if testNameFlag == nil || *testNameFlag == "" {
+		return nil, fmt.Errorf("missing required flag: %s", testNameFlagName)
 	}
 
-	testName := strings.ToLower(testNameFlag.Value.String())
+	testName := strings.ToLower(*testNameFlag)
 
-	kernelFileFlag := autoTestCmd.Lookup("kernel-file")
-	if kernelFileFlag == nil || kernelFileFlag.Value.String() == "" {
-		return nil, errors.New("missing required flag: kernel-file")
+	if kernelFlag == nil || *kernelFlag == "" {
+		return nil, fmt.Errorf("missing required flag: %s", kernelFlagName)
 	}
 
-	if err := checkKernel(kernelFileFlag.Value.String()); err != nil {
+	bitSize, err := checkKernel(*kernelFlag)
+	if err != nil {
 		return nil, err
 	}
 
 	gdbPath := *gdbPathFlag
 
 	if len(gdbPath) == 0 {
-		gdbPath = os.Getenv("RISCV_PREFIX") + "gdb"
+		var ok bool
+
+		gdbPath, ok = findDefaultGDB(bitSize)
+		if !ok {
+			return nil, fmt.Errorf("failed to find any valid GDB executable")
+		}
+	}
+
+	qemuPath := *qemuPathFlag
+
+	if len(qemuPath) == 0 {
+		var ok bool
+
+		qemuPath, ok = findDefaultQEMU(bitSize)
+		if !ok {
+			return nil, fmt.Errorf("failed to find any valid QEMU executable")
+		}
 	}
 
 	if _, ok := testMap[testName]; !ok {
@@ -75,10 +96,42 @@ func ParseInvocation(name string, flags []string) (*Invocation, error) {
 	return &Invocation{
 		gdbPath:    gdbPath,
 		gdbPort:    ":1234",
-		qemuPath:   *qemuPathFlag,
+		qemuPath:   qemuPath,
 		testName:   testName,
-		kernelFile: kernelFileFlag.Value.String(),
+		kernelFile: *kernelFlag,
 	}, nil
+}
+
+func findDefaultGDB(bitSize int) (string, bool) {
+	path, err := exec.LookPath(fmt.Sprintf("riscv%d-elf-gdb", bitSize))
+	if err == nil {
+		return path, true
+	}
+
+	prefixPath := os.Getenv("RISCV_PREFIX") + "gdb"
+	_, err = os.Stat(prefixPath)
+	if err == nil {
+		return prefixPath, true
+	}
+
+	return "", false
+}
+
+func findDefaultQEMU(bitSize int) (string, bool) {
+	expectedBinary := fmt.Sprintf("qemu-system-riscv%d", bitSize)
+
+	path, err := exec.LookPath(expectedBinary)
+	if err == nil {
+		return path, true
+	}
+
+	prefixPath := os.Getenv("RISCV_PREFIX") + expectedBinary
+	_, err = os.Stat(prefixPath)
+	if err == nil {
+		return prefixPath, true
+	}
+
+	return "", false
 }
 
 // Invoke parses and runs an invocation of ss-autotest, where name is the name
@@ -137,11 +190,35 @@ func getAllTestNames() string {
 	return strings.Join(allTests, " | ")
 }
 
-func checkKernel(path string) error {
+// checkKernel ensures the kernel exists and is a valid RISC-V ELF file, and returns the bit size (32 or 64)
+func checkKernel(path string) (int, error) {
 	_, err := os.Stat(path)
 	if err != nil {
-		return err
+		if os.IsNotExist(err) {
+			return 0, fmt.Errorf("kernel %q not found", path)
+		}
+
+		return 0, err
 	}
 
-	return nil
+	f, err := elf.Open(path)
+	if err != nil {
+		return 0, fmt.Errorf("failed to open kernel as an ELF file: %s", err)
+	}
+
+	defer f.Close()
+
+	if f.FileHeader.Machine != elf.EM_RISCV {
+		return 0, fmt.Errorf("specified kernel is not RISC-V")
+	}
+
+	class := f.FileHeader.Class
+
+	if class == elf.ELFCLASS32 {
+		return 32, nil
+	} else if class == elf.ELFCLASS64 {
+		return 64, nil
+	}
+
+	return 0, fmt.Errorf("unknown architecture in kernel; expected either 32 or 64 bit")
 }
