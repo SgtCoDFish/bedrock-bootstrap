@@ -6,8 +6,9 @@ import (
 	"io"
 	"log"
 	"strings"
+	"time"
 
-	"github.com/jacobsa/go-serial/serial"
+	"github.com/tarm/serial"
 
 	"github.com/sgtcodfish/substratum"
 	"github.com/sgtcodfish/substratum/qemu"
@@ -33,7 +34,7 @@ type State struct {
 	QEMU *qemu.QEMU
 
 	// SerialConn holds a persistent open connection over UART
-	SerialConn io.ReadWriteCloser
+	SerialConn *serial.Port
 }
 
 var _ io.Closer = (*State)(nil)
@@ -55,16 +56,13 @@ func NewState(ctx context.Context, logger *log.Logger, qemuPath string, gdbPath 
 	serialDevice := qemu.SerialDevice()
 	logger.Printf("communicating with QEMU over serial device %q", serialDevice)
 
-	serialOptions := serial.OpenOptions{
-		PortName:        serialDevice,
-		BaudRate:        9600,
-		DataBits:        8,
-		StopBits:        1,
-		ParityMode:      serial.PARITY_NONE,
-		MinimumReadSize: 1,
+	serialOptions := &serial.Config{
+		Name:        serialDevice,
+		Baud:        115200,
+		ReadTimeout: 2 * time.Second,
 	}
 
-	serialConn, err := serial.Open(serialOptions)
+	serialConn, err := serial.OpenPort(serialOptions)
 	if err != nil {
 		_ = qemu.Close()
 		return nil, err

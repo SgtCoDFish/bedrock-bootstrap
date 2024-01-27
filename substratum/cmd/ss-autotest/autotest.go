@@ -13,7 +13,7 @@ import (
 )
 
 var testMap = map[string]autotest.TestFunc{
-	"uart-simple-read":  autotest.ProcessUARTSimpleRead,
+	"uart-simple-read":  autotest.ProcessUARTSimpleReadBreak,
 	"uart-rxxd-basic":   autotest.ProcessUARTRxxdBasic,
 	"uart-rxxd-comment": autotest.ProcessUARTRxxdComment,
 	"uart-rxxd-full":    autotest.ProcessUARTRxxdFull,
