@@ -33,3 +33,4 @@ We're not going to be _using_ the "Freedom Metal" library or much of the freedom
 - [OpenOCD SPI Flash Driver](https://github.com/riscv/riscv-openocd/blob/riscv/src/flash/nor/fespi.c) - a neat insight into how the driver works which lets us upload our code.
 - [OSDev HiFive1 Bare Bones](https://wiki.osdev.org/HiFive-1_Bare_Bones#The_Bare_Bones) - a brilliant C tutorial which outlines working on bare metal on the HiFive1. The OSDev Wiki is a fantastic resource itself.
 - [bcompiler (mirror)](https://github.com/smtlaissezfaire/bcompiler): the page which originally inspired this project was "Bootstrapping a simple compiler from nothing" by Edmund Grimley Evans, which does a similar project using x86. The original site has disappeared but this GitHub repository has a mirror of the code.
+- [Hello, RISC-V and QEMU](https://mth.st/blog/riscv-qemu/) is a useful blog post from 2020 which is a good example of interacting with QEMU and RISC-V
