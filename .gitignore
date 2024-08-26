@@ -33,3 +33,5 @@
 .idea
 
 substratum/_bin
+
+**/_bin/*
