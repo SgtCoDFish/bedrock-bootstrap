@@ -32,8 +32,7 @@ b7 37 01 10  # lui a5, 0x10013
 # UART_REG_TXCTRL = 0x10013008
 # UART_REG_TXCTRL := 0x01 | 0x03
 # TODO: Should this be set to 0x03 or 0x01?
-93 87 07 ff  # addi a5, a5, -0x10
-# 13 05 30 00  # addi a0, x0, 0x3 ???
+93 87 07 ff  # addi a5, a5, -0x10 or should this be 13 05 30 00  # addi a0, x0, 0x3 ???
 13 05 10 00  # addi a0, x0, 0x1
 23 a0 a7 00  # sw a0, 0(a5)
 
@@ -49,10 +48,16 @@ b7 37 01 10  # lui a5, 0x10013
 13 00 00 00  # nop
 13 00 00 00  # nop
 
-# Read UART0_TXDATA into a0 until (a0 & 0x80000000) == 0
-# Then put our data from a1, which we'll make 0x00000035 (an ASCII '5', for RISC-V!)
-# UART0_TXDATA = 0x10013000
+# We need to read from UART0_TXDATA to confirm that UART is ready.
+# UART0_TXDATA = 0x10013000, which is UART_REG_RXCTRL (already in register a5) minus 0xC (0x1001300C - 0xC = 0x10013000)
+# So we can subtract 0xC from a5 and save an instruction
 93 87 47 ff  # addi a5, a5, -0xC
+
+# NB: UART0_TXDATA = 0x10013000, which is UART_REG_RXCTRL minus 0xC (0x1001300C - 0xC = 0x10013000)
+# So we can subtract 0xC from a5 and save an instruction
+
+# Read UART0_TXDATA into a0 until (a0 & 0x80000000) == 0
+# Then put our data from a1, which we'll make 0x35 (an ASCII '5', for RISC-V!)
 93 05 50 03  # addi a1, x0, 0x35
 37 06 00 80  # lui a2, 0x80000
 03 a5 07 00  # lw a0, 0(a5)
