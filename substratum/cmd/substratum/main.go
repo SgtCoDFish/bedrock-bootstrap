@@ -8,20 +8,26 @@ import (
 
 	ssasm "github.com/sgtcodfish/substratum/cmd/ss-asm"
 	ssautotest "github.com/sgtcodfish/substratum/cmd/ss-autotest"
+	sstemplate "github.com/sgtcodfish/substratum/cmd/ss-template"
 	"github.com/sgtcodfish/substratum/cmd/util"
 )
 
-// ASMCommand is the command which runs the basic Substratum RISC-V "assembler"
-const ASMCommand = "asm"
+const (
+	// ASMCommand is the command which runs the basic Substratum RISC-V "assembler"
+	ASMCommand = "asm"
 
-// AutoTestCMD is the command which runs automated, GDB-backed tests of RISC-V baremetal programs
-const AutoTestCMD = "autotest"
+	// AutoTestCommand is the command which runs automated, GDB-backed tests of RISC-V baremetal programs
+	AutoTestCommand = "autotest"
+
+	// TemplateCommand creates a template of NOP commands to aid with writing a program
+	TemplateCommand = "template"
+)
 
 func run(ctx context.Context) error {
 	logger := util.Logger(ctx)
 
 	if len(os.Args) < 2 {
-		logger.ErrorContext(ctx, fmt.Sprintf("missing required argument: command (one of '%s')", strings.Join([]string{ASMCommand, AutoTestCMD}, ", ")))
+		logger.ErrorContext(ctx, fmt.Sprintf("missing required argument: command (one of '%s')", strings.Join([]string{ASMCommand, AutoTestCommand, TemplateCommand}, ", ")))
 		os.Exit(1)
 	}
 
@@ -35,10 +41,16 @@ func run(ctx context.Context) error {
 			return fmt.Errorf("%s: %s", ASMCommand, err.Error())
 		}
 
-	case AutoTestCMD:
+	case AutoTestCommand:
 		err := ssautotest.Invoke(ctx, fullCommandName, os.Args[2:])
 		if err != nil {
-			return fmt.Errorf("%s: %s", AutoTestCMD, err.Error())
+			return fmt.Errorf("%s: %s", AutoTestCommand, err.Error())
+		}
+
+	case TemplateCommand:
+		err := sstemplate.Invoke(ctx, fullCommandName, os.Args[2:])
+		if err != nil {
+			return fmt.Errorf("%s: %s", TemplateCommand, err.Error())
 		}
 
 	default:

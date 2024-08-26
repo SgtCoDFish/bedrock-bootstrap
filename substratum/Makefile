@@ -10,6 +10,7 @@ BINDIR := _bin
 NAME := substratum
 SS_ASM_NAME := ss-asm
 SS_AUTOTEST_NAME := ss-autotest
+SS_TEMPLATE_NAME := ss-template
 
 VERSION := $(shell cat VERSION.txt)
 
@@ -43,9 +44,9 @@ verify-vendor:
 	$(GO) mod verify > /dev/null
 
 .PHONY: build
-build: $(BINDIR)/$(NAME) $(BINDIR)/$(SS_ASM_NAME) $(BINDIR)/$(SS_AUTOTEST_NAME)
+build: $(BINDIR)/$(NAME) $(BINDIR)/$(SS_ASM_NAME) $(BINDIR)/$(SS_AUTOTEST_NAME) $(BINDIR)/$(SS_TEMPLATE_NAME)
 
-$(BINDIR)/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard cmd/$(SS_ASM_NAME)/*.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/*.go) $(wildcard autotest/*.go) | $(BINDIR)
+$(BINDIR)/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard cmd/$(SS_ASM_NAME)/*.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/*.go) $(wildcard autotest/*.go) $(wildcard cmd/$(SS_TEMPLATE_NAME)/*.go) | $(BINDIR)
 	$(GO) build -mod=vendor -o $@ cmd/$(NAME)/*.go
 
 $(BINDIR)/$(SS_ASM_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_ASM_NAME)/*.go) $(wildcard cmd/$(SS_ASM_NAME)/main/*.go) | $(BINDIR)
@@ -53,6 +54,9 @@ $(BINDIR)/$(SS_ASM_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_ASM_NAME)/*.go) $
 
 $(BINDIR)/$(SS_AUTOTEST_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/*.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/main/*.go) | $(BINDIR)
 	$(GO) build -mod=vendor -o $@ cmd/$(SS_AUTOTEST_NAME)/main/*.go
+
+$(BINDIR)/$(SS_TEMPLATE_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_TEMPLATE_NAME)/*.go) $(wildcard cmd/$(SS_TEMPLATE_NAME)/main/*.go) | $(BINDIR)
+	$(GO) build -mod=vendor -o $@ cmd/$(SS_TEMPLATE_NAME)/main/*.go
 
 .PHONY: install
 install:
