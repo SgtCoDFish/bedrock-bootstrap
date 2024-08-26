@@ -1,0 +1,30 @@
+# Load the value of the PC (0x1000) into t0
+
+97 02 00 00  # 0x1000: auipc t0,0x0
+
+# Add 0x28 to 0x1000 and store in a2
+
+13 86 82 02  # 0x1004: addi a2, t0, 0x28
+
+# Load the current hart ID into a0
+# (in effect, load the core ID since hart = hardware thread and there's likely only one hart per core)
+
+73 25 40 f1  # 0x1008: csrr a0,mhartid
+
+# Load the doubleword at *(t0+0x20) into a1 (i.e. the data at 0x1020)
+# This doubleword is set in the bootloader to be 0x87e00000_00000000
+
+83 b5 02 02  # 0x100c: ld a1, 32(t0)
+
+# Load the doubleword at *(t0+0x18) into t0 (i.e. the data at 0x1018)
+
+83 b2 82 01  # 0x1010: ld t0, 24(t0)
+
+# Jump to the address in t0 (0x8000_0000)
+
+67 80 02 00  # 0x1014: jr t0
+
+00 00 00 80  # 0x1018: 0x80000000 (raw value)
+00 00 00 00  # 0x101c: 0x00000000 (raw value)
+00 00 e0 87  # 0x1020: 0x87e00000 (raw value)
+00 00 00 00  # 0x1024: 0x00000000 (raw value)
