@@ -1,6 +1,6 @@
 module github.com/sgtcodfish/substratum
 
-go 1.21
+go 1.22
 
 require (
 	github.com/cyrus-and/gdb v0.0.0-20230321224603-9424cb2f2a86
