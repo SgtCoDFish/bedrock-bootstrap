@@ -17,4 +17,4 @@ $(bindir):
 
 .PHONY: qemu
 qemu: $(bindir)/kernel.elf
-	qemu-system-riscv64 -machine virt -bios none -kernel $(bindir)/kernel.elf -serial mon:stdio -nographic
+	qemu-system-riscv64 -machine virt -bios none -kernel $(bindir)/kernel.elf -serial mon:stdio -nographic -s -S
