@@ -35,6 +35,7 @@ sha256sum riscv32-embecosm-ubuntu2004-gcc13.2.0.tar.gz
 tar xf riscv32-embecosm-ubuntu2004-gcc13.2.0.tar.gz
 
 git clone --branch 2.0.0 git@github.com:raspberrypi/pico-sdk.git
+cd pico-sdk && git submodule update --init && cd ..
 
 mkdir build && cd build
 
