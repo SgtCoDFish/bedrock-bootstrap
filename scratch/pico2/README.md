@@ -1,5 +1,7 @@
 # Pico 2 Research
 
+This folder (along with this README) contains information on getting started running RISC-V on a Raspberry Pi Pico 2.
+
 ## Background
 
 The Raspberry Pi Pico 2 is a really interesting option for a bedrock bootstrap for one main reason: it's a Raspberry Pi!
@@ -52,3 +54,48 @@ b67f6f8d636d01066dbce8758031da53a35f32037d4c6b62a11744867c59a902  uart/hello_uar
 ```
 
 I've included a gzipped tarball of these 5 artifacts in this folder, since they compress very well.
+
+## Building OpenOCD
+
+Eventually debugging the Pico 2 through OpenOCD will be upstream, but today it doesn't seem to be possible using the latest on Arch (0.12.0).
+
+Raspberry Pi provide a fork of OpenOCD with the required values, so we'll need to build that to use the Pi Debug Probe.
+
+NB: From a fresh checkout with no other flags, the build failed using my system's GCC (`gcc version 14.2.1 20240805 (GCC)`).
+
+This is presumably because this OpenOCD fork was tested with an older version of GCC, and since it enables `-Werror` any new errors will cause the build to fail.
+
+To avoid this, we disable the warning. If you're using an older GCC you might just be able to drop the CFLAGS var below.
+
+```console
+git clone git@github.com:raspberrypi/openocd.git && cd openocd
+# NB: We check out a SHA to make this reproducible in the face of future changes to the repo
+git checkout ebec9504d7ad2fbd7a64d60dace013267d80172d
+./bootstrap
+
+# See above - you might be able to drop CFLAGS here.
+CFLAGS="-Wno-calloc-transposed-args" ./configure
+
+make -j
+```
+
+Our built binary is in `./src/openocd`.
+
+## Debugging using GDB
+
+The final step is to actually connect to the device using GDB. We've build our own version of OpenOCD, which acts as the server that GDB can connect to.
+
+OpenOCD also needs configuration files to start up, and again these aren't upstream and are found in the Raspberry Pi fork of OpenOCD.
+We need to use the `-s` flag to point our new binary at the location of these files (which is the `tcl` directory in our checkout).
+
+Running from the `openocd` folder we cloned when building OpenOCD, the following command will start the server:
+
+```console
+sudo ./src/openocd -s ./tcl -f interface/cmsis-dap.cfg -f target/rp2350-riscv.cfg -c "adapter speed 5000"
+```
+
+Finally, in another terminal we can connect with GDB and debug as we desire:
+
+```console
+riscv32-elf-gdb -ex "target extended-remote :3333" -ex "layout asm" -ex "layout regs"
+```
