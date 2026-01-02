@@ -74,7 +74,7 @@ addi x21, x14, 0x0
 .READ_UART:
 lw x10, 0(x16)
 and x11, x10, x12
-bne x10, x0, -8
+bne x11, x0, -8
 andi x10, x10, 0xFF
 
 addi x0, x0, 0x0

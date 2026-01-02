@@ -46,13 +46,13 @@ verify-vendor:
 .PHONY: build
 build: $(BINDIR)/$(NAME) $(BINDIR)/$(SS_ASM_NAME) $(BINDIR)/$(SS_AUTOTEST_NAME) $(BINDIR)/$(SS_TEMPLATE_NAME)
 
-$(BINDIR)/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard cmd/$(SS_ASM_NAME)/*.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/*.go) $(wildcard autotest/*.go) $(wildcard cmd/$(SS_TEMPLATE_NAME)/*.go) | $(BINDIR)
+$(BINDIR)/$(NAME): $(wildcard *.go) $(wildcard cmd/$(NAME)/*.go) $(wildcard cmd/$(SS_ASM_NAME)/*.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/*.go) $(wildcard autotest/*.go) $(wildcard cmd/$(SS_TEMPLATE_NAME)/*.go) $(wildcard qemu/*.go) | $(BINDIR)
 	$(GO) build -mod=vendor -o $@ cmd/$(NAME)/*.go
 
 $(BINDIR)/$(SS_ASM_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_ASM_NAME)/*.go) $(wildcard cmd/$(SS_ASM_NAME)/main/*.go) | $(BINDIR)
 	$(GO) build -mod=vendor -o $@ cmd/$(SS_ASM_NAME)/main/*.go
 
-$(BINDIR)/$(SS_AUTOTEST_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/*.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/main/*.go) | $(BINDIR)
+$(BINDIR)/$(SS_AUTOTEST_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/*.go) $(wildcard cmd/$(SS_AUTOTEST_NAME)/main/*.go) $(wildcard qemu/*.go) | $(BINDIR)
 	$(GO) build -mod=vendor -o $@ cmd/$(SS_AUTOTEST_NAME)/main/*.go
 
 $(BINDIR)/$(SS_TEMPLATE_NAME): $(wildcard *.go) $(wildcard cmd/$(SS_TEMPLATE_NAME)/*.go) $(wildcard cmd/$(SS_TEMPLATE_NAME)/main/*.go) | $(BINDIR)

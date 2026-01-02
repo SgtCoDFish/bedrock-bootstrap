@@ -1,6 +1,7 @@
 package qemu
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"syscall"
@@ -30,19 +31,19 @@ type PTY struct {
 func NewPTY() (*PTY, error) {
 	masterFile, err := os.OpenFile("/dev/ptmx", os.O_RDWR, 0)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open /dev/ptmx: %w", err)
 	}
 
 	err = unlockSubPty(masterFile)
 	if err != nil {
 		_ = masterFile.Close()
-		return nil, err
+		return nil, fmt.Errorf("failed to unlock sub pty: %w", err)
 	}
 
 	subPtyName, err := getSubPtyName(masterFile)
 	if err != nil {
 		_ = masterFile.Close()
-		return nil, err
+		return nil, fmt.Errorf("failed to get sub pty name: %w", err)
 	}
 
 	return &PTY{
@@ -71,17 +72,4 @@ func getSubPtyName(masterFile *os.File) (string, error) {
 
 	name := "/dev/pts/" + strconv.FormatUint(ptyno, 10)
 	return name, nil
-}
-
-func unlockSubPty(masterFile *os.File) error {
-	// 0 means "unlock"
-	unlock := 0
-
-	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(masterFile.Fd()), uintptr(tiocsptlck), uintptr(unsafe.Pointer(&unlock)))
-
-	if errno != 0 {
-		return errno
-	}
-
-	return nil
 }

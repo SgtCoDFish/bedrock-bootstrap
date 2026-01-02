@@ -33,7 +33,7 @@ func NewQEMU(ctx context.Context, qemuPath string, kernelPath string) (*QEMU, er
 
 	pty, err := NewPTY()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create pty: %w", err)
 	}
 
 	qemuArgs := []string{
@@ -54,12 +54,12 @@ func NewQEMU(ctx context.Context, qemuPath string, kernelPath string) (*QEMU, er
 
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get stdin pipe for QEMU: %w", err)
 	}
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get stdout pipe for QEMU: %w", err)
 	}
 
 	qemu := &QEMU{

@@ -44,12 +44,12 @@ func NewState(ctx context.Context, qemuPath string, gdbPath string, gdbPort stri
 
 	qemu, err := qemu.NewQEMU(ctx, qemuPath, kernelPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create QEMU instance: %w", err)
 	}
 
 	err = qemu.Start()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to start QEMU instance: %w", err)
 	}
 
 	serialDevice := qemu.SerialDevice()

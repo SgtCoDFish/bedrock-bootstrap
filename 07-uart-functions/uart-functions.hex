@@ -73,8 +73,8 @@ b7 37 01 10  # lui x15, 0x10013
 # b0: .READ_UART
 # Read a byte from UART
 03 25 08 00  # lw x10, 0(x16)
-b3 75 c5 00  # and x11, x10, x12
-e3 9c 05 fe  # bnez x10, -8 == bne x10, x0, -8
+b3 75 c5 00  # and x11, x10, x12 # mask EMPTY bit
+e3 9c 05 fe  # bnez x11, -8 == bne x11, x0, -8
 13 75 f5 0f  # andi x10, x10, 0xFF
 
 13 00 00 00  # nop

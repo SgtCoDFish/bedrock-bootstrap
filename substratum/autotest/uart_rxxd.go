@@ -21,21 +21,21 @@ func ProcessUARTRxxdBasic(ctx context.Context, state *State) error {
 
 	err := checkInitialization(state)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check initialization: %w", err)
 	}
 
 	msg := []byte("13000000")
 
 	err = state.SendSerial(msg)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to send serial message: %w", err)
 	}
 
 	initialMemoryLoc := uint32(0x20400000)
 
 	word, err := state.GDBConn.ReadMemoryWord(initialMemoryLoc)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read memory word: %w", err)
 	}
 
 	state.Logger.InfoContext(ctx, fmt.Sprintf("word at 0x%8.8X: %s\n", initialMemoryLoc, word))
