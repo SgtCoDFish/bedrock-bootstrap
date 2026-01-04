@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // QEMU wraps an exec.Cmd for running QEMU, establishing a new pseudo-tty for serial
@@ -23,7 +25,7 @@ type QEMU struct {
 
 	stdin io.WriteCloser
 
-	pty *PTY
+	SerialConn net.Conn
 }
 
 // NewQEMU initialises a new QEMU command and allocates a ptty for serial communications
@@ -31,15 +33,10 @@ type QEMU struct {
 func NewQEMU(ctx context.Context, qemuPath string, kernelPath string) (*QEMU, error) {
 	logger := log.New(os.Stderr, "qemu: ", 0)
 
-	pty, err := NewPTY()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create pty: %w", err)
-	}
-
 	qemuArgs := []string{
 		"-nographic",
 		"-serial",
-		pty.SubFilename,
+		"tcp:127.0.0.1:4444,server,nowait",
 		"-s",
 		"-S",
 		"-M",
@@ -68,15 +65,9 @@ func NewQEMU(ctx context.Context, qemuPath string, kernelPath string) (*QEMU, er
 		logger:        logger,
 		stdoutScanner: bufio.NewScanner(stdoutPipe),
 		stdin:         stdinPipe,
-		pty:           pty,
 	}
 
 	return qemu, nil
-}
-
-// SerialDevice returns the name of the file for the subordinate console
-func (q *QEMU) SerialDevice() string {
-	return q.pty.SubFilename
 }
 
 func (q *QEMU) stdoutReader() {
@@ -86,7 +77,7 @@ func (q *QEMU) stdoutReader() {
 }
 
 // Start is analogous to exec.Cmd.Start; begins the command begins reading stdout
-func (q *QEMU) Start() error {
+func (q *QEMU) Start(ctx context.Context) error {
 	err := q.cmd.Start()
 	if err != nil {
 		return err
@@ -94,7 +85,32 @@ func (q *QEMU) Start() error {
 
 	go q.stdoutReader()
 
+	conn, err := waitForTCP(ctx, "127.0.0.1:4444", 10*time.Second)
+	if err != nil {
+		return fmt.Errorf("failed to dial serial TCP port: %w", err)
+	}
+
+	q.SerialConn = conn
+
 	return nil
+}
+
+// waitForTCP retries until timeout
+func waitForTCP(ctx context.Context, addr string, timeout time.Duration) (net.Conn, error) {
+	deadline := time.Now().Add(timeout)
+
+	dialer := net.Dialer{}
+
+	for time.Now().Before(deadline) {
+		conn, err := dialer.DialContext(ctx, "tcp", addr)
+		if err == nil {
+			return conn, nil
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	return nil, fmt.Errorf("timed out waiting for connection to %s", addr)
 }
 
 // Close attempts to shut down QEMU, first gracefully and then by force if required.
@@ -102,6 +118,11 @@ func (q *QEMU) Close() error {
 	var errs []string
 
 	_, err := q.stdin.Write([]byte("\nquit\n"))
+	if err != nil {
+		errs = append(errs, err.Error())
+	}
+
+	err = q.SerialConn.Close()
 	if err != nil {
 		errs = append(errs, err.Error())
 	}

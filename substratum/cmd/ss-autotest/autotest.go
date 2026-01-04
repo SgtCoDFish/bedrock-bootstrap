@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/sgtcodfish/substratum/autotest"
 	"github.com/sgtcodfish/substratum/cmd/util"
 )
 
@@ -18,12 +17,9 @@ const (
 	kernelFlagName   = "kernel"
 )
 
-var testMap = map[string]autotest.TestFunc{
-	"uart-simple-read":  autotest.ProcessUARTSimpleReadBreak,
-	"uart-rxxd-basic":   autotest.ProcessUARTRxxdBasic,
-	"uart-rxxd-comment": autotest.ProcessUARTRxxdComment,
-	"uart-rxxd-full":    autotest.ProcessUARTRxxdFull,
-}
+type TestFunc func()
+
+var testMap = map[string]TestFunc{}
 
 // Invocation holds state for a given invocation of the ss-autotest command
 type Invocation struct {
@@ -151,31 +147,12 @@ func (a *Invocation) Run(ctx context.Context) error {
 
 	logger.InfoContext(ctx, "processing autotest", "testName", a.testName, "gdb", a.gdbPath, "qemu", a.qemuPath)
 
-	testFn, ok := testMap[a.testName]
+	_, ok := testMap[a.testName]
 	if !ok {
 		panic("invalid test name when running autotest invocation")
 	}
 
-	testState, err := autotest.NewState(ctx, a.qemuPath, a.gdbPath, a.gdbPort, a.kernelFile)
-	if err != nil {
-		return err
-	}
-
-	logger.InfoContext(ctx, "initialised autotest successfully")
-
-	defer func() {
-		err := testState.Close()
-		if err != nil {
-			logger.ErrorContext(ctx, "failed to shut down test state", "error", err)
-		}
-	}()
-
-	err = testState.Run(ctx, testFn)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return fmt.Errorf("NYI")
 }
 
 func getAllTestNames() string {
