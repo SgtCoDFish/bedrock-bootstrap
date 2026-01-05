@@ -3,39 +3,31 @@
 13 00 00 00  # nop
 13 00 00 00  # nop
 
-# Initialise UART
-b7 27 01 10  # lui a5,0x10012
-93 87 c7 03  # addi a5, a5, 0x3c
-03 a5 07 00  # lw a0, 0(a5)
+# Initialise UART; see comments in 05-uart/uart.hex for detailed explanation
+# of what these instructions are doing.
+b7 27 01 10  # lui x15, 0x10012
+93 87 c7 03  # addi x15, x15, 0x3c
+03 a5 07 00  # lw a0, 0(x15)
 93 05 30 00  # addi a1, x0, 0x3
 93 95 05 01  # slli a1, a1, 0x10
 b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
 33 f5 a5 00  # and a0, a1, a0
-23 a0 a7 00  # sw a0, 0(a5)
-
-# GPIO_IOF_EN |= IOF0_UART0_MASK to enable UART
-93 87 87 ff  # addi a5, a5, -0x8
-03 a5 07 00  # lw a0, 0(a5)
+23 a0 a7 00  # sw a0, 0(x15)
+93 87 87 ff  # addi x15, x15, -0x8
+03 a5 07 00  # lw a0, 0(x15)
 b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
 33 65 b5 00  # or a0, a0, a1
-
-# Set UART_REG_DIV
-b7 37 01 10  # lui a5, 0x10013
-93 87 87 01  # addi a5, a5, 0x18
+b7 37 01 10  # lui x15, 0x10013
+93 87 87 01  # addi x15, x15, 0x18
 13 05 a0 08  # addi a0, x0, 0x8a
-23 a0 a7 00  # sw a0, 0(a5)
-
-# Set UART0_TXCTRL
-# TODO: Should this be set to 0x03 or 0x01?
-93 87 07 ff  # addi a5, a5, -0x10
-# 13 05 30 00  # addi a0, x0, 0x3 ???
+23 a0 a7 00  # sw a0, 0(x15)
+93 87 07 ff  # addi x15, x15, -0x10
 13 05 10 00  # addi a0, x0, 0x1
-23 a0 a7 00  # sw a0, 0(a5)
-
-# Set UART_REG_RXCTRL
-93 87 47 00  # addi a5, a5, 0x4
+23 a0 a7 00  # sw a0, 0(x15)
+93 87 47 00  # addi x15, x15, 0x4
 13 05 10 00  # addi a0, x0, 0x1
-23 a0 a7 00  # sw a0, 0(a5)
+23 a0 a7 00  # sw a0, 0(x15)
+
 
 # Pad to 0x80
 13 00 00 00  # nop
