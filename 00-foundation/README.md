@@ -81,8 +81,13 @@ We can run qemu using `make qemu` but first we'll take a look at some of the arg
 Finally we point at our "kernel" - which is our ELF file - and kick off QEMU. If you encounter any issues using QEMU from a package manager, it's very easy to build your own.
 
 ```bash
-$ make riscv
-# Open a separate terminal
+$ make qemu
+```
+
+
+Now, open a separate terminal:
+
+```
 $ "$RISCV_PREFIX"gdb
 (gdb) target remote localhost:1234
 (gdb) x 0x80000000
