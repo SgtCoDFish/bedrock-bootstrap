@@ -11,7 +11,7 @@ References:
 
 ## Hand Assembling
 
-We're not going to list how to hand assemble every instruction, as it gets boring quickly and it's not hard to reason about how it works. There's a reason people use assemblers!
+We're not going to list how to hand assemble every instruction - it gets boring quickly and it's not hard to reason about how it works. There's a reason people use assemblers!
 
 There are a couple of examples at [1] to help with the basic concepts, and there's a scratchpad of the "working out" in [HAND\_ASSEMBLY\_SCRATCHPAD.md](../guides/HAND_ASSEMBLY_SCRATCHPAD.md) with fuller working for many types of instructions.
 
@@ -19,16 +19,21 @@ There are a couple of examples at [1] to help with the basic concepts, and there
 
 `uart.hex` is the end result of our UART example; it does nothing except output a single ASCII "5". We need to "compile" `BUILD/uart.elf` by adding an ELF header with the correct program size, removing the comments and then doing a reverse hexdump on the file.
 
-We can run on QEMU using the following slightly modified command:
+We can run on QEMU using `make qemu`:
 
 ```bash
-$ qemu-system-riscv32 -nographic -serial pty -s -S -M sifive_e -kernel BUILD/uart.elf
-QEMU 3.1.0 monitor - type 'help' for more information
-char device redirected to /dev/ttys007 (label serial0)
+$ make qemu
+qemu-system-riscv64 -nographic -serial pty -gdb tcp::1234 -S -machine sifive_e -kernel BUILD/uart.elf
+QEMU 10.2.0 monitor - type 'help' for more information
+char device redirected to /dev/ttys003 (label serial0)
+```
 
+And we can connect screen using the named tty. We use a baud rate of 115200, which matches what we selected in `uart.hex`.
+
+```bash
 # Note that the char device might change depending on your system.
 # In any case, you can connect to it in a different terminal using:
-screen /dev/ttys007 115200
+screen /dev/ttys003 115200
 ```
 
 After you've connected to the emulated serial port, go back to the `(qemu)` prompt in the QEMU window and type `c` for `(c)ontinue`, and then press enter. You should see a `5` output in the screen session.
@@ -39,7 +44,7 @@ Use `Ctrl+A` followed by `k` to quit the screen session, and then the `quit` com
 
 The hex file itself is commented heavily, to show both the reasoning behind each section and the individual assembly instructions which the machine code segments represent. These comments are stripped by `sed` in the Makefile.
 
-(NB: This UART initialisation process was mostly reverse-engineered from existing code. If you know of a good guide which contains the details please do raise a PR!)
+(NB: This UART initialisation process was mostly reverse-engineered from existing code - usually in C - which enables UART.)
 
 The program initialises the UART by:
 

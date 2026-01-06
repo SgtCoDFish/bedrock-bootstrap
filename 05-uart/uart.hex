@@ -1,6 +1,10 @@
 13 00 00 00  # nop
 
 # UART initialisation
+# NB: this isn't required on QEMU, but it also doesn't do any harm to do this on QEMU.
+# On hardware, this is required.
+
+# Registers:
 # x15 (a5) is used to store addresses we're reading / writing in memory
 # x10 (a0) and x11 (a1) are used to store values read from memory or to be written to memory
 
@@ -9,19 +13,23 @@
 # GPIO_IOF_SEL &= ~(IOF0_UART0_MASK) to enable UART
 
 # Set x15 to 0x1001203C (GPIO_IOF_SEL)
+
 b7 27 01 10  # lui x15, 0x10012
 93 87 c7 03  # addi x15, x15, 0x3c
 
 # Read the value of GPIO_IOF_SEL into a0
+
 03 a5 07 00  # lw a0, 0(x15)
 
 # Load 0x3 into a1 then shift to the correct position and negate
 # (i.e. set a1 to -0x00030000)
+
 93 05 30 00  # addi a1, x0, 0x3
 93 95 05 01  # slli a1, a1, 0x10
 b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
 
 # GPIO_IOF_SEL &= ~(IOF0_UART0_MASK)
+
 33 f5 a5 00  # and a0, a1, a0
 23 a0 a7 00  # sw a0, 0(x15)
 
@@ -30,13 +38,16 @@ b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
 
 # Take 0x8 from x15 (relies on x15 previously being the address of GPIO_IOF_SEL)
 # then load the value at that address into a0
+
 93 87 87 ff  # addi x15, x15, -0x8
 03 a5 07 00  # lw a0, 0(x15)
 
 # Un-negate a1, so the value is now 0x00030000
+
 b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
 
 # Set the bit in GPIO_IOF_EN
+
 33 65 b5 00  # or a0, a0, a1
 
 # UART_REG_DIV @ 0x10013018
@@ -56,11 +67,13 @@ b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
 # Therefore we set UART_REG_DIV = 0x8A.
 
 # Set x15 to 0x10013018 (UART_REG_DIV)
+
 b7 37 01 10  # lui x15, 0x10013
 93 87 87 01  # addi x15, x15, 0x18
 13 05 a0 08  # addi a0, x0, 0x8a
 
 # Store the value 0x8a into UART_REG_DIV
+
 23 a0 a7 00  # sw a0, 0(x15)
 
 # UART_REG_TXCTRL @ 0x10013008
@@ -69,15 +82,18 @@ b7 37 01 10  # lui x15, 0x10013
 # The second bit is left as zero to signify we only want one stop bit.
 
 # Set x15 to the value of UART_REG_TXCTRL by subtracting 0x10 (assumes that x15 was previously set to UART_REG_DIV)
+
 93 87 07 ff  # addi x15, x15, -0x10
 
 # Set a0 to 0x1 and store into UART_REG_TXCTRL
+
 13 05 10 00  # addi a0, x0, 0x1
 23 a0 a7 00  # sw a0, 0(x15)
 
 # UART_REG_RXCTRL = 0x1001300C
 # UART_REG_RXCTRL := 0x01
 # 0x1 is required to enable receiving on UART. Other bits are unused by us.
+
 93 87 47 00  # addi x15, x15, 0x4
 13 05 10 00  # addi a0, x0, 0x1
 23 a0 a7 00  # sw a0, 0(x15)
@@ -92,6 +108,7 @@ b7 37 01 10  # lui x15, 0x10013
 # Since x15 already contains the address of UART_REG_RXCTRL,
 # we can subtract 0xC to get the value of UART0_TXDATA (0x10013000)
 # i.e.: 0x1001300C - 0xC = 0x10013000
+
 93 87 47 ff  # addi x15, x15, -0xC
 
 # Poll UART0_TXDATA until the TX FIFO is not full, which is signified
@@ -100,6 +117,7 @@ b7 37 01 10  # lui x15, 0x10013
 # this follows the defined UART programming model and ensures the write will be accepted
 
 # First, set a1 to ASCII "5" (for "RISC-V")
+
 93 05 50 03  # addi a1, x0, 0x35
 37 06 00 80  # lui a2, 0x80000
 03 a5 07 00  # lw a0, 0(x15)
@@ -107,6 +125,7 @@ b7 37 01 10  # lui x15, 0x10013
 e3 1c 05 fe  # bnez a0, -8 == bne a0, x0, -8
 
 # Then put our data from a1 into UART0_TXDATA to transmit over UART
+
 23 a0 b7 00  # sw a1, 0(x15)
 
 13 00 00 00  # nop
