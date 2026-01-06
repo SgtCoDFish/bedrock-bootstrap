@@ -3,7 +3,8 @@ addi x0, x0, 0x00
 addi x0, x0, 0x00
 addi x0, x0, 0x00
 
-# Initialise UART
+# Initialise UART; see comments in 05-uart/uart.hex for a detailed explanation
+# of what these instructions are doing.
 lui a5, 0x10012
 addi a5, a5, 0x3c
 lw a0, 0(a5)
