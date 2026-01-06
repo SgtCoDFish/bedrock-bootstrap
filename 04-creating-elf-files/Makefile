@@ -1,4 +1,4 @@
-SHELL := /usr/bin/env bash
+include ../common.mk
 
 SOURCES := $(wildcard *.hex)
 TARGETS := $(patsubst %.hex,%.elf,$(SOURCES))

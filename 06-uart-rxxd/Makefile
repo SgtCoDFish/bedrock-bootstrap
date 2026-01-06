@@ -1,4 +1,4 @@
-RISCV_PREFIX ?= riscv32-unknown-elf-
+include ../common.mk
 
 .PHONY: all
 all: BUILD/uart-rxxd.bin BUILD/uart-rxxd.elf
@@ -7,9 +7,12 @@ all: BUILD/uart-rxxd.bin BUILD/uart-rxxd.elf
 clean:
 	rm -rf BUILD
 
-BUILD/uart-rxxd.bin: uart-rxxd.hex
+BUILD/uart-rxxd.bin: uart-rxxd.hex | BUILD
 	@mkdir -p BUILD
 	sed "s/#.*$$//g" $< | xxd -r -p > $@
+
+BUILD/uart-rxxd.elf: elfheader.hex uart-rxxd.hex | BUILD
+	cat $^ | sed "s/#.*$$//g" | xxd -r -p > $@
 
 .PHONY: dump
 dump: BUILD/uart-rxxd.bin
@@ -19,6 +22,5 @@ dump: BUILD/uart-rxxd.bin
 qemu:
 	qemu-system-riscv64 -nographic -serial pty -gdb tcp::1234 -S -machine sifive_e -kernel BUILD/uart-rxxd.elf
 
-BUILD/uart-rxxd.elf: elfheader.hex uart-rxxd.hex
-	@mkdir -p BUILD
-	cat $^ | sed "s/#.*$$//g" | xxd -r -p > $@
+BUILD:
+	@mkdir -p $@

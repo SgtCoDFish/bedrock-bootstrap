@@ -1,4 +1,4 @@
-SHELL = /bin/bash
+include ../common.mk
 
 .PHONY: all
 all: clean nothing.bin nothing.elf nothing.dump

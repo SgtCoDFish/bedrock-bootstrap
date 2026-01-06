@@ -1,4 +1,4 @@
-RISCV_PREFIX ?= riscv32-unknown-elf-
+include ../common.mk
 
 .PHONY: all
 all: BUILD/uart.bin BUILD/uart.elf
@@ -15,7 +15,6 @@ dump: BUILD/uart.bin
 	$(RISCV_PREFIX)objdump -D -b binary -EL -m riscv:rv32 $<
 
 BUILD/uart.elf: elfheader.hex uart.hex | BUILD
-	@mkdir -p BUILD
 	cat elfheader.hex uart.hex | sed "s/#.*$$//g" | xxd -r -p > $@
 
 .PHONY: qemu

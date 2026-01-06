@@ -1,5 +1,4 @@
-SHELL = /bin/bash
-RISCV_PREFIX ?=
+include ../common.mk
 
 BUILD/bootloader1:
 	@mkdir -p BUILD
