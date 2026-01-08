@@ -1,40 +1,47 @@
 # `BB1`: Adding Support for Functions
 
-It's not a great deal of fun to have to calculate offsets for jumps by hand, and even ignoring the lack of fun it's error prone and makes our programs brittle; if we add extra instructions in between the start and end of a jump, we might need to recalculate offsets.
+It's not a great deal of fun to have to calculate offsets for jumps by hand, and even ignoring fun it's error prone and makes our programs brittle; if we add extra instructions in between the start and end of a jump, we need to recalculate offsets.
 
-Being able to label sections of code - and then later jump to those labels and have the assembler calculate the offset for us - is a staple of assembly language, and adopting it for our code will make it much easier to write larger programs. To do this, we'll add the ability to define functions, each with a single ASCII letter as a label.
+Being able to label sections of code and then later jump to those labels without needing to calculate offsets is a staple of assembly language. Adding support for functions for our code will make it much easier to write larger programs. To do this, we'll add the ability to define functions.
 
-We'll start by adopting a convention: that registers will be used as in the RISC-V ABI with regards to their being preserved across calls. There's no compelling reason to deviate from that ABI, but do also note that there's nothing compelling us to follow it.
+We'll start by adopting a convention: that registers will be used as in the RISC-V ABI with regards to their being preserved across calls. There's no compelling reason to deviate from that ABI.
 
-We also need to make a choice about what kind of program layout we'll adopt.
+## Constraints
 
-## Functions First
+Given our desire to target the HiFive1 and given that we're currently stuck to using RAM[1], we have a hard limit of 0x1000 (4096) bytes of instructions which in RV32I translates to 1024 instructions.
 
-One option is to have everything be defined in functions. We can choose a convention whereby the `main` or `_start` function has a label by convention, say `m`, and unconditionally jump to that function when we jump to the program. This approach broadly mirrors how a higher-level language such as C or assembly would work.
+[1] We could write a driver of some kind to use other kinds of memory, but that would be difficult even if we had full access to assembly. Better to stick to RAM for now.
 
-The downside to this approach is that no code written for `BB0` - i.e. "raw" ASCII machine code - would work without changes. That said, who's writing a lot of code in `BB0`?
+## Function Syntax
 
-## Code First
+We must add new syntax for defining and calling functions:
 
-If a function `A` is defined by a prelude such as `.A`, we can have `BB0` code optionally interspersed with function calls, which might look like `xA`. Functions - if there are any - can be defined after the initial block. That is, the "main" block, such that there is one, would consist of any code up until the first function definition.
-
-This allows `BB0` code to run as-is in `BB1`. This property of preserving the ability to run code from previous bootstrapping stages is a neat element of purity, and also by default provides us with several ready-to-run tests of any new stage - that is, the code of a previous stage!
-
-## Which to Use?
-
-There's not really a correct choice here - both approaches would work and have different advantages. In practise, the differences in testability between the different approaches are minimal, since we'd use an automated test-bed in `substratum`. The trade-off then is between the approach which has a neat sense of purity - "code first" - and the "functions first" code which more closely matches the type of programs that we are likely to write in future bootstrap stages.
-
-On balance, we choose to go with "functions first". Working pragmatically, the only purpose of any given bootstrap step (except the last one!) is to enable the next step in the process. Being able to write programs in any given step is a neat distraction, but practically there's little point writing in BB0 when we can do a full bootstrap and use assembly or a high-level language. As such, preserving backwards compatibility - while cool - isn't hugely useful, and it's better to prefer a more easy-to-read approach which minimises implicit assumptions.
-
-## Implementation
-
-We define some new control characters:
-
-- `.` denotes a function. It must be followed by a single letter, which will be converted to lowercase and will be the name of the function. For example, `.M` defines a function called `m`.
+- `.` denotes a function definition. It must be followed by a single letter, which will be converted to lowercase and will be the name of the function. For example, `.M` defines a function called `m`.
 - `x` is a function call - it should be followed by a single letter which is converted into lowercase and which denotes the function to be called. For example, `xM` calls the function called `m`
 
-We define `m` to be the main function. Every `BB1` program must have `m`, and the bootstrapper will jump to `m` to start the program.
+We're explicitly not defining a way to _end_ a function. Once we see e.g. `.A`, all following instructions are part of `a` until we see a different definition. This reduces complexity of parsing inputs.
 
-Given our desire to target the HiFive1, and the advantage of being able to stay within the on-chip memory for now (which removes the need to write any complicated "driver" code for the flash memory), we have a hard limit of 0x1000 (4096) bytes of instructions, which in RV32I translates to 1024 instructions. To avoid having to build a hash table which points to the start of each function on disk, we blindly assign each function from A-L 0x138 (312) bytes each, which gives an upper limit of 78 instructions in each function.
+## Function Addresses
 
-The main function is therefore located at the end, and has an extra 40 bytes (10 instructions) worth of space.
+Knowing the address of a function is a non-trivial topic in computer science; linkers can be quite involved, and there are a lot of ways to handle things. We have some main considerations, though:
+
+1) We want to minimise the amount of code we write in BB0
+2) We have 16kB of RAM to work with
+3) Trying to avoid writing code implies that functions will tend to be smaller, and hex code is small anyway.
+
+To avoid the world of lookup tables for function addresses or having to deal with linkers, we can at least for now define functions to have preset addresses.
+
+If we define that functions begin at `0x8000_1000`, then we can define `a` to always have the address `0x8000_1000` and `b` to have address `0x8000_1200` and so on. That means each function could have 128 instructions in it (0x200 / 0x4 == 0x80 == 128), and we could fit 24 functions total (0x3000 / 0x200 == 0x18 == 24).
+
+While simple, this approach comes with real downsides which we need to be aware of:
+
+1) All functions are the same size, so a function which is only a couple of instructions takes as much RAM as a complex function.
+2) It's easy for one function to clobber another; with enough instructions, `a` can grow past the start of `b`.
+
+We'll leave it to the programmer to remember these caveats and choose function names wisely.
+
+## Code Layout
+
+To keep implementation simple, we define the start of the program to be the start of the main function, written to the beginning of RAM at `0x8000_0000`.
+
+Function definitions start at `0x8000_1000` as mentioned earlier. This implies a cap of 1024 (0x1000 / 4 == 1024) instructions in the "main" function before it clobbers the `a` function.
