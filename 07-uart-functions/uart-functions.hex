@@ -1,7 +1,6 @@
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
-13 00 00 00  # nop
 
 # Initialise UART; see comments in 05-uart/uart.hex for a detailed explanation
 # of what these instructions are doing.
@@ -52,6 +51,8 @@ b7 37 01 10  # lui x15, 0x10013
 #           ASCII char to set the location to write a function
 # s7 / x23: function location start; the first address at which a defined
 #           function will be written. 0x8000_1000
+# s8 / x24: function call mode flag; nonzero means we're waiting for the next
+#           ASCII char to identify the function to call
 
 93 02 00 00  # mv x05, x0 == addi x05, x00, 0x0
 13 03 00 00  # mv x06, x0 == addi x06, x00, 0x0
@@ -71,7 +72,7 @@ b7 37 01 10  # lui x15, 0x10013
 93 0a 07 00  # mv x21, x14 == addi x21, x14, 0x0
 13 0b 00 00  # addi x22, x0, 0x0
 b7 1b 00 80  # lui x23, 0x80001
-
+13 0c 00 00  # addi x24 x0 0x0
 
 # b0: .READ_UART
 # Read a byte from UART
@@ -101,7 +102,7 @@ e3 00 00 fe  # beq x0, x0, .READ_UART (-0x20)
 # d8: We're not in function mode or in comment mode.
 
 # Check for "." (0x2e) for function definition mode
-13 04 e4 02  # addi x8, x0, 0x2e
+13 04 e0 02  # addi x8 x0 0x2e
 63 1a 85 00  # bne x10 x8 0x14
 
 # We got an ".", so set x22 to 1 then jump back to READ_UART
@@ -160,6 +161,8 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 # instructions we received, which is stored in x21
 
 13 04 a0 06  # addi x08, 00, 0x6A
+
+# TODO: can't panic here, need to check for "x"
 63 1c 85 06  # bne x10, x08, .PANIC + 0x78
 
 # If we're here, we need to jump to the location in x21
@@ -245,24 +248,42 @@ e3 04 00 ee  # beq x00, x00, READ_UART -0x118
 63 00 00 00  # beq x00, x00, 0 # hang
 
 # 1e0: Handle function mode
-# Force uppercase
+# Force uppercase by ORing with 0x20
 13 65 05 02  # ori  x10, x10, 0x20
 
 # 'A' = 0x61, so subtract 0x61 from the value we have
 13 05 f5 f9  # addi x10, x10, -0x61
 
-# x10 now contains a number 0 - 25
-# Need to set x14 to x23 plus 0x200 multiplied by the value in x10
+13 00 00 00  # addi x0, x0, 0x0
 
-13 87 0b 00  # addi x14, x23, 0x0 (mv x14, x23)
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
+# If x10 < 0, panic
+e3 40 05 fe  # blt x10 x0 -0x20 (.PANIC)
+
+# If x10 > 25, panic
+# (blt x8 x10 imm == bgt x10 x8 imm)
+
+13 04 90 01  # addi x8 x0 25
+e3 4c a4 fc  # blt x8 x10 -0x28 (.PANIC)
+
+# x10 now contains a number 0 - 25
+
+# Need to set x14 to x23 plus 0x200 multiplied by the value in x10
+# i.e. x14 becomes the location at which the new function is written
+
+13 87 0b 00  # addi x14, x23, 0x0 / mv x14, x23
+
+# Each function is defined to be a max of 0x200 bytes
+# We load 0x200 into x8 to use it as an increment
+13 04 00 20  # addi x8, x0, 0x200
 
 # 0x200 from here
+# Start loop: If x10 == 0, jump back to READ_UART
+# Otherwise, add 0x200 (via x8) to x14, decrement x10 and loop
+
+e3 08 05 ea  # beq x10, x0, -0x150
+33 07 87 00  # add x14, x14, x8
+13 05 f5 ff  # addi x10, x10, -1
+e3 0a 00 fe  # beq x0 x0 -0xc
 
 13 00 00 00  # nop
 13 00 00 00  # nop
