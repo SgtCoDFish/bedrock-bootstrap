@@ -101,7 +101,7 @@ e3 00 00 fe  # beq x0, x0, .READ_UART (-0x20)
 
 # d8: We're not in function mode or in comment mode.
 
-# Check for "." (0x2e) for function definition mode
+# Check for "." (0x2e) to set function definition mode
 13 04 e0 02  # addi x8 x0 0x2e
 63 1a 85 00  # bne x10 x8 0x14
 
@@ -109,21 +109,20 @@ e3 00 00 fe  # beq x0, x0, .READ_UART (-0x20)
 
 13 0b 10 00  # addi x22, x0, 0x1
 e3 06 00 fc  # beq x0, x0, -0x34 (READ_UART)
-13 00 00 00  # nop
-13 00 00 00  # nop
 
-# f0: If we're here, we're not in a special mode
-# We need to check if we got 0x23 (#) and if so,
-# enter comment mode
+# e8: Check for $ to enter function jump mode
+13 04 40 02  # addi x8 x0 0x24 ("$")
+63 02 a4 14  # beq x8 x10 0x144
+
+# f0: Check if we got 0x23 (#) and if so, enter comment mode
 
 13 04 30 02  # addi x08, x00, 0x23
 63 1a 85 00  # bne x10 x08 0x14
-
-# We got a #, so enter comment mode
 13 0a 10 00  # addi x20, x00, 0x1
 e3 0a 00 fa  # beq x00, x00, .READ_UART (-0x4C)
 
-13 00 00 00  # nop
+# 0x100: If the function call mode flag is set, handle it
+63 10 0c 14  # bne x24 x0 0x140
 13 00 00 00  # nop
 
 # 108: If we didn't get 0x23 or 0x2e, we can ignore anything below 0x30 ('0')
@@ -162,7 +161,6 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 
 13 04 a0 06  # addi x08, 00, 0x6A
 
-# TODO: can't panic here, need to check for "x"
 63 1c 85 06  # bne x10, x08, .PANIC + 0x78
 
 # If we're here, we need to jump to the location in x21
@@ -247,14 +245,14 @@ e3 04 00 ee  # beq x00, x00, READ_UART -0x118
 13 00 00 00  # nop
 63 00 00 00  # beq x00, x00, 0 # hang
 
-# 1e0: Handle function mode
+# 1e0: Handle function definition mode
 # Force uppercase by ORing with 0x20
 13 65 05 02  # ori  x10, x10, 0x20
 
 # 'A' = 0x61, so subtract 0x61 from the value we have
 13 05 f5 f9  # addi x10, x10, -0x61
 
-13 00 00 00  # addi x0, x0, 0x0
+13 00 00 00  # nop
 
 # If x10 < 0, panic
 e3 40 05 fe  # blt x10 x0 -0x20 (.PANIC)
@@ -280,7 +278,7 @@ e3 4c a4 fc  # blt x8 x10 -0x28 (.PANIC)
 # Start loop: If x10 == 0, jump back to READ_UART
 # Otherwise, add 0x200 (via x8) to x14, decrement x10 and loop
 
-e3 08 05 ea  # beq x10, x0, -0x150
+e3 08 05 ea  # beq x10, x0, -0x150 (.READ_UART)
 33 07 87 00  # add x14, x14, x8
 13 05 f5 ff  # addi x10, x10, -1
 e3 0a 00 fe  # beq x0 x0 -0xc
@@ -295,14 +293,49 @@ e3 0a 00 fe  # beq x0 x0 -0xc
 13 00 00 00  # nop
 13 00 00 00  # nop
 
+# 0x230: Function call mode; set x24 to 1 and jump to READ_UART to read the function name
+13 0c 10 00  # addi x24 x0 0x1
+e3 0e 00 e6  # beq x0 x0 -0x184
+13 00 00 00  # nop
+13 00 00 00  # nop
+
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
 
+# 0x240: Handle function call mode
+# Ensure x10 ends up as a number 0 <= x10 <= 25
+# See comments for 0x1e0 for more detials
+13 65 05 02  # ori  x10, x10, 0x20
+13 05 f5 f9  # addi x10, x10, -0x61
 13 00 00 00  # nop
-13 00 00 00  # nop
+e3 48 05 f6  # blt x10 x0 -0x90 (PANIC)
+
+13 04 90 01  # addi x8 x0 25
+e3 44 a4 f6  # blt x8 x10 -0x98 (PANIC)
+
+# x10 now contains a number 0 - 25
+# We need to load the address of the target function into x8
+
+# x23 is the start of functions
+13 84 0b 00  # addi x8, x23, 0x00
+
+# Add 0x200 until x10 == 0
+63 08 05 00  # beq x10 x0 0x10
+13 04 04 20  # addi x8 x8 0x200
+13 05 f5 ff  # addi x10, x10, -1
+e3 0a 00 fe  # beq x0 x0 -0xc
+
+# x8 now contains the location of the function we want to jump to
+# So we need to write a JALR instruction to do the jump:
+# The instruction is: e7 00 04 00  # jalr ra 0(x8)
+
+b7 04 04 00  # lui x9, 0x00040
+
+93 84 74 0e  # addi x9 x9 0xe7
+23 20 97 00  # sw x9 0(x14)
 13 00 00 00  # nop
 13 00 00 00  # nop
 
-# 0x240 from here
+e3 00 00 e2  # beq x0 x0 -0x1e0
