@@ -31,15 +31,16 @@ func TestUARTHello(t *testing.T) {
 	}
 	t.Logf("a0  = 0x%08x", a0)
 
-	// Inspect all registers
-	regs, err := rt.GDB.ReadAllRegs()
-	if err != nil {
-		t.Fatalf("failed to dump regs: %s", err)
-	}
+	/*
+		regs, err := rt.GDB.ReadAllRegs()
+		if err != nil {
+			t.Fatalf("failed to dump regs: %s", err)
+		}
 
-	for r, v := range regs {
-		t.Logf("r%-2d = 0x%08x", r, v)
-	}
+		for r, v := range regs {
+			t.Logf("r%-2d = 0x%08x", r, v)
+		}
+	*/
 
 	const UART_TXDATA = 0x10013000
 	val, err := rt.GDB.ReadMem(UART_TXDATA, 4)

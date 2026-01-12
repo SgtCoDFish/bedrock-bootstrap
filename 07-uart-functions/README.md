@@ -17,7 +17,7 @@ Given our desire to target the HiFive1 and given that we're currently stuck to u
 We must add new syntax for defining and calling functions:
 
 - `.` denotes a function definition. It must be followed by a single letter, which will be converted to lowercase and will be the name of the function. For example, `.M` defines a function called `m`.
-- `x` is a function call - it should be followed by a single letter which is converted into lowercase and which denotes the function to be called. For example, `xM` calls the function called `m`
+- `$` is a function call - it should be followed by a single letter which is converted into lowercase and which denotes the function to be called. For example, `$M` calls the function called `m`
 
 We're explicitly not defining a way to _end_ a function. Once we see e.g. `.A`, all following instructions are part of `a` until we see a different definition. This reduces complexity of parsing inputs.
 

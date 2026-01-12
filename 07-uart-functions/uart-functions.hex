@@ -103,7 +103,7 @@ e3 00 00 fe  # beq x0, x0, .READ_UART (-0x20)
 
 # Check for "." (0x2e) to set function definition mode
 13 04 e0 02  # addi x8 x0 0x2e
-63 1a 85 00  # bne x10 x8 0x14
+63 16 85 00  # bne x10 x8 0xc
 
 # We got an ".", so set x22 to 1 then jump back to READ_UART
 
@@ -117,7 +117,7 @@ e3 06 00 fc  # beq x0, x0, -0x34 (READ_UART)
 # f0: Check if we got 0x23 (#) and if so, enter comment mode
 
 13 04 30 02  # addi x08, x00, 0x23
-63 1a 85 00  # bne x10 x08 0x14
+63 16 85 00  # bne x10 x8 0xc
 13 0a 10 00  # addi x20, x00, 0x1
 e3 0a 00 fa  # beq x00, x00, .READ_UART (-0x4C)
 
@@ -164,12 +164,11 @@ e3 0c 00 f8  # beq x00, x00, .READ_UART
 63 1c 85 06  # bne x10, x08, .PANIC + 0x78
 
 # If we're here, we need to jump to the location in x21
-# but first, we need to write an infinite loop instruction to the location stored in x14
-# so that we don't jump to x21, execute a few instructions and then hit an invalid
-# 0000_0000 instruction and trap
+# Previously we wrote an infinite loop instruction, but now that would
+# clobber the last instruction of our program so instead just jump
 
-13 05 30 06  # addi x10, x00, 0x63
-23 20 a7 00  # sw x10, 0(x14)
+13 00 00 00  # nop
+13 00 00 00  # nop
 67 80 0a 00  # jalr x0, x21, 0x00
 13 00 00 00  # nop
 13 00 00 00  # nop
@@ -275,15 +274,17 @@ e3 4c a4 fc  # blt x8 x10 -0x28 (.PANIC)
 13 04 00 20  # addi x8, x0, 0x200
 
 # 0x200 from here
+
+# Need to clear function definition mode flag
+13 0b 00 00  # addi x22 x0 0x0
+
 # Start loop: If x10 == 0, jump back to READ_UART
 # Otherwise, add 0x200 (via x8) to x14, decrement x10 and loop
-
-e3 08 05 ea  # beq x10, x0, -0x150 (.READ_UART)
+e3 06 05 ea  # beq x10 x0 -0x154 (.READ_UART)
 33 07 87 00  # add x14, x14, x8
 13 05 f5 ff  # addi x10, x10, -1
 e3 0a 00 fe  # beq x0 x0 -0xc
 
-13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
@@ -318,24 +319,116 @@ e3 44 a4 f6  # blt x8 x10 -0x98 (PANIC)
 # x10 now contains a number 0 - 25
 # We need to load the address of the target function into x8
 
-# x23 is the start of functions
+# x23 is the start of functions; load that into x8
 13 84 0b 00  # addi x8, x23, 0x00
 
-# Add 0x200 until x10 == 0
+# Add 0x200 to x8, decrementing x10 each time until x10 == 0
 63 08 05 00  # beq x10 x0 0x10
 13 04 04 20  # addi x8 x8 0x200
 13 05 f5 ff  # addi x10, x10, -1
 e3 0a 00 fe  # beq x0 x0 -0xc
 
 # x8 now contains the location of the function we want to jump to
-# So we need to write a JALR instruction to do the jump:
-# The instruction is: e7 00 04 00  # jalr ra 0(x8)
+# We need to write instructions to load that location into a register to RAM,
+# and then encode a jump instruction using that register.
+# We'll use x29 to avoid clobbering other work.
 
-b7 04 04 00  # lui x9, 0x00040
+# We'll write the value of x8 (the address of the function) to memory directly.
 
-93 84 74 0e  # addi x9 x9 0xe7
+# First need to write an instruction to jump over the next word,
+# so we don't interpret the address of the function as an instruction!
+# The jump is 63 04 00 00  # beq x0 x0 0x8 == 0x00000463
+
+93 04 30 46  # addi x9 x0 0x463
+13 00 00 00  # nop
+13 00 00 00  # nop
 23 20 97 00  # sw x9 0(x14)
+
+# Increment to next instruction location
+13 07 47 00  # addi x14 x14 0x4
+
+# Store the literal address in RAM directly at x14
+23 20 87 00  # sw x8 0(x14)
+
+# Increment to next instruction location again
+13 07 47 00  # addi x14 x14 0x4
+
+# We need to load the literal address from PC-4 into x29,
+# and then load the value from the address in x29 into x29
+# i.e.:
+# 97 0e 00 00  # auipc x29 0x0 == 0xe97
+# 83 ae 8e ff  # lw x29 -8(x29) == 0xff8eae8e
+
+# Build auipc instruction
+# i.e.: 97 0e 00 00  # auipc x29 0x0 == 0xe97
+13 04 e0 00  # addi x8 x0 0xe
+13 14 84 00  # slli x8 x8 0x8
+13 04 74 09  # addi x8 x8 0x97
+
+# Store and increment
+23 20 87 00  # sw x8 0(x14)
+13 07 47 00  # addi x14 x14 0x4
+
+# Build lw x29 -4(x29) instruction
+# i.e. 83 ae ce ff  # lw x29 -4(x29) == 0xffceae83
+
+# 0xffceb000 - 0xff8eae83 = 0x17d
+37 b4 ce ff  # lui x8 0xffceb
+13 04 34 e8  # addi x8 x8 -0x17d
 13 00 00 00  # nop
 13 00 00 00  # nop
 
-e3 00 00 e2  # beq x0 x0 -0x1e0
+# Store and increment
+23 20 87 00  # sw x8 0(x14)
+13 07 47 00  # addi x14 x14 0x4
+
+# Finally, write a JALR instruction to do the jump:
+# The instruction is: e7 80 0e 00  # jalr ra 0(x29) == 0x000e80e7
+
+37 84 0e 00  # lui x8 0x000e8
+13 04 74 0e  # addi x8 x8 0xe7
+23 20 87 00  # sw x8 0(x14)
+13 07 47 00  # addi x14 x14 0x4
+
+# Need to clear the function call mode flag
+13 0c 00 00  # addi x24 x0 0x0
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+e3 04 00 dc  # beq x0 x0 -0x238 # Jump back to READ_UART0
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop  # 0x350 here

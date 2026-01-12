@@ -17,8 +17,9 @@ dump: BUILD/uart-functions.bin
 BUILD/uart-functions.elf: elfheader.hex uart-functions.hex | BUILD
 	cat $^ | sed "s/#.*$$//g" | xxd -r -p > $@
 
-BUILD/uart-functions.o: uart-functions.asm | BUILD
-	$(RISCV_PREFIX)as -march=rv32i $< -o $@
+.PHONY: qemu
+qemu: BUILD/uart-functions.elf
+	qemu-system-riscv32 -nographic -serial pty -gdb tcp::1234 -S -machine sifive_e -kernel $<
 
 BUILD:
 	@mkdir -p $@

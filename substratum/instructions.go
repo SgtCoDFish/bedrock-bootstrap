@@ -347,6 +347,13 @@ var instructionMap = map[string]Instruction{
 			Opcode: 0x37,
 		},
 	},
+	"auipc": {
+		Name: "auipc",
+		Type: UType,
+		Opcodes: Opcodes{
+			Opcode: 0x17,
+		},
+	},
 	"or": {
 		Name: "or",
 		Type: RType,

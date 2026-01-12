@@ -19,7 +19,7 @@ BUILD/uart.elf: elfheader.hex uart.hex | BUILD
 
 .PHONY: qemu
 qemu: BUILD/uart.elf
-	qemu-system-riscv64 -nographic -serial pty -gdb tcp::1234 -S -machine sifive_e -kernel BUILD/uart.elf
+	qemu-system-riscv32 -nographic -serial pty -gdb tcp::1234 -S -machine sifive_e -kernel BUILD/uart.elf
 
 BUILD:
 	@mkdir -p $@
