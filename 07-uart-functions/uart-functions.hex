@@ -382,7 +382,7 @@ e3 0a 00 fe  # beq x0 x0 -0xc
 23 20 87 00  # sw x8 0(x14)
 13 07 47 00  # addi x14 x14 0x4
 
-# Finally, write a JALR instruction to do the jump:
+# Write a JALR instruction to do the jump:
 # The instruction is: e7 80 0e 00  # jalr ra 0(x29) == 0x000e80e7
 
 37 84 0e 00  # lui x8 0x000e8
@@ -390,14 +390,25 @@ e3 0a 00 fe  # beq x0 x0 -0xc
 23 20 87 00  # sw x8 0(x14)
 13 07 47 00  # addi x14 x14 0x4
 
-# Need to clear the function call mode flag
+# Finally, write 3 NOP instructions so that the function call block is
+# exactly 0x20 bytes. This means that for conditional function calls it'll be
+# easier to write a branch instruction in hex1 which skips the whole block.
+
+13 04 30 01  # addi x8 x0 0x13
+23 20 87 00  # sw x8 0(x14)
+23 22 87 00  # sw x8 4(x14)
+23 24 87 00  # sw x8 8(x14)
+
+13 07 c7 00  # addi x14 x14 0xc
+
+# Last, need to clear the function call mode flag
 13 0c 00 00  # addi x24 x0 0x0
 13 00 00 00  # nop
 
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
-e3 04 00 dc  # beq x0 x0 -0x238 # Jump back to READ_UART0
+e3 0a 00 da  # beq x0 x0 -0x24c # Jump back to READ_UART0
 
 13 00 00 00  # nop
 13 00 00 00  # nop

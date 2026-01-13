@@ -39,22 +39,44 @@ func TestUARTFunctionsBasic(t *testing.T) {
 
 		expected := []uint32{
 			0x00000013, // nop
+
 			// start function call code
 			0x00000463, // beq x0, x0, 0x8
 			0x80001000, // <location of function>
 			0x00000e97, // auipc x29, 0x0
 			0xffceae83, // lw x29, -4(x29)
 			0x000e80e7, // jalr ra, 0(x29)
+			0x00000013, // nop
+			0x00000013, // nop
+			0x00000013, // nop
 			// end function call code
+
 			0x005d8d93, // addi x27, x27, 0x5
+
 			// start function call code
 			0x00000463, // beq x0, x0, 0x8
 			0x80001200, // <location of function>
 			0x00000e97, // auipc x29, 0x0
 			0xffceae83, // lw x29, -4(x29)
 			0x000e80e7, // jalr ra, 0(x29)
-			// end function call code
 			0x00000013, // nop
+			0x00000013, // nop
+			0x00000013, // nop
+			// end function call code
+
+			0x02000063, // beq x0, x0, 0x20 // skip over $C
+
+			// start function call code
+			0x00000463, // beq x0, x0, 0x8
+			0x80001400, // <location of function>
+			0x00000e97, // auipc x29, 0x0
+			0xffceae83, // lw x29, -4(x29)
+			0x000e80e7, // jalr ra, 0(x29)
+			0x00000013, // nop
+			0x00000013, // nop
+			0x00000013, // nop
+			// end function call code
+
 			0x00000063, // beq x0, x0, 0x0
 		}
 
@@ -117,6 +139,34 @@ func TestUARTFunctionsBasic(t *testing.T) {
 
 	{
 		const base = 0x80001200
+
+		expected := []uint32{
+			0x001d8d93, // addi x27 x27 0x1
+			0x00008067, // ret
+		}
+
+		for i, want := range expected {
+			addr := base + uint32(i*4)
+			data, err := rt.GDB.ReadMem(addr, 4)
+			if err != nil {
+				t.Fatalf("failed to read from 0x%08x: %s", addr, err)
+			}
+
+			got := binary.LittleEndian.Uint32(data)
+
+			if got != want {
+				t.Fatalf(
+					"instruction %d @ 0x%08x = 0x%08x, want 0x%08x",
+					i, addr, got, want,
+				)
+			}
+
+			t.Logf("OK: instruction %d @ 0x%08x = 0x%08x", i, addr, got)
+		}
+	}
+
+	{
+		const base = 0x80001400
 
 		expected := []uint32{
 			0x001d8d93, // addi x27 x27 0x1

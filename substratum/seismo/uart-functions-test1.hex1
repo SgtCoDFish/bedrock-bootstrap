@@ -6,7 +6,10 @@ $A
 
 $B
 
-13 00 00 00  # nop
+63 00 00 02  # beq x0 x0 0x20
+
+$C
+
 63 00 00 00  # beq x0 x0 0x0
 
 .A
@@ -17,6 +20,11 @@ $B
 67 80 00 00  # jalr x0, 0(x1) / ret
 
 .B
+
+93 8d 1d 00  # addi x27 x27 0x1
+67 80 00 00  # jalr x0, 0(x1) / ret
+
+.C
 
 93 8d 1d 00  # addi x27 x27 0x1
 67 80 00 00  # jalr x0, 0(x1) / ret
