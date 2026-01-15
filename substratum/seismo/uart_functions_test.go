@@ -8,7 +8,7 @@ import (
 )
 
 func TestUARTFunctionsBasic(t *testing.T) {
-	rt := NewRISCVTest(t, "uart-functions.elf")
+	rt := NewRISCVTest(t, "../../07-uart-functions/BUILD/uart-functions.elf")
 
 	if err := rt.GDB.Continue(); err != nil {
 		t.Fatalf("failed to continue: %v", err)

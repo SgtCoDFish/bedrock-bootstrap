@@ -6,7 +6,7 @@ import (
 )
 
 func TestUARTHello(t *testing.T) {
-	rt := NewRISCVTest(t, "uart.elf")
+	rt := NewRISCVTest(t, "../../05-uart/BUILD/uart.elf")
 
 	if err := rt.GDB.Continue(); err != nil {
 		t.Fatal(err)

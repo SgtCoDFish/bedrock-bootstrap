@@ -10,8 +10,10 @@ import (
 	"github.com/sgtcodfish/substratum"
 )
 
+const uartRXXD = "../../06-uart-rxxd/BUILD/uart-rxxd.elf"
+
 func TestUARTLoadsNOPInstruction(t *testing.T) {
-	rt := NewRISCVTest(t, "uart-rxxd.elf")
+	rt := NewRISCVTest(t, uartRXXD)
 
 	if err := rt.GDB.Continue(); err != nil {
 		t.Fatalf("failed to continue: %v", err)
@@ -46,7 +48,7 @@ func TestUARTLoadsNOPInstruction(t *testing.T) {
 }
 
 func TestUARTLoadsMultipleInstructions(t *testing.T) {
-	rt := NewRISCVTest(t, "uart-rxxd.elf")
+	rt := NewRISCVTest(t, uartRXXD)
 
 	if err := rt.GDB.Continue(); err != nil {
 		t.Fatalf("failed to continue: %v", err)
