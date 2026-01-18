@@ -235,10 +235,10 @@ e3 04 00 ee  # beq zero, zero, READ_UART -0x118
 63 00 00 00  # beq zero, zero, 0 # hang
 
 # 1e0: Handle function definition mode
-# Force uppercase by ORing with 0x20
+# Force lowercase by ORing with 0x20
 13 65 05 02  # ori  a0, a0, 0x20
 
-# 'A' = 0x61, so subtract 0x61 from the value we have
+# 'a' = 0x61, so subtract 0x61 from the value we have
 13 05 f5 f9  # addi a0, a0, -0x61
 
 13 00 00 00  # nop
@@ -246,13 +246,13 @@ e3 04 00 ee  # beq zero, zero, READ_UART -0x118
 # If a0 < 0, panic
 e3 40 05 fe  # blt a0, zero, -0x20 (.PANIC)
 
-# If a0 > 25, panic
+# If a0 > 0x14, panic
 # (blt s0 a0 imm == bgt a0 s0 imm)
 
-13 04 90 01  # addi s0, zero, 25
+13 04 40 01  # addi s0, x0, 0x14
 e3 4c a4 fc  # blt s0, a0, -0x28 (.PANIC)
 
-# a0 now contains a number 0 - 25
+# a0 now contains a number 0 - 0x16 (20)
 
 # Need to set a4 to s7 plus 0x200 multiplied by the value in a0
 # i.e. a4 becomes the location at which the new function is written
