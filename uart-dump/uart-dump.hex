@@ -1,0 +1,24 @@
+b7 27 01 10  # lui a5, 0x10012
+93 87 c7 03  # addi a5, a5, 0x3c
+03 a5 07 00  # lw a0, 0(a5)
+93 05 30 00  # addi a1, x0, 0x3
+93 95 05 01  # slli a1, a1, 0x10
+b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
+33 f5 a5 00  # and a0, a1, a0
+23 a0 a7 00  # sw a0, 0(a5)
+93 87 87 ff  # addi a5, a5, -0x8
+03 a5 07 00  # lw a0, 0(a5)
+b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
+33 65 b5 00  # or a0, a0, a1
+b7 37 01 10  # lui a5, 0x10013
+93 87 87 01  # addi a5, a5, 0x18
+13 05 a0 08  # addi a0, x0, 0x8a
+23 a0 a7 00  # sw a0, 0(a5)
+93 87 07 ff  # addi a5, a5, -0x10
+13 05 10 00  # addi a0, x0, 0x1
+23 a0 a7 00  # sw a0, 0(a5)
+93 87 47 00  # addi a5, a5, 0x4
+13 05 10 00  # addi a0, x0, 0x1
+23 a0 a7 00  # sw a0, 0(a5)
+
+

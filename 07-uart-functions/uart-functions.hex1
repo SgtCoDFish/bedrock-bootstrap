@@ -1,0 +1,65 @@
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+# Initialise UART; see comments in 05-uart/uart.hex for a detailed explanation
+# of what these instructions are doing.
+b7 27 01 10  # lui a5, 0x10012
+93 87 c7 03  # addi a5, a5, 0x3c
+03 a5 07 00  # lw a0, 0(a5)
+93 05 30 00  # addi a1, zero, 0x3
+93 95 05 01  # slli a1, a1, 0x10
+b3 05 b0 40  # neg a1, a1 # sub a1, zero, a1
+33 f5 a5 00  # and a0, a1, a0
+23 a0 a7 00  # sw a0, 0(a5)
+93 87 87 ff  # addi a5, a5, -0x8
+03 a5 07 00  # lw a0, 0(a5)
+b3 05 b0 40  # neg a1, a1 # sub a1, zero, a1
+33 65 b5 00  # or a0, a0, a1
+b7 37 01 10  # lui a5, 0x10013
+93 87 87 01  # addi a5, a5, 0x18
+13 05 a0 08  # addi a0, zero, 0x8a
+23 a0 a7 00  # sw a0, 0(a5)
+93 87 07 ff  # addi a5, a5, -0x10
+13 05 10 00  # addi a0, zero, 0x1
+23 a0 a7 00  # sw a0, 0(a5)
+93 87 47 00  # addi a5, a5, 0x4
+13 05 10 00  # addi a0, zero, 0x1
+23 a0 a7 00  # sw a0, 0(a5)
+
+# Persistent register allocations:
+# s4: RAM write pointer, starts at 0x8000_0000
+# s5: UART0 base   = 0x10013000
+#     UART0_TXDATA = 0x10013000 (write UART)
+#     UART0_RXDATA = 0x10013004 (receive UART)
+# s6: Flags
+# s7: jump target when input is finished
+# s8: function base address (0x8000_1000)
+37 0a 00 80  # lui s4 0x80000
+b7 3a 01 10  # lui s5 0x10013
+13 0b 00 00  # addi s6 x0 0x0
+93 0b 0a 00  # addi s7 s4 0x0
+37 1c 00 80  # lui s8 0x80001
+
+.A # READ_UART
+
+b7 02 00 80  # lui t0 0x80000
+03 a5 4a 00  # lw a0 4(s5)
+
+# If rxdata[31] is 1, there's no valid character in rxdata
+# So, check the value and - if set - jump back to loading rxdata
+
+33 73 55 00  # and t1 a0 t0
+e3 1c 03 fe  # bne t1 x0 -8
+
+# If we're here, rxdata[31] should be zero and as such this AND should be
+# redundant - but let's be sure
+13 75 f5 0f  # andi a0, a0, 0xFF
+
+# TODO: check value is valid?
+
+67 80 00 00  # jalr x0 x1 0x0 / ret

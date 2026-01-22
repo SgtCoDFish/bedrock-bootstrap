@@ -15,32 +15,28 @@ SRC_END    = 0x20400100
  * ------------------------------------------------------------------*/
 _start:
 /* UART setup, taken from 05-uart */
-lui a5, 0x10012
+	lui a5, 0x10012
     addi a5, a5, 0x3c
-lw a0, 0(a5)
+	lw a0, 0(a5)
     addi a1, x0, 0x3
     slli a1, a1, 0x10
     sub a1, x0, a1
     and a0, a1, a0
-sw a0, 0(a5)
-
+	sw a0, 0(a5)
     addi a5, a5, -0x8
-lw a0, 0(a5)
+	lw a0, 0(a5)
     sub a1, x0, a1
     or a0, a0, a1
-
     lui a5, 0x10013
     addi a5, a5, 0x18
     addi a0, x0, 0x8a
-sw a0, 0(a5)
-
+	sw a0, 0(a5)
     addi a5, a5, -0x10
     addi a0, x0, 0x1
-sw a0, 0(a5)
-
+	sw a0, 0(a5)
     addi a5, a5, 0x4
     addi a0, x0, 0x1
-sw a0, 0(a5)
+	sw a0, 0(a5)
 
     /* Load source start address */
     lui     t0, %hi(SRC_START)
