@@ -69,7 +69,7 @@ On most modern systems, the bootstrapping process is hidden from users by virtue
 
 On Windows, "trust" is the end of the road - you don't get to see most of the code that's running and check it.
 
-On Linux you generally _do_ get that right, but in practise _nobody_ can feasibly vet every single line of code they're running in a Linux system, whether they have access to the source or not. Even with the source, one has to trust the binaries provided by their package manager unless they're reproducible - which most aren't. Compiling everything yourself is possible, but the problem of not being able to feasibly audit the code remains.
+On Linux you generally _do_ get that right, but in practice _nobody_ can feasibly vet every single line of code they're running in a Linux system, whether they have access to the source or not. Even with the source, one has to trust the binaries provided by their package manager unless they're reproducible - which most aren't. Compiling everything yourself is possible, but the problem of not being able to feasibly audit the code remains.
 
 On top of this, modern systems usually run on proprietary hardware, with proprietary firmware. Source availability for firmware is vanishingly rare, and even where it can be replaced it often requires specialist knowledge and tools.
 
