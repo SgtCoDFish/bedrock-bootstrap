@@ -1,24 +1,27 @@
-b7 27 01 10  # lui a5, 0x10012
-93 87 c7 03  # addi a5, a5, 0x3c
-03 a5 07 00  # lw a0, 0(a5)
-93 05 30 00  # addi a1, x0, 0x3
-93 95 05 01  # slli a1, a1, 0x10
-b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
-33 f5 a5 00  # and a0, a1, a0
-23 a0 a7 00  # sw a0, 0(a5)
-93 87 87 ff  # addi a5, a5, -0x8
-03 a5 07 00  # lw a0, 0(a5)
-b3 05 b0 40  # neg a1, a1 # sub a1, x0, a1
-33 65 b5 00  # or a0, a0, a1
-b7 37 01 10  # lui a5, 0x10013
-93 87 87 01  # addi a5, a5, 0x18
-13 05 a0 08  # addi a0, x0, 0x8a
-23 a0 a7 00  # sw a0, 0(a5)
-93 87 07 ff  # addi a5, a5, -0x10
-13 05 10 00  # addi a0, x0, 0x1
-23 a0 a7 00  # sw a0, 0(a5)
-93 87 47 00  # addi a5, a5, 0x4
-13 05 10 00  # addi a0, x0, 0x1
-23 a0 a7 00  # sw a0, 0(a5)
+# To make the dump program easily tranferrable we'll load the values
+# we need into registers, even if those registers might be previously
+# loaded with the values we need.
 
+# t2 := UART_BASE
+b7 33 01 10  # lui t2 0x10013
 
+# t0 := DUMP_START (the first memory location we should dump)
+b7 02 00 80  # lui t0 0x80000
+
+# t1 := DUMP_END (break when we get here)
+37 43 00 80  # lui t1 0x80004
+
+# send_loop:
+
+63 8e 62 00  # beq t0 t1 0x1c (done)
+03 ce 02 00  # lbu t3 0(t0)
+
+# uart_wait:
+83 ae 03 00  # lw t4 0(t2)
+e3 ce 0e fe  # blt t4 x0 -0x4
+23 a0 c3 01  # sw t3 0(t2)
+93 82 12 00  # addi t0 t0 0x1
+e3 04 00 fe  # beq x0 x0 -0x18 (send_loop)
+
+# done:
+63 00 00 00  # beq x0 x0 0x00

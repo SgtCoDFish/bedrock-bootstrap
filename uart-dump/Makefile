@@ -1,7 +1,7 @@
 include ../common.mk
 
 .PHONY: all
-all: clean BUILD/dump-uart.elf BUILD/qemu-dump.bin
+all: clean BUILD/dump-uart.elf BUILD/uart-dump.bin
 
 .PHONY: clean
 clean:
@@ -21,6 +21,13 @@ dump-asm: BUILD/dump-uart.elf
 # Dumps the values dumped over UART
 dump-dumped: BUILD/qemu-dump.bin
 	riscv64-elf-objdump -D -b binary -EL -m riscv:rv32 $<
+
+.PHONY: dump-hex
+dump-hex: BUILD/uart-dump.bin
+	$(RISCV_PREFIX)objdump -D -b binary -EL -m riscv:rv32 $<
+
+BUILD/uart-dump.bin: uart-dump.hex | BUILD
+	sed "s/#.*$$//g" $< | xxd -r -p > $@
 
 .PHONY: qemu
 qemu:
