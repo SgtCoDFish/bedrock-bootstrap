@@ -146,7 +146,13 @@ e3 0c 00 f8  # beq x0, x0, .READ_UART
 # instructions we received, which is stored in s5
 
 13 04 a0 06  # addi s0, x0, 0x6A
-63 1c 85 06  # bne a0, s0, .PANIC + 0x78
+63 08 85 00  # beq a0 s0 0x10 (jump over check for "p")
+
+# Check for "p" (0x70) and if given, jump to UART_DUMP. Else, panic
+
+13 04 00 07  # addi s0 x0 0x70
+63 02 85 08  # beq a0 s0 0x84 (UART_DUMP)
+63 06 00 06  # beq x0 x0 0x6c (PANIC)
 
 # If we're here, we need to jump to the location in s5
 # but first, we need to write an infinite loop instruction to the location stored in a4
@@ -156,9 +162,6 @@ e3 0c 00 f8  # beq x0, x0, .READ_UART
 13 05 30 06  # addi a0, x0, 0x63
 23 20 a7 00  # sw a0, 0(a4)
 67 80 0a 00  # jalr x0, s5, 0x00
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
 
 # 170: ADDRAW: we got a value to be added to our "running word" which will be written
 # when it's complete.
@@ -203,3 +206,30 @@ e3 04 00 ee  # beq x0, x0, READ_UART -0x118
 13 00 00 00  # nop
 13 00 00 00  # nop
 63 00 00 00  # beq x0, x0, 0 # hang
+
+# 1e0: UART_DUMP
+
+# t2 := UART_BASE
+b7 33 01 10  # lui t2 0x10013
+
+# t0 := DUMP_START (the first memory location we should dump)
+b7 02 00 80  # lui t0 0x80000
+
+# t1 := DUMP_END (break when we get here)
+# Since we know that a4 holds the end of where we wrote, we can just use the value of a4
+13 03 07 00  # addi t1 a4 0x0
+
+# send_loop:
+
+63 8e 62 00  # beq t0 t1 0x1c (done)
+03 ce 02 00  # lbu t3 0(t0)
+
+# uart_wait:
+83 ae 03 00  # lw t4 0(t2)
+e3 ce 0e fe  # blt t4 x0 -0x4
+23 a0 c3 01  # sw t3 0(t2)
+93 82 12 00  # addi t0 t0 0x1
+e3 04 00 fe  # beq x0 x0 -0x18 (send_loop)
+
+# done:
+63 00 00 00  # beq x0 x0 0x00

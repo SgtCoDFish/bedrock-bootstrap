@@ -1,12 +1,16 @@
 # `BB0`: `xxd -r` Over UART
 
-Our aim for now is to bootstrap a simple compiler for a higher-level language. A sensible place to start is the "compiler" we use to convert `.hex` files to binaries - `xxd -r -p`, which will let us self-host the "0th" stage of our bootstrapping process.
+Our aim for now is to bootstrap a simple compiler for a higher-level language. A sensible place to start is the "compiler" we use to convert `.hex` files to binaries: `xxd -r -p`.
 
-We'll accept a stream of ASCII hex chars over UART and then convert them into binary, storing them in RAM as we go. For example, given the UART input `13 00 00 00` (a no-op instruction) we'll end up writing `0x13000000` at `0x80000000` in memory. Given further input of `12 34 56 78` we'll write `0x12345678` at `0x80000004`, and so on.
+This will let us self-host the "0th" stage of our bootstrapping process.
 
-We'll support comments in the form of a `#` character, which will mean we ignore anything until a newline (`\n`, 0xA).
+We'll accept a stream of ASCII hex chars over UART and then convert them into binary, storing them in RAM as we go. For example, given the UART input `13 00 00 00` (a no-op instruction) we'll end up writing `0x00000013` at `0x80000000` in memory. Given further input of `12 34 56 78` we'll write `0x78563412` at `0x80000004`, and so on.
 
-Finally, we need a way of actually executing the code we write. If we receive an ASCII `j` or `J` character over UART, we'll jump to the beginning of the memory block where we started writing code - 0x80000000 after we write an infinite loop instruction to the end of that block.
+We'll support comments in the form of a `#` character. Once we see a `#`, we'll start "comment mode" and ignore anything until a newline (`\n`, 0xA).
+
+Finally, we need a way of actually using the code we write. If we receive an ASCII `j` or `J` character over UART, we'll jump to the beginning of the memory block where we started writing code (i.e. `0x80000000`), after we write an infinite loop instruction to the end of that block.
+
+Another way of using the code is to be able to get it back off the RISC-V system we upload it to, which we can do by echoing it back over UART. If the program receives an ASCII `p` or `P`, it'll print the contents of RAM to UART.
 
 ## Aims
 

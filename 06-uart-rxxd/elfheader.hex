@@ -21,8 +21,8 @@ f3 00  # RISC-V
 01 00 00 00  # loadable segment
 80 01 00 00  # segment offset in file MAY CHANGE PER PROGRAM
 00 00 40 20 00 00 40 20  # location in memory
-dc 01 00 00  # size of program            # CHANGES PER PROGRAM
-dc 01 00 00  # size of program, repeated  # CHANGES PER PROGRAM
+08 02 00 00  # size of program            # CHANGES PER PROGRAM
+08 02 00 00  # size of program, repeated  # CHANGES PER PROGRAM
 05 00 00 00  # segment dependent flags; readable and executable
 80 01 00 00  # alignment MAY CHANGE PER PROGRAM
 
@@ -59,7 +59,7 @@ dc 01 00 00  # size of program, repeated  # CHANGES PER PROGRAM
 06 00 00 00  # flags: "occupies memory during execution" and "executable"
 00 00 40 20  # virtual address of the section
 80 01 00 00  # segment offset in file, same as in program header
-dc 01 00 00  # segment size, same as in program header # CHANGES PER PROGRAM
+08 02 00 00  # segment size, same as in program header # CHANGES PER PROGRAM
 00 00 00 00 00 00 00 00  # unused
 04 00 00 00  # alignment
 00 00 00 00  # unused
