@@ -2,107 +2,111 @@
 
 Before we can do _anything_ we'll need to get some necessary tools, gather some required documentation, and find a way to debug the code we'll write.
 
-- See [TOOLS.md](../guides/TOOLS.md) for a guide to tools
+- See [TOOLS.md](../guides/TOOLS.md) for a guide to tools you'll likely need to work in this repo. By design though, not much is needed!
 - Check [RESOURCES.md](../guides/RESOURCES.md) for a list of references and other resources which might be handy.
-- Read [OPENOCD\_WRITING.md](../guides/OPENOCD_WRITING.md) for a guide to uploading code onto a HiFive1 using OpenOCD
 
-Without the [tools](../guides/TOOLS.md) you'll struggle to do much at all.
+Without the [tools](../guides/TOOLS.md) you won't be able to progress. This folder contains a test which confirms that all required tools are configured and working correctly.
 
 ## Aims
 
 - Understand the very basics of compiling and inspecting RISC-V code.
-- Run a binary on QEMU and use some basic commands to inspect the state of the system.
+- Run code on QEMU and use some basic commands to understand the state of the system.
 
-## Compiling Our Toolchain Test
+## Testing our Toolchain
 
-**NOTE**: The linker-script used for these examples is intentionally "weird". Running `nothing.elf` on hardware won't work. The idea here is to use QEMU to check that our toolchain is doing what we expect; actually running stuff on hardware comes later.
+Dependencies for bedrock-bootstrap are minimal, but we do require a few tools. This folder contains a few minimal examples which will test that your local toolchain is set up correctly.
 
-We can test our toolchain using the files in this repo. As long as you've set `$RISCV_PREFIX` correctly and you've got a riscv compiler installed, you should be good to go.
+Put simply: if you can run `make all` in this directory without an error, you have everything you need to run through this whole repo!
 
-Building the binaries is simple; you can check the underlying `Makefile` for details of the specific commands.
+First, if you haven't already you'll need to ensure that `RISCV_PREFIX` is set. If your RISC-V objdump command is called `riscv64-elf-objdump` then you don't need to do anything - that's the default (see [common.mk](../common.mk)).
+
+If it's anything else (e.g. `riscv32-unknown-objdump`) you'll need to `export RISCV_PREFIX=riscv32-unknown-` (changed as appropriate).
+
+### Running the Test
+
+Simply run:
 
 ```bash
 make all
 ```
 
+This will delete all generated files from this directory and attempt to regenerate them. It tests both hex code (our ultimate aim!) and the assembler (which is helpful for illustrative purposes).
+
 Several files will be dumped into this directory and intermediate files are placed in `BUILD/`.
 
 For this example only, the artifacts are also committed into Git to make it possible to test QEMU without having the full toolchain set up and working.
 
-The most interesting files from our perspective are `nothing.bin` and `nothing.dump`:
+The most interesting files are `toolchain-test-asm.elf` and `toolchain-test-hex.elf`. These are the kernels resulting from assembly and raw hex code respectively, and they can be run directly in QEMU.
+
+There are also "dump" files showing the RISC-V instructions present in `toolchain-test.asm` and `toolchain-test.hex`.
+
+There are also dumps of both the ASM and HEX examples, showing that they're equivalent.
 
 ```bash
-$ cat nothing.dump
-nothing.elf:     file format elf32-littleriscv
+$ cat toolchain-test-asm.dump toolchain-test-hex.dump
+
+toolchain-test-asm.elf:     file format elf32-littleriscv
 
 
 Disassembly of section .text:
 
-80000000 <main>:
-80000000:   00b00513           li a0,11
-80000004:   00008067           ret
+80000000 <_start>:
+80000000:	12345137          	lui	sp,0x12345
 
-80000008 <_start>:
-80000008:   80004137           lui sp,0x80004
-8000000c:   ff5ff0ef           jal ra,80000000 <main>
-80000010:   00100073           ebreak
-80000014:   0000006f           j 80000014 <_start+0xc>
+BUILD/toolchain-test-hex.bin:     file format binary
 
-$ od -Ax -tx1 nothing.bin
-# dumps nothing.bin in ASCII hex, one byte at a time
-000000 13 05 b0 00 67 80 00 00 37 41 00 80 ef f0 5f ff
-000010 73 00 10 00 6f 00 00 00
-000018
 
-$ od -Ax -tx4 nothing.bin
-# dumps nothing.bin in ASCII hex, four bytes at a time
-000000 00b00513 00008067 80004137 ff5ff0ef
-000010 00100073 0000006f
-000018
+Disassembly of section .data:
+
+00000000 <.data>:
+   0:	12345137          	lui	sp,0x12345
 ```
 
-Note that the raw binary dump (`nothing.bin`) is very small, and that the bytes match up with the disassembly in `nothing.dump`. For example, we see that the first instruction, at address `0x80000000` has the hex machine-code representation `00b00513` and that this matches the first 4 bytes of `nothing.bin` in the hex dumps using `od`.
-
-The dump also has assembly on the right to make it easier to read, so we can see that the sole command in `main` is `li a0,11` which loads the value `11` into the register named `a0` (which is designated by the RISC-V [Calling Convention](https://riscv.org/wp-content/uploads/2015/01/riscv-calling.pdf) as being for return values).
-
-Of course, the compiled output isn't much use to us right now - we want to actually run it!
+Of course, the output isn't much use to us right now - we want to actually run it!
 
 ## Running in QEMU
 
-First, we should note how to exit QEMU when running headless, which is done by pressing Ctrl+A, releasing and then pressing `x` (use Ctrl+A and then `h` for help on other such commands).
+We already know that the two kernels are functionally equivalent from the dumps, but still we provide two make targets for QEMU - one for ASM (`make qemu-asm`) and one for HEX (`make qemu-hex`).
 
-We can run qemu using `make qemu` but first we'll take a look at some of the arguments we pass to QEMU:
+Since they're functionally equivalent, you can choose either one to run. We'll show output from the hex version since that's more similar to what we'll use in the following steps of bootstrapping.
 
-- `-gdb tcp::1234` starts a GDB debugger on port `1234` which lets us dump memory
-- `-S` pauses the CPU before running anything, giving us time to attach using GDB
-- `-machine sifive_e` tells QEMU we're running a `sifive-e` machine (which the HiFive1 is!)
-- `-nographic` disables graphics - we're not going to need them.
+First, let's run QEMU:
 
-Finally we point at our "kernel" - which is our ELF file - and kick off QEMU. If you encounter any issues using QEMU from a package manager, it's very easy to build your own.
-
-```bash
-$ make qemu
+```console
+$ make qemu-hex
+qemu-system-riscv32 -nographic -serial pty -gdb tcp::1234 -S -machine virt -bios none -kernel toolchain-test-hex.elf
+QEMU 10.2.0 monitor - type 'help' for more information
+char device redirected to /dev/ttys004 (label serial0)
+(qemu)
 ```
 
+Your output might differ slightly, but it should be close enough. First: to quit QEMU, type "quit" and then press return.
 
-Now, open a separate terminal:
+Now we'll attach GDB to ensure that works too.
 
+In a separate terminal, run `make gdb`:
+
+```console
+$ make gdb
+riscv64-elf-gdb -q -ex "set architecture riscv:rv32" -ex "target remote :1234"
+The target architecture is set to "riscv:rv32".
+Remote debugging using :1234
+⚠️ warning: No executable has been specified and target does not support
+determining executable automatically.  Try using the "file" command.
+0x00001000 in ?? ()
+(gdb)
 ```
-$ "$RISCV_PREFIX"gdb
-(gdb) target remote localhost:1234
-(gdb) x 0x80000000
-0x80000000:    0x00b00513
-(gdb) info register pc # can also write "i r pc"
-                       # or just "i r" to dump all registers
-pc 0x1000     0x1000
-(gdb) x 0x1000
-0x1000:    0x204002b7
-(gdb) x 0x1004
-0x1004:    0x00028067
+
+Both the HEX and ASM programs are placed into memory at `0x80000000`. To confirm that they're loaded correctly, we'll dump the instruction at that location:
+
+```text
+(gdb) x/4i 0x80000000
+   0x80000000:	lui	sp,0x12345
+   0x80000004:	unimp
+   0x80000006:	unimp
+   0x80000008:	unimp
 ```
 
-`x 0x80000000` dumps the memory at that address, which we can see is our `main` function above. We know we've loaded the file correctly into QEMU.
+`x/4i` dumps 4 words of data at the given memory location, and disassembles them. We can see that the instruction at 0x8000000 matches the ASM and HEX code, and that the other instructions are empty (`unimp`).
 
-So we see our program is loaded correctly, and `info register pc` shows us that the board has defaulted `pc` to `0x1000`, and at that address there's actually an instruction already there which we didn't write!
-
-We _could_ cheat and look up in the HiFive1 manual for clues as to what that instruction does, but this is actually a great opportunity to write some raw machine code and disassemble it, which we'll try in the next section.
+If you're here without error, you've confirmed that your toolchain is fully working and you can move forwards!

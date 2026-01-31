@@ -1,31 +1,48 @@
 include ../common.mk
 
 .PHONY: all
-all: clean nothing.bin nothing.elf nothing.dump
+all: clean toolchain-test-asm.elf toolchain-test-asm.dump toolchain-test-hex.elf toolchain-test-hex.dump
 
 .PHONY: clean
 clean:
-	rm -rf BUILD nothing.elf nothing.bin nothing.dump
+	rm -rf BUILD toolchain-test-asm.elf toolchain-test-asm.dump toolchain-test-hex.elf toolchain-test-hex.dump
 
-BUILD/start.o: start.s
-	@mkdir -p BUILD
+.PHONY: gdb
+gdb:
+	$(RISCV_PREFIX)gdb -q -ex "set architecture riscv:rv32" -ex "target remote :1234" -ex "set confirm off"
+
+# HEX example
+
+BUILD/elfheader.bin: elfheader.hex
+	sed "s/#.*$$//g" $< | xxd -r -p > $@
+
+BUILD/toolchain-test-hex.bin: toolchain-test.hex
+	sed "s/#.*$$//g" $< | xxd -r -p > $@
+
+toolchain-test-hex.elf: BUILD/elfheader.bin BUILD/toolchain-test-hex.bin
+	cat $^ > $@
+
+toolchain-test-hex.dump: BUILD/toolchain-test-hex.bin
+	$(RISCV_PREFIX)objdump -D -b binary -EL -m riscv:rv32 $< > $@
+
+.PHONY: qemu-hex
+qemu-hex: toolchain-test-hex.elf
+	qemu-system-riscv32 -nographic -serial pty -gdb tcp::1234 -S -machine virt -bios none -kernel $<
+
+# ASM Example
+
+BUILD/toolchain-test.o: toolchain-test.asm | BUILD
 	$(RISCV_PREFIX)as -march=rv32i $< -o $@
 
-BUILD/nothing.o: nothing.c
-	@mkdir -p BUILD
-	$(RISCV_PREFIX)gcc -fPIC -O2 -g0 -static -fvisibility=hidden -nostdlib -nostartfiles -march=rv32i -mabi=ilp32 -c $< -o $@
+toolchain-test-asm.elf: BUILD/toolchain-test.o linker.ld
+	$(RISCV_PREFIX)ld $< -Tlinker.ld -m elf32lriscv -o $@
 
-nothing.elf: BUILD/nothing.o BUILD/start.o
-	@mkdir -p BUILD
-	$(RISCV_PREFIX)ld $^ -Tlinker.ld -m elf32lriscv -o $@
-
-nothing.bin: nothing.elf
-	@mkdir -p BUILD
-	$(RISCV_PREFIX)objcopy $< -O binary $@
-
-nothing.dump: nothing.elf
+toolchain-test-asm.dump: toolchain-test-asm.elf
 	$(RISCV_PREFIX)objdump -d $< > $@
 
-.PHONY: qemu
-qemu:
-	qemu-system-riscv64 -machine sifive_e -nographic -gdb tcp::1234 -S -kernel nothing.elf
+.PHONY: qemu-asm
+qemu-asm: toolchain-test-asm.elf
+	qemu-system-riscv32 -nographic -serial pty -gdb tcp::1234 -S -machine virt -bios none -kernel $<
+
+BUILD:
+	@mkdir -p $@

@@ -1,0 +1,2 @@
+# set the register x2 to 0x12345000
+37 51 34 12  # lui x2 0x12345

@@ -20,7 +20,7 @@ dump-asm: BUILD/dump-uart.elf
 .PHONY: dump-dumped
 # Dumps the values dumped over UART
 dump-dumped: BUILD/qemu-dump.bin
-	riscv64-elf-objdump -D -b binary -EL -m riscv:rv32 $<
+	$(RISCV_PREFIX)objdump -D -b binary -EL -m riscv:rv32 $<
 
 .PHONY: dump-hex
 dump-hex: BUILD/uart-dump.bin

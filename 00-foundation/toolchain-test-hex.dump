@@ -1,0 +1,8 @@
+
+BUILD/toolchain-test-hex.bin:     file format binary
+
+
+Disassembly of section .data:
+
+00000000 <.data>:
+   0:	12345137          	lui	sp,0x12345

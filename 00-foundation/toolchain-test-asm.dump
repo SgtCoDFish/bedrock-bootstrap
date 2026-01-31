@@ -1,0 +1,8 @@
+
+toolchain-test-asm.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+80000000 <_start>:
+80000000:	12345137          	lui	sp,0x12345

@@ -2,62 +2,44 @@
 
 While we do want to minimise the amount of tooling we use so that we can minimise the amount of third-party code we need to rely on, it would be considerably harder to work without a few core tools.
 
-## Building QEMU
+The main tools required if you want to follow along and write your own bedrock bootstrapping code are:
 
-If your system has QEMU >= 3.1 RISC-V support is likely to be included and you can probably install a RISC-V-supporting QEMU from your system package manager. If you run into problems using the version from your package manage, it's very easy to build QEMU from source and use that.
+1. A text editor to write hex
+2. `make` - should be available on almost any system
+2. Some program to convert hex into binary (reverse hex dumping)
 
-Clone it yourself and build:
+In this repo, the reverse hex dump tool of choice is `xxd`, which is commonly available by default or else can be found in Linux package managers or bundled with `vim` (which is the case in Homebrew).
 
-```bash
-git clone --recursive --depth 1 https://github.com/qemu/QEMU riscv-qemu
-cd riscv-qemu
-mkdir build && cd build
-../configure --target-list=riscv32-softmmu
-make -j4
-```
+The initial bootstrapping also uses `sed` to strip whitespace and comments from `.hex` files, which should be available on any POSIX system.
 
-## The GNU Toolchain
+## QEMU
 
-You can use a pre-built toolchain from [SiFive](https://www.sifive.com/boards/) (search for "GCC Toolchain") or build your own. You'll need one in either case; the compilers won't be much use, but some of the other tools will be.
+Unless you want to run everything on hardware (or if you're running through this repo on a RISC-V machine!) you'll need QEMU to be able to run the RISC-V code we generate.
 
-If you're building from source, you can see in the freedom-e-sdk HiFive1 [BSP](https://github.com/sifive/freedom-e-sdk/blob/30c143eb5445f47edb351ba54c84ff8285dc27a9/bsp/sifive-hifive1/settings.mk) that we need to target a different arch and ABI, since the toolchain defaults to 64 bit.
+If running on Linux or macOS it should be trivial to get a version of QEMU which supports RISC-V.
 
-You can choose where you want to run the tools from, but the build commands used in this project assume you've set `$RISCV_PREFIX` to point at the correct executables on the path. For example, if you install to `/opt/riscv` then you should set `$RISCV_PREFIX` to `/opt/riscv/bin/riscv32-unknown-elf-`.
+On macOS the `qemu` package in Homebrew includes `qemu-system-riscv32` which is all you need.
 
-Also, note that if you're installing somewhere where your user doesn't have write permissions (e.g. `/opt/riscv`) you'll probably need to build as root (`sudo make -j4`).
+On Linux, as long as you're running a distro which was released in the last few years QEMU is almost certain to be available in your package manager with RISC-V support. For example, the `qemu-system-riscv` package is available in Debian Trixie and in Debian Bullseye backports.
 
-Before building, you're likely to need to install some additional requirements. See [the repo](https://github.com/riscv/riscv-gnu-toolchain) for requirements on various platforms including popular Linus distros and macOS.
+## Binutils
 
-```bash
-git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
-cd riscv-gnu-toolchain
-mkdir build && cd build
-../configure --with-arch=rv32ima --with-abi=ilp32 --with-cmodel=medlow --prefix=SOME_PREFIX  # change SOME_PREFIX to whatever you like
-make -j4  # might need to be done as root depending on where you're installing
-```
+There are a few tools commonly used in this repo which make it much easier to work with the low-level bootstrapping code.
 
-Note that we're using the arch `rv32ima` which means the base RISC-V 32-bit instruction set (`i`) plus extensions for multiplication and atomic operations. You'll often see a `c` used in other toolchains; its omission is a conscious decision to simplify our efforts to write bare-metal machine code.
+The key tool is `objdump`. This is available in the `riscv64-elf-binutils` package in Homebrew, and is available in many package manager. Don't worry about specifically finding a `riscv32` objdump - the 64 bit version will work fine for us.
 
-In any case, we can (and will) explicitly specify the arch later when building which will allow us to avoid using extensions even if the toolchain is built with support for various extensions.[1]
+To be clear: you don't _need_ objdump - it just helps to check that the hex you're writing is correct.
 
-The executables will be in the `bin` directory.
+## GDB
 
-## OpenOCD
+Debuggers are an incredibly useful set of tools, and using GDB to debug QEMU will make bootstrapping much simpler.
 
-OpenOCD is also available from SiFive as a pre-built binary: [search "OpenOCD"](https://www.sifive.com/boards).
+GDB should be available in package manager, and `riscv64-elf-gdb` is in Homebrew.
 
-At the time of writing, RISC-V wasn't supported by any versions of OpenOCD which were installable from package managers like apt or homebrew. There is a [patched version](https://github.com/riscv/riscv-openocd) which is easy to build, however:
+## Compilers
 
-```bash
-git clone https://github.com/riscv/riscv-openocd
-cd riscv-openocd
-./bootstrap
-./configure
-make -j4
-```
+Binutils are much more important for our purposes than GCC. You can bootstrap a system without needing a compiler at all.
 
-The built binary will be in `src/openocd`.
+This repository does contain some assembly code for instructional or illustrative purposes and compiling that will require an assembler (`as`) and a linker (`ld`). Again, importantly, you can just choose to not bother with those - the point of bootstrapping is to avoid them.
 
-### Notes
-
-[1] In fact, it appears that even if one builds the toolchain without `c` support it still gets added in at the time of writing. That's why we'll explicitly not use it when building our applications.
+These tools are also available in `riscv64-elf-binutils` in Homebrew or in package managers.

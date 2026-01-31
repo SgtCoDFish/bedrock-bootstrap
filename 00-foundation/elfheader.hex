@@ -1,0 +1,98 @@
+7f 45 4c 46  # magic
+01 01 01  # 32 bit, little endian, ELFv1
+00 00 00 00 00 00 00 00 00  # unused
+02 00  # executable ELF
+f3 00  # RISC-V
+01 00 00 00  # ELFv1
+00 00 40 20  # Entry point
+34 00 00 00  # Program Header table pointer, follows ELF header
+54 00 00 00  # Section Header table pointer, follows program header table
+00 00 00 00  # unused
+34 00  # ELF header size
+20 00  # Program Header table entry size
+01 00  # Program Header table entry count
+28 00  # Section Header table entry size
+04 00  # Section Header table entry count
+01 00  # Index of ".shstrtab" in section header table
+
+# 0x34: Program Headers
+
+# The sole program header
+01 00 00 00  # loadable segment
+80 01 00 00  # segment offset in file MAY CHANGE PER PROGRAM
+00 00 00 80 00 00 00 80  # location in memory
+04 00 00 00  # size of program            # CHANGES PER PROGRAM
+04 00 00 00  # size of program, repeated  # CHANGES PER PROGRAM
+05 00 00 00  # segment dependent flags; readable and executable
+80 01 00 00  # alignment MAY CHANGE PER PROGRAM
+
+# 0x54: Section Headers
+# 0x54: NULL header
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+
+# 0x7C: .shstrtab
+09 00 00 00  # shstrtab name offset
+03 00 00 00  # strtab type
+00 00 00 00 00 00 00 00  # unused
+00 01 00 00  # section offset in file
+19 00 00 00  # section length
+00 00 00 00 00 00 00 00  # unused
+01 00 00 00  # alignment
+00 00 00 00  # unused
+
+# 0xA4: .symtab
+01 00 00 00  # shstrtab name offset
+02 00 00 00  # symtab type
+00 00 00 00 00 00 00 00  # unused
+20 01 00 00  # section offset in file
+20 00 00 00  # section length
+01 00 00 00  # index of associated section header (reuse shstrtab = 1)
+01 00 00 00  # index in symtab of first non-local symbol
+04 00 00 00  # alignment
+10 00 00 00  # size of a symbol table entry
+
+# 0xCC: .text
+13 00 00 00  # shstrtab name offset
+01 00 00 00  # program bits type
+06 00 00 00  # flags: "occupies memory during execution" and "executable"
+00 00 40 20  # virtual address of the section
+80 01 00 00  # segment offset in file, same as in program header
+04 00 00 00  # segment size, same as in program header # CHANGES PER PROGRAM
+00 00 00 00 00 00 00 00  # unused
+04 00 00 00  # alignment
+00 00 00 00  # unused
+
+# 0xF4: C bytes of padding to 0x0100
+00 00 00 00 00 00 00 00 00 00 00 00
+
+# 0x0100: .shstrtab section body
+# contains null-terminated ASCII: "\0.symtab\0.shstrtab\0.text\0"
+00 2e 73 79 6d 74 61 62 00 2e 73 68 73 74 72 74
+61 62 00 2e 74 65 78 74 00
+
+# 0x0119: 7 bytes padding to 0x0120
+00 00 00 00 00 00 00
+
+# 0x0120: .symtab section body
+# 2 entries, each 0x10 bytes long
+# 0x0120: First entry is always null and ignored
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+# 0x0130: Second Entry
+13 00 00 00  # string table name pointer, 13 points to ".text"
+00 00 40 20  # value: 0x2040_0000
+00 00 00 00  # size of symbol
+10  # info: NOTYPE, GLOBAL bind type
+00  # default visibility
+01 00  # section header table index
+
+# 0x0140: padding to 0x0180
+
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+# 0x0180: the actual program
