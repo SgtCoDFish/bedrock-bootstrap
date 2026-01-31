@@ -2,29 +2,50 @@
 
 # UART init
 
-# TODO
+# UART_BASE := 0x10000000
 
-# li t0, UART_BASE
+b7 02 00 10  # lui t0, 0x10000
 
 ## Disable interrupts
-# sb zero, UART_IER(t0)
+
+a3 a0 02 00  # sw x0 1(t0)
 
 # Enable DLAB
-# li t1, LCR_DLAB
-# sb t1, UART_LCR(t0)
+
+13 03 00 08  # addi t1 x0 0x80
+a3 a1 62 00  # sw t1 3(t0)
 
 # Set baud rate divisor = 1 (115200 @ 1.8432 MHz)
 
-# li t1, 1
-# sb t1, UART_DLL(t0)
-# sb zero, UART_DLM(t0)
+13 03 10 00  # addi t1 x0 0x1
+23 a0 62 00  # sw t1 0(t0)
+a3 a0 02 00  # sw x0 1(t0)
 
 # 8 data bits, no parity, 1 stop bit, clear DLAB
 
-# li t1, 0x03
-# sb t1, UART_LCR(t0)
+13 03 30 00  # addi t1 x0 0x3
+a3 a1 62 00  # sw t1 3(t0)
 
 # Enable FIFO, clear RX/TX FIFO
 
-# li t1, 0x07
-# sb t1, UART_FCR(t0)
+13 03 70 00  # addi t1 x0 0x7
+23 a1 62 00  # sw t1 2(t0)
+
+# pad to 0x60
+
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop

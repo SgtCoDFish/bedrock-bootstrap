@@ -1,25 +1,25 @@
 include ../common.mk
 
 .PHONY: all
-all: BUILD/uart-asm.elf
+all: BUILD/sifive-uart.bin BUILD/virt-uart.bin
 
 .PHONY: clean
 clean:
 	rm -rf BUILD
 
-.PHONY: dump
-dump: BUILD/uart-asm.elf
-	$(RISCV_PREFIX)readelf -a $<
+BUILD/sifive-uart.bin: sifive-uart.hex | BUILD
+	sed "s/#.*$$//g" $< | xxd -r -p > $@
 
-BUILD/start.o: uart.asm | BUILD
-	$(RISCV_PREFIX)as -march=rv32i $< -o $@
+BUILD/virt-uart.bin: virt-uart.hex | BUILD
+	sed "s/#.*$$//g" $< | xxd -r -p > $@
 
-BUILD/uart-asm.elf: BUILD/start.o | BUILD
-	$(RISCV_PREFIX)ld $^ -Tlinker.ld --architecture=rv32i -m elf32lriscv -o $@
+.PHONY: dump-sifive
+dump-sifive: BUILD/sifive-uart.bin
+	$(RISCV_PREFIX)objdump -D -b binary -EL -m riscv:rv32 $<
 
-.PHONY: qemu-asm
-qemu-asm: BUILD/uart-asm.elf
-	qemu-system-riscv32 -nographic -serial pty -gdb tcp::1234 -S -machine virt -bios none -kernel $<
+.PHONY: dump-virt
+dump-virt: BUILD/virt-uart.bin
+	$(RISCV_PREFIX)objdump -D -b binary -EL -m riscv:rv32 $<
 
 BUILD:
 	@mkdir -p $@
