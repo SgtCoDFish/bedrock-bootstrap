@@ -1,13 +1,39 @@
-# Booting on QEMU and the HiFive1
+# Understanding the Bootloader of `sifive_e` and `HiFive`
 
-So we know that after the first bootloader, control will pass to 0x20400000 immediately and then everything hangs. Why does it hang, and does the HiFive1 do the same thing?
+## Notes on the bootloader of QEMU `sifive_e`
 
-## Aims
+`lui t0,0x20400` loads the unsigned value `0x20400000` into `t0` which is a "temporary" register. You'll note that the immediate value in the instruction, `0x20400` doesn't _exactly_ match the value that ends up in `t0`. To clear that up, the [manual](https://content.riscv.org/wp-content/uploads/2016/06/riscv-spec-v2.1.pdf) says:
 
-- Learn how the boot process works on both QEMU and the HiFive1
-- Work out how we can run the same code on both platforms
+> `LUI` (load upper immediate) is used to build 32-bit constants ... `LUI` places the immediate value in the top 20 bits of the destination register, filling in the lowest 12 bits with zeros.
 
-## Why QEMU Hangs
+Since one hex "value" is 4 bits, that means the bottom 12 bits of the loaded value are `000`, which explains the difference.
+
+`jr t0` unconditionally jumps to the address in `t0`, which has the effect of setting `pc` to the value in `t0`.
+
+So we conclude that the bootloader just immediately jumps to the address `0x2040_0000`! Let's try it out in a GDB session connected to QEMU with `nothing.elf` from the previous section:
+
+```bash
+(gdb) nexti
+0x00001004 in ?? ()
+
+(gdb) i r pc t0
+pc    0x1004
+t0    0x20400000
+
+(gdb) nexti
+<execution hangs, so we press Ctrl-C>
+^C
+Program received signal SIGINT, Interrupt.
+0x00000000 in ?? ()
+
+(gdb) i r pc t0
+pc    0x0
+t0    0x20400000
+```
+
+That pretty much confirms what we expected to happen. We set `t0` and then jump to the address it contains, where the debugger hangs after jumping to `0x0`. Even after the hang, we still see the value that we set in `t0`. This was to be expected; we didn't write any code at `0x2040_0000` and there's nothing placed there at design time.
+
+So we know that after the first bootloader, control will pass to 0x20400000.
 
 ```bash
 (gdb) x 0x20400000
