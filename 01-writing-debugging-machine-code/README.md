@@ -46,3 +46,9 @@ Let's look at the objdump parameters we used:
 - `-m riscv:rv32` hints that we're dealing with RISC-V 32-bit instructions. This is required; there's no context in a raw binary file which might allow objdump to infer the architecture
 
 Basically, we need to tell objdump that the file is just a raw list of RISC-V instructions. From that, it can disassemble the contents for us.
+
+## Practical Machine Code
+
+`echo` is a great way to introduce the concept, but obviously we _can_ use `echo` to write binary files... but having to prefix everything with `\x` would be a pain, so we need an easier way to write hex and convert to binary. If you've not already, you'll probably want to read [guides/XXD\_COMPILER.md](../guides/XXD_COMPILER.md) which explains how we'll write "hex" files in a bit more detail.
+
+In short: we'll actually use `xxd` to convert hex to binary. You'll see this in various Makefiles across this repo (often paired with a `sed` oneliner to strip comments).

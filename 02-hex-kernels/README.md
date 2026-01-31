@@ -1,93 +1,57 @@
 # Understanding Kernel Formats
 
-We need to get code into the correct location to run it; as such we'll learn about the ELF format!
+We need to get code into the correct location to run it, and we need QEMU to be able to understand the format we provide it!
 
 ## Aims
 
 - Understand what format we need to make a kernel bootable in QEMU
 - Know which parts of an ELF file are important for our purposes and which are not needed.
-
-## `ret1234`
-
-In this directory we have a simple assembly language program which loads the value `0x01234` into the upper part of `x1`. The code is placed (via the linker script, `linker.ld`) into memory address `0x2040_0000`, which happens to be the location that control is passed to for some RISC-V development boards and the QEMU `sifive_e` machine.
-
-After loading the value, it calls `ebreak` which breaks to a debugger, and then loops in the same position infinitely.
-
-The binaries are committed to git in the form of `ret1234.elf` - an ELF file - and `ret1234.bin` which is a raw binary file with no relocation information.
+- Create a reasonably minimal ELF file which can be re-used for our future hex programs
+- Understand what parts of that ELF file will need to change per-program
 
 ## Kernel File Formats
-
-So what binary file format - ELF or raw binary - do we actually need?
-
-### QEMU
 
 So far we've used an ELF file to provide the kernel for QEMU, and in fact that's the only choice we have as evidenced by the `riscv-qemu` source code for [load\_kernel](https://github.com/riscv/riscv-qemu/blob/32a1a94dd324d33578dca1dc96d7896a0244d768/hw/riscv/sifive_e.c#L77-L88)[1].
 
 That means that to run under QEMU, we always have to provide an [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) file[2].
 
-That introduces a decent amount of complexity in our build process that it would be desirable to avoid since it'll be harder to generate an ELF than a raw binary file - but there's no reason it should stop us.
+That introduces a decent amount of complexity in our build process that it would be desirable to avoid; it's harder to generate an ELF than a raw binary file. But we can make a simple ELF header in hex and then `cat` the header along with our code.
 
 ## ELF Files
 
-In this directory we see `ret1234.elf`. From [Wikipedia](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format#File_header) we learn that a 32-bit ELF binary has a 52-byte long header, followed by program headers and section headers. The Wikipedia article is an excellent reference for the format and you'll probably want to have the article open while analysing the file.
+The [Wikipedia](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format#File_header) article on ELF files is an excellent reference for the format. The following is a brief overview of the different sections, but more in-depth analysis is provided in [ELF\_DETAIL](../guides/ELF_DETAIL.md).
 
-The following is a brief overview of the different sections. More in-depth analysis is provided in [ELF\_DETAIL](../guides/ELF_DETAIL.md)
+We don't need that level of detail - we can treat the ELF header as a black box most of the time. There are only a few parts which we need to change.
 
-### ELF Header
+First, the ELF file needs to reflect the total size of the program. Second, it needs to point to the location in memory that the kernel should be loaded. Mostly, that's all we need to tweak! [3]
 
-The first 52 bytes of `ret1234.elf`, when dumped, show the ELF file header. This mostly doesn't change between different RV32I ELF files in our case, since we'll be aiming for a very simple file with very few program headers and section headers.
+If stripped down, there really isn't much more that needs to change. We explicitly lay out the header such that there's very little which varies. ELF files have multiple sections, and we want to use only a bare minimum:
 
-### Program Header
-
-```text
-$ od -Ax -tx1 -N32 -j52 ret1234.elf
-000034 01 00 00 00 00 10 00 00 00 00 40 20 00 00 40 20
-000044 0c 00 00 00 0c 00 00 00 05 00 00 00 00 10 00 00
-```
-
-In short, this header points at a `0xc` byte long executable section which is located at offset `0x1000` in this file, and indicates that the section should be loaded at `0x2040_0000`.
-
-We can dump that section and confirm that the expected code is present:
-
-```text
-$ od -v -Ax -tx1 -j4096 -N12 ret1234.elf
-001000 b7 40 23 01 73 00 10 00 6f 00 00 00
-```
-
-The program header is one of the parts of the file that must change for each program, since it contains the size of the program itself.
-
-### Section Headers
-
-The 6 section headers in this file are located at `0x000010ac` and, according to the ELF file header, each has a size of 40 bytes.
-
-The types are summarised here, with more detail available [in this doc](https://docs.oracle.com/cd/E23824_01/html/819-0690/chapter7-1.html#scrolltoc):
-
-- a null, empty section, which appears to be required
-- `.text` is the most important section type since it contains our code! The others are less important, but some are required.
-- `.riscv.attributes` is a special RISC-V section which contains details about the specific RISC-V architecture the object was compiled for - `rv32i` in this case. It's not at all well-documented and so we avoid adding it for now. Since we're writing a single ELF as output, the information contained within this section is not particularly useful.
-- `.symtab` is the [symbol table](https://docs.oracle.com/cd/E23824_01/html/819-0690/chapter6-79797.html#scrolltoc), which is needed to perform relocations on symbolic definitions and references.
-- `.strtab` is a table containing null-terminated strings relating to symbol table entries.
-- `.shstrtab` is a table also containing null-terminated strings which are the names of section headers
-
-Three of these sections are vital (aside from NULL which is required):
-
+- a "null" section which seems to be required - this is just blank
 - `.text` contains our code
-- `.shstrtab` which has header names for everything. We can get rid of the separate `.strtab` and place everything in here if needed.
-- `.symtab` which points to our code and gives details about how function calls work. This will be very simple for our use cases.
+- `.shstrtab` which has header names for everything
+- `.symtab` which points to our code and gives details about how function calls work
 
-### Section Bodies
+## Writing a Minimal ELF Header
 
-`.shstrtab` and `.strtab` both contain lists of null-terminated strings, and `.text` just contains our compiled code.
+Take a look at `elfheader.hex` which contains a basic "baremetal hex" ELF file, and then `elfheader.smallsyms.hex` which goes slightly further in saving space. There are some small changes compared to an ELF file generated by the GNU toolchain:
 
-`.symtab` has a "global" section which points at our code, but the rest of the sections can be ignored.
+- We removed the `.riscv.attributes` section. It _is_ useful in the general case to have the architecture of the code alongside the code; in our case, `rv32i`. However, this section is poorly documented and our binaries will tend to be statically compiled kernels where the architecture doesn't really matter - there's no further linking going on.
+- We removed the `strtab` section. There's no real need to have a second section since we're forced to have a `shstrtab` for section headers, and everything seems to work fine if we just re-use that.
+- We removed a decent amount of padding. The code in the "GNU" ELF was placed at 0x1000 into the file, which is ~4kB of mostly empty space.
+- We remove some seemingly pointless entries from the symbol table, leaving just a required null entry and the actual program's entry.
 
-The program section pointed to by the program header is the same as the `.text` section in our simple case.
+We leave a small amount of padding in the file for future changes but mostly we optimise for small size.
 
-Mostly, there's a large amount of padding up to `0x1000` bytes which is all zeroes. We can get rid of almost all of it.
+## Using the ELF Header
 
-## Next
+`elftemplate` is provided as a template for future programs. It must be changed to be useful, since the length of the program is replaced with `XX XX XX XX` in the template. This length occurs in the program header as well as in the `.text` section header.
 
-We've seen what an ELF file looks like, and we know that we need an ELF file for QEMU. The next step is to write an ELF header in hex.
+To use `elftemplate` for a new program, copy it and replace the dummy program lengths with the actual little-endian hex length, and then append the hex program itself. You can add the program with `cat`, since the ELF header intentionally leaves the program at the end of the file. Finally, use our "xxd compiler" to create an ELF file:
+
+```bash
+cat elfheader.hex program.hex | sed "s/#.*$//g" | xxd -r -p > program.elf
+```
 
 ## Notes
 
@@ -98,3 +62,5 @@ We've seen what an ELF file looks like, and we know that we need an ELF file for
 We could for example patch the `load_kernel` function to parse `-kernel "0x20400000:ret1234.bin"` as "place `ret1234.bin` at `0x2040_0000`". It's a judgement call, but it feels like patching QEMU is further away from what we're trying to do than just banging out an ELF header, which is what we'll be doing later.
 
 At the end of the day, one of the tasks involves writing C and the other involves writing hex!
+
+[3] Something that will come into play later is that we can reduce the need to tweak the ELF header by making our programs a standard size.

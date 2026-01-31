@@ -1,23 +1,31 @@
 # UART
 
-Next thing is enable a connection and communication over [UART](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter) which will let us upload to and download from our target device.
+We've spent a lot of time getting things set up, so let's actually _do_ something!
 
-The UART on the `sifive_e` QEMU board matches the UART on the HiFive1 so we should be able to write once and run on both platforms.
+[UART](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter) is very common as a method of transmitting data in embedded or bare metal devices. We'll need a communication channel down the road, but for now let's just do the equivalent of a "hello world" to test out our bare metal programming!
 
-References:
+Before this point, we've run QEMU targeting the `virt` machine. For this section, we'll use the `sifive_e` machine because it's slightly simpler and it'll build up to something in a later chapter.
+
+The UART on the `sifive_e` QEMU board matches the UART on the HiFive1 development board, so if you have one handy you can test this program on hardware, too! (Note that the given ELF header will only work for Revision A of the board, not Revision B)
+
+References for this section:
 
 - [Freedom Metal UART Driver](https://github.com/sifive/freedom-metal/blob/6d69e6d48babe4472a6f4671b832cb7df941f274/src/drivers/sifive%2Cuart0.c)
 - [dwelch UART Driver](https://github.com/dwelch67/sifive_samples/blob/e93a68e4dfed9f0cc5e3d23cc4ac7c4176f15b98/hifive1/uart02/notmain.c)
 
 ## Hand Assembling
 
+Obviously some work is needed to convert an instruction like `addi x15, x15, 0x3c` to hex like `93 87 c7 03`. This is what an assembler usually does, and we need to do it by hand.
+
 We're not going to list how to hand assemble every instruction - it gets boring quickly and it's not hard to reason about how it works. There's a reason people use assemblers!
 
 There are a couple of examples at [1] to help with the basic concepts, and there's a scratchpad of the "working out" in [HAND\_ASSEMBLY\_SCRATCHPAD.md](../guides/HAND_ASSEMBLY_SCRATCHPAD.md) with fuller working for many types of instructions.
 
+There's an assembler available as part of [substraum](../substratum/), too.
+
 ## Running `uart.hex`
 
-`uart.hex` is the end result of our UART example; it does nothing except output a single ASCII "5". We need to "compile" `BUILD/uart.elf` by adding an ELF header with the correct program size, removing the comments and then doing a reverse hexdump on the file.
+`uart.hex` is effectively a hex "hello world" for UART. It does nothing except output a single ASCII "5". We need to "compile" `BUILD/uart.elf` by adding an ELF header with the correct program size, removing the comments and then doing a reverse hexdump on the file.
 
 We can run on QEMU using `make qemu`:
 
@@ -64,10 +72,6 @@ There's also a hint in there:
 > A RISC-V `amoswap` instruction can be used to both read the full status and attempt to enqueue data, with a non-zero return value indicating the character was not accepted.
 
 We don't use this trick because we're only using RV32I instructions, and `amoswap` is in the `A` (atomic) extension.
-
-## Next
-
-Now that we've written a more complicated program - including a re-usable UART initialisation "driver", we can do something more complicated and write a program which takes input from UART.
 
 ## Notes
 

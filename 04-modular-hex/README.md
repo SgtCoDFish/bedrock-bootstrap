@@ -1,3 +1,0 @@
-# Modular `hex`
-
-TODO

@@ -3,7 +3,7 @@
 13 00 00 00  # nop
 13 00 00 00  # nop
 
-# Initialise UART; see comments in 05-uart/uart.hex for a detailed explanation
+# Initialise UART; see comments in 04-uart/uart.hex for a detailed explanation
 # of what these instructions are doing.
 b7 27 01 10  # lui a5, 0x10012
 93 87 c7 03  # addi a5, a5, 0x3c
