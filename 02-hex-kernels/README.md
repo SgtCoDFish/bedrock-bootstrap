@@ -1,23 +1,23 @@
 # Understanding Kernel Formats
 
-Now we understand the boot process and how control passes to our programs, we need to get some code into the correct location to run it, which will require some more research and analysis. We'll learn about the ELF format. If you know about the ELF format's inner structure already, this section won't provide much of use!
+We need to get code into the correct location to run it; as such we'll learn about the ELF format!
 
 ## Aims
 
-- Understand what format we need to use to get code running on both platforms
+- Understand what format we need to make a kernel bootable in QEMU
 - Know which parts of an ELF file are important for our purposes and which are not needed.
 
 ## `ret1234`
 
-In this directory we have a simple assembly language program which loads the value `0x01234` into the upper part of `x1`. The code is placed (via the linker script, `linker.ld`) into memory address `0x2040_0000` so it can be booted on both QEMU and the HiFive1.
+In this directory we have a simple assembly language program which loads the value `0x01234` into the upper part of `x1`. The code is placed (via the linker script, `linker.ld`) into memory address `0x2040_0000`, which happens to be the location that control is passed to for some RISC-V development boards and the QEMU `sifive_e` machine.
 
 After loading the value, it calls `ebreak` which breaks to a debugger, and then loops in the same position infinitely.
 
-The binaries are once again committed to git in the form of `ret1234.elf` - an ELF file - and `ret1234.bin` which is a raw binary file with no relocation information.
+The binaries are committed to git in the form of `ret1234.elf` - an ELF file - and `ret1234.bin` which is a raw binary file with no relocation information.
 
-## File Formats
+## Kernel File Formats
 
-So what binary file format - ELF or raw binary - do we actually need? We'll need to analyse both QEMU and our HiFive1 hardware.
+So what binary file format - ELF or raw binary - do we actually need?
 
 ### QEMU
 
@@ -27,15 +27,11 @@ That means that to run under QEMU, we always have to provide an [ELF](https://en
 
 That introduces a decent amount of complexity in our build process that it would be desirable to avoid since it'll be harder to generate an ELF than a raw binary file - but there's no reason it should stop us.
 
-### HiFive1
-
-When developing for the HiFive1 we can choose to produce ELF files (which can be uploaded natively by OpenOCD) but we also have the option to use OpenOCD's `write_image` directive to write a raw binary file at a memory offset we specify. This is friendlier to raw machine code since we could avoid the cost of having to create an ELF header, but QEMU forces our hand.
-
 ## ELF Files
 
 In this directory we see `ret1234.elf`. From [Wikipedia](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format#File_header) we learn that a 32-bit ELF binary has a 52-byte long header, followed by program headers and section headers. The Wikipedia article is an excellent reference for the format and you'll probably want to have the article open while analysing the file.
 
-The following is a brief overview of the different sections. More in-depth analysis is provided in [ELF\_DETAIL](./ELF_DETAIL.md)
+The following is a brief overview of the different sections. More in-depth analysis is provided in [ELF\_DETAIL](../guides/ELF_DETAIL.md)
 
 ### ELF Header
 

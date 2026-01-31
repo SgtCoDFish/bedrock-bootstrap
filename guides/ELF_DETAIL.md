@@ -1,6 +1,6 @@
 # ELF Details
 
-Analysing ELF files in detail is not the goal of this stage; nevertheless, if you want more in depth information on different ELF sections, that's provided here in a slightly free-flowing format.
+Analysing ELF files in detail is not the goal of this repo; nevertheless, if you want more in depth information on different ELF sections, that's provided here in a slightly free-flowing format.
 
 ## ELF File Header
 
