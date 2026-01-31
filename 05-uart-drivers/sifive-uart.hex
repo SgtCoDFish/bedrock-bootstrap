@@ -1,0 +1,102 @@
+# UART initialisation for SiFive UART
+
+# Registers:
+# a5 (x15) is used to store addresses we're reading / writing in memory
+# a0 (x10) and a1 (x11) are used to store values read from memory or to be written to memory
+
+# IOF0_UART0_MASK = 0x00030000
+# GPIO_IOF_SEL @ 0x1001203C
+# GPIO_IOF_SEL &= ~(IOF0_UART0_MASK) to enable UART
+
+# Set a5 to 0x1001203C (GPIO_IOF_SEL)
+
+b7 27 01 10  # lui x15, 0x10012
+93 87 c7 03  # addi x15, x15, 0x3c
+
+# Read the value of GPIO_IOF_SEL into a0
+
+03 a5 07 00  # lw a0, 0(a5)
+
+# Load 0x3 into a1 then shift to the correct position and negate
+# (i.e. set a1 to -0x00030000)
+
+93 05 30 00  # addi a1, zero, 0x3
+93 95 05 01  # slli a1, a1, 0x10
+b3 05 b0 40  # neg a1, a1 # sub a1, zero, a1
+
+# GPIO_IOF_SEL &= ~(IOF0_UART0_MASK)
+
+33 f5 a5 00  # and a0, a1, a0
+23 a0 a7 00  # sw a0, 0(a5)
+
+# GPIO_IOF_EN @ 0x10012038
+# GPIO_IOF_EN |= IOF0_UART0_MASK to enable UART
+
+# Take 0x8 from a5 (relies on a5 previously being the address of GPIO_IOF_SEL)
+# then load the value at that address into a0
+
+93 87 87 ff  # addi a5, a5, -0x8
+03 a5 07 00  # lw a0, 0(a5)
+
+# Un-negate a1, so the value is now 0x00030000
+
+b3 05 b0 40  # neg a1, a1 # sub a1, zero, a1
+
+# Set the bit in GPIO_IOF_EN
+
+33 65 b5 00  # or a0, a0, a1
+
+# UART_REG_DIV @ 0x10013018
+# UART_REG_DIV will be set to 138 (0x8A) to control the baud rate.
+#
+# The UART baud rate is generated as:
+#     baud = f_uart_clk / (DIV + 1)
+#
+# Assuming the FE310 default UART clock of 16 MHz and a target baud rate
+# of 115200:
+#
+#     DIV = (16,000,000 / 115,200) - 1 ≈ 137.9 ≈ 138 (0x8A)
+#
+# This results in an actual baud rate of approximately 115,108 baud
+# (error ≈ −0.08%), which is well within UART tolerance.
+#
+# Therefore we set UART_REG_DIV = 0x8A.
+
+# Set a5 to 0x10013018 (UART_REG_DIV)
+
+b7 37 01 10  # lui x15, 0x10013
+93 87 87 01  # addi x15, x15, 0x18
+13 05 a0 08  # addi a0, zero, 0x8a
+
+# Store the value 0x8a into UART_REG_DIV
+
+23 a0 a7 00  # sw a0, 0(a5)
+
+# UART_REG_TXCTRL @ 0x10013008
+# UART_REG_TXCTRL should be set to 0x01
+# The first bit controls whether transmission is enabled (which we want)
+# The second bit is left as zero to signify we only want one stop bit.
+
+# Set a5 to the value of UART_REG_TXCTRL by subtracting 0x10
+# (assumes that a5 was previously set to UART_REG_DIV)
+
+93 87 07 ff  # addi a5, a5, -0x10
+
+# Set a0 to 0x1 and store into UART_REG_TXCTRL
+
+13 05 10 00  # addi a0, zero, 0x1
+23 a0 a7 00  # sw a0, 0(a5)
+
+# UART_REG_RXCTRL @ 0x1001300C
+# UART_REG_RXCTRL := 0x01
+# 0x1 is required to enable receiving on UART. Other bits are unused by us.
+
+93 87 47 00  # addi a5, a5, 0x4
+13 05 10 00  # addi a0, zero, 0x1
+23 a0 a7 00  # sw a0, 0(a5)
+
+# UART init complete
+# Pad to 0x60
+
+13 00 00 00  # nop
+13 00 00 00  # nop

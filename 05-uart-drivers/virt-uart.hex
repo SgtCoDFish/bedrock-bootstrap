@@ -1,0 +1,30 @@
+# NS16550 compatible UART driver
+
+# UART init
+
+# TODO
+
+# li t0, UART_BASE
+
+## Disable interrupts
+# sb zero, UART_IER(t0)
+
+# Enable DLAB
+# li t1, LCR_DLAB
+# sb t1, UART_LCR(t0)
+
+# Set baud rate divisor = 1 (115200 @ 1.8432 MHz)
+
+# li t1, 1
+# sb t1, UART_DLL(t0)
+# sb zero, UART_DLM(t0)
+
+# 8 data bits, no parity, 1 stop bit, clear DLAB
+
+# li t1, 0x03
+# sb t1, UART_LCR(t0)
+
+# Enable FIFO, clear RX/TX FIFO
+
+# li t1, 0x07
+# sb t1, UART_FCR(t0)
