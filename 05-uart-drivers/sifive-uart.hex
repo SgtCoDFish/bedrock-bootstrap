@@ -122,23 +122,27 @@ b7 37 01 10  # lui x15, 0x10013
 13 00 00 00  # nop
 
 # 0xa0: READ_UART
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
 
-13 00 00 00  # nop
+# a6 / x16: UART0_RXDATA = 0x10013004 (receive UART)
+
+b7 33 01 10  # lui t2 0x10013
+03 a3 43 00  # lw t1 4(t2)
+e3 4e 03 fe  # blt t1 x0 -0x4
+13 75 f3 0f  # andi a0 t1 0xff
+67 80 00 00  # jalr x0 x1 0x0 / ret
+
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
 
 # 0xc0: WRITE_UART
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
 
-13 00 00 00  # nop
+b7 33 01 10  # lui t2 0x10013
+83 ae 03 00  # lw t4 0(t2)
+e3 ce 0e fe  # blt t4 x0 -0x4
+23 a0 a3 00  # sw a0 0(t2)
+67 80 00 00  # jalr x0 x1 0x0 / ret
+
 13 00 00 00  # nop
 13 00 00 00  # nop
 13 00 00 00  # nop
