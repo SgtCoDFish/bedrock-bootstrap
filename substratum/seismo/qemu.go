@@ -1,8 +1,19 @@
 package seismo
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
+)
+
+type QEMUMachine string
+
+const (
+	SiFiveE QEMUMachine = "sifive_e"
+	Virt    QEMUMachine = "virt"
+
+	serialPort = 4444
+	gdbPort    = 3333
 )
 
 type QEMU struct {
@@ -11,17 +22,18 @@ type QEMU struct {
 	GDBPort    int
 }
 
-func StartQEMU(kernel string, serialPort, gdbPort int) (*QEMU, error) {
+func StartQEMU(ctx context.Context, machine QEMUMachine, kernelPath string) (*QEMU, error) {
 	args := []string{
-		"-machine", "sifive_e",
+		"-machine", string(SiFiveE),
 		"-nographic",
-		"-kernel", kernel,
+		"-bios", "none",
+		"-kernel", kernelPath,
 		"-serial", fmt.Sprintf("tcp::%d,server", serialPort),
 		"-gdb", fmt.Sprintf("tcp::%d", gdbPort),
 		"-S",
 	}
 
-	cmd := exec.Command("qemu-system-riscv32", args...)
+	cmd := exec.CommandContext(ctx, "qemu-system-riscv32", args...)
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}

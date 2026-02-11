@@ -11,15 +11,10 @@ type RISCVTest struct {
 	GDB  *GDB
 }
 
-func NewRISCVTest(t *testing.T, kernel string) *RISCVTest {
-	const (
-		serialPort = 4444
-		gdbPort    = 3333
-	)
-
+func NewRISCVTest(t *testing.T, kernelPath string) *RISCVTest {
 	ctx := t.Context()
 
-	qemu, err := StartQEMU(kernel, serialPort, gdbPort)
+	qemu, err := StartQEMU(ctx, SiFiveE, kernelPath)
 	if err != nil {
 		t.Fatal(err)
 	}
