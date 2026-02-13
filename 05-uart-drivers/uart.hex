@@ -1,0 +1,81 @@
+# Store the initial address of this "main" program in s0
+# This allows us to easily do relative jumps "back" into the UART driver
+17 04 00 00  # auipc s0 0x0
+13 05 50 03  # addi a0 x0 0x35 ("5")
+e7 00 04 fa  # jalr x1 -0x60(s0) # WRITE_UART
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
+13 00 00 00  # nop
