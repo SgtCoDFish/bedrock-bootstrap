@@ -75,9 +75,9 @@ a3 a1 62 00  # sw t1 3(t0)
 # 0xa0: READ_UART
 b7 02 00 10  # lui t0 0x10000
 03 83 52 00  # lb t1 5(t0)
-13 73 03 02  # andi t1 t1 0x20
+13 73 13 00  # andi t1 t1 0x1
 e3 0c 03 fe  # beq t1 x0 -0x8
-23 80 a2 00  # sb a0 0(t0)
+03 85 02 00  # lb a0 0(t0)
 67 80 00 00  # jalr x0 x1 0x0 / ret
 
 13 00 00 00  # nop
@@ -86,9 +86,9 @@ e3 0c 03 fe  # beq t1 x0 -0x8
 # 0xc0: WRITE_UART
 b7 02 00 10  # lui t0 0x10000
 03 83 52 00  # lb t1 5(t0)
-13 73 13 00  # andi t1 t1 0x1
+13 73 03 02  # andi t1 t1 0x20
 e3 0c 03 fe  # beq t1 x0 -0x8
-03 85 02 00  # lb a0 0(t0)
+23 80 a2 00  # sb a0 0(t0)
 67 80 00 00  # jalr x0 x1 0x0 / ret
 
 13 00 00 00  # nop

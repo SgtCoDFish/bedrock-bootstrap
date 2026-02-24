@@ -43,7 +43,7 @@ dump-virt-example: BUILD/virt-example.bin
 
 .PHONY: qemu-sifive
 qemu-sifive: BUILD/sifive-example.elf
-	qemu-system-riscv32 -nographic -serial pty -gdb tcp::1234 -S -machine sifive_e -kernel BUILD/uart.elf
+	qemu-system-riscv32 -nographic -serial pty -gdb tcp::1234 -S -machine sifive_e -kernel $<
 
 .PHONY: qemu-virt
 qemu-virt: BUILD/virt-example.elf

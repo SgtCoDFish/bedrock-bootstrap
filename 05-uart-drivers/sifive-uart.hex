@@ -126,7 +126,7 @@ b7 37 01 10  # lui x15, 0x10013
 
 # 0xa0: READ_UART
 
-# a6 / x16: UART0_RXDATA = 0x10013004 (receive UART)
+# UART0_RXDATA = 0x10013004 (receive UART)
 
 b7 33 01 10  # lui t2 0x10013
 03 a3 43 00  # lw t1 4(t2)

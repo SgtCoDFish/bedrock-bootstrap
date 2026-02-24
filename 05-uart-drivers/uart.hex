@@ -1,13 +1,19 @@
 # Store the initial address of this "main" program in s0
 # This allows us to easily do relative jumps "back" into the UART driver
+
 17 04 00 00  # auipc s0 0x0
+
+# Always write a "5" out to start
+
 13 05 50 03  # addi a0 x0 0x35 ("5")
-e7 00 04 fa  # jalr x1 -0x60(s0) # WRITE_UART
+e7 00 04 fc  # jalr x1 -0x40(s0) # WRITE_UART
 13 00 00 00  # nop
 
-13 00 00 00  # nop
-13 00 00 00  # nop
-13 00 00 00  # nop
+# Loop reading and then echoing byte back out over UART
+
+e7 00 04 fa  # jalr x1 -0x60(s0) # READ_UART
+e7 00 04 fc  # jalr x1 -0x40(s0) # WRITE_UART
+e3 0c 00 fe  # beq x0 x0 -0x8
 13 00 00 00  # nop
 
 13 00 00 00  # nop
